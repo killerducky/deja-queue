@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>YouTube Queue</title>
+        <style>
+            body {
+                font-family: sans-serif;
+                width: 200px;
+            }
+            input {
+                width: 100%;
+                margin-bottom: 5px;
+            }
+            ul {
+                padding: 0;
+                list-style: none;
+            }
+            li {
+                margin: 4px 0;
+            }
+        </style>
+    </head>
+    <body>
+        <input id="videoId" type="text" placeholder="YouTube Video ID" />
+        <button id="add">Add to Queue</button>
+        <button id="loadFile">Load from JSON</button>
+        <input id="fileInput" type="file" accept=".json" style="display: none" />
+        <ul id="queue"></ul>
+        <script src="popup.js"></script>
+    </body>
+</html>

@@ -1,0 +1,20 @@
+{
+    "manifest_version": 3,
+    "name": "YouTube DJ",
+    "version": "1.0",
+    "description": "Custom queue control for YouTube videos.",
+    "permissions": ["storage", "scripting"],
+    "content_scripts": [
+        {
+            "matches": ["*://www.youtube.com/*"],
+            "js": ["content.js"]
+        }
+    ],
+    "action": {
+        "default_popup": "popup.html"
+    },
+    "options_ui": {
+        "page": "popup.html",
+        "open_in_tab": true
+    }
+}
