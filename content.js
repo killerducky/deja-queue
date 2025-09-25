@@ -12,7 +12,8 @@ async function playNextVideo() {
     if (queue.length > 0) {
         current = (current + 1) % queue.length; // wrap around
         await browser.storage.local.set({ current });
-        window.location.href = `https://www.youtube.com/watch?v=${queue[current]}`;
+        window.location.href = `https://www.youtube.com/watch?v=${queue[current].id}`;
+        console.log("Play: ", queue[current].title);
     } else {
         console.log("Queue is empty.");
     }

@@ -1,6 +1,6 @@
 // Cross-browser shim
 if (typeof browser === "undefined") {
-    var browser = chrome;
+    var browser = chrome; // var so it's global
 }
 
 const input = document.getElementById("videoId");
@@ -9,11 +9,19 @@ const list = document.getElementById("queue");
 const loadBtn = document.getElementById("loadFile");
 const fileInput = document.getElementById("fileInput");
 
+function shuffleArray(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
+    return array;
+}
+
 function renderQueue(queue, current) {
     list.innerHTML = "";
-    queue.forEach((id, i) => {
+    queue.forEach((item, i) => {
         const li = document.createElement("li");
-        li.textContent = id + (i === current ? " <- now" : "");
+        li.textContent = item.title + (i === current ? " <- now" : "");
         list.appendChild(li);
     });
 }
@@ -21,10 +29,9 @@ function renderQueue(queue, current) {
 addBtn.addEventListener("click", async () => {
     const id = input.value.trim();
     if (!id) return;
-
     const data = await browser.storage.local.get(["queue", "current"]);
     let queue = data.queue || [];
-    queue.push(id);
+    queue.push({ id: id, title: id });
     console.log(queue);
     await browser.storage.local.set({ queue });
     renderQueue(queue, data.current ?? 0);
@@ -42,8 +49,8 @@ fileInput.addEventListener("change", async (e) => {
     const reader = new FileReader();
     reader.onload = async () => {
         try {
-            const jsonList = JSON.parse(reader.result);
-            queue = jsonList.map((item) => item.id);
+            let queue = JSON.parse(reader.result);
+            queue = shuffleArray(queue);
             console.log(queue);
             await browser.storage.local.set({ queue, current: 0 });
             renderQueue(queue, 0);
