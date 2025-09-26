@@ -117,7 +117,7 @@ async function playNextVideo() {
 // }
 
 browser.runtime.onMessage.addListener((msg, sender) => {
-    console.log("options.js received message:", msg, sender);
+    console.log("options.js received message:", msg);
     if (msg.type === "videoEnded") {
         console.log("Controller: video ended, moving to next");
         playNextVideo();
@@ -131,13 +131,14 @@ browser.runtime.onMessage.addListener((msg, sender) => {
 
 // Initial load
 (async () => {
-    const url = browser.runtime.getURL("videos.json");
-    const resp = await fetch(url);
-    const defaultQueue = await resp.json();
     let data = {};
-    data.queue = defaultQueue;
+    // const url = browser.runtime.getURL("videos.json");
+    const url = browser.runtime.getURL("videos_debug.json");
+    const resp = await fetch(url);
+    data.queue = await resp.json();
+    data.queue = shuffleArray(data.queue);
     data.current = 0;
     await browser.storage.local.set(data);
-    data = await browser.storage.local.get(["queue", "current"]);
+    // data = await browser.storage.local.get(["queue", "current"]);
     renderQueue(data.queue || [], data.current ?? 0);
 })();
