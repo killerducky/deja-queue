@@ -10,27 +10,22 @@ function attachListener() {
     if (video === lastVideo) return;
     lastVideo = video;
     console.log("attachListener video:", video);
-    video.addEventListener(
-        "playing",
-        () => {
-            browser.runtime.sendMessage({ type: "videoPlaying" });
-        },
-        { once: true }
-    );
-    video.addEventListener("ended", () => {
+    video.onplaying = () => {
+        console.log("sendMessage videoPlaying");
+        browser.runtime.sendMessage({ type: "videoPlaying" });
+    };
+    video.onended = () => {
         console.log("sendMessage videoEnded");
         browser.runtime.sendMessage({ type: "videoEnded" });
-    });
-    video.addEventListener("pause", () => {
+    };
+    video.onpause = () => {
         // Only treat pause as "ended" if the video is at the end
         if (Math.abs(video.duration - video.currentTime) < 0.5) {
             console.log("sendMessage videoEnded (pause at end)");
             browser.runtime.sendMessage({ type: "videoEnded" });
         }
-    });
+    };
 }
-
-attachListener();
 
 const observer = new MutationObserver(() => attachListener());
 observer.observe(document.body, { childList: true, subtree: true });

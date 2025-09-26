@@ -88,33 +88,33 @@ async function playNextVideo() {
     }
 }
 
-function waitForPlayableVideo(tabId, timeout = 5000) {
-    return new Promise((resolve) => {
-        let done = false;
+// function waitForPlayableVideo(tabId, timeout = 5000) {
+//     return new Promise((resolve) => {
+//         let done = false;
 
-        function listener(msg, sender) {
-            if (sender.tab?.id !== tabId) {
-                console.log("Ignoring message from different tab:", msg, sender);
-                return;
-            }
-            if (msg.type === "videoPlaying") {
-                done = true;
-                browser.runtime.onMessage.removeListener(listener);
-                resolve(true);
-            }
-        }
+//         function listener(msg, sender) {
+//             if (sender.tab?.id !== tabId) {
+//                 console.log("Ignoring message from different tab:", msg, sender);
+//                 return;
+//             }
+//             if (msg.type === "videoPlaying") {
+//                 done = true;
+//                 browser.runtime.onMessage.removeListener(listener);
+//                 resolve(true);
+//             }
+//         }
 
-        browser.runtime.onMessage.addListener(listener);
+//         browser.runtime.onMessage.addListener(listener);
 
-        setTimeout(() => {
-            if (!done) {
-                console.log("timeout");
-                browser.runtime.onMessage.removeListener(listener);
-                resolve(false);
-            }
-        }, timeout);
-    });
-}
+//         setTimeout(() => {
+//             if (!done) {
+//                 console.log("timeout");
+//                 browser.runtime.onMessage.removeListener(listener);
+//                 resolve(false);
+//             }
+//         }, timeout);
+//     });
+// }
 
 browser.runtime.onMessage.addListener((msg, sender) => {
     console.log("options.js received message:", msg, sender);
@@ -131,24 +131,9 @@ browser.runtime.onMessage.addListener((msg, sender) => {
 
 // Initial load
 (async () => {
-    let defaultQueue = [
-        {
-            id: "aujAeGeuWfg",
-            title: "Powerup! - Jeremy Blake | Royalty Free Music - No Copyright Music",
-        },
-        {
-            id: "8PQAiH0G8jU",
-            title: "Spark - QU4NTUM | Upbeat Music Instrumental No Copyright Background Music Electronic House Music EDM",
-        },
-        {
-            id: "qN7miZz-w6Y",
-            title: "Dance - Bensound | Royalty Free Music - No Copyright Music | Bensound Music",
-        },
-        {
-            id: "VAMGtMGCqSc",
-            title: "Beat Your Competition - Vibe Tracks | Royalty Free Music - No Copyright Music | YouTube Music",
-        },
-    ];
+    const url = browser.runtime.getURL("videos.json");
+    const resp = await fetch(url);
+    const defaultQueue = await resp.json();
     let data = {};
     data.queue = defaultQueue;
     data.current = 0;
