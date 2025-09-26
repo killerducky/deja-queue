@@ -11,10 +11,13 @@
         }
     ],
     "action": {
-        "default_popup": "popup.html"
+        "default_popup": "options.html"
+    },
+    "background": {
+        "scripts": ["background.js"]
     },
     "options_ui": {
-        "page": "popup.html",
+        "page": "options.html",
         "open_in_tab": true
     }
 }
