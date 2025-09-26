@@ -105,8 +105,8 @@ browser.runtime.onMessage.addListener((msg, sender) => {
 // Initial load
 (async () => {
     let data = {};
-    // const url = browser.runtime.getURL("videos.json");
-    const url = browser.runtime.getURL("videos_debug.json");
+    const url = browser.runtime.getURL("videos.json");
+    // const url = browser.runtime.getURL("videos_debug.json");
     const resp = await fetch(url);
     data.queue = await resp.json();
     data.queue = shuffleArray(data.queue);
