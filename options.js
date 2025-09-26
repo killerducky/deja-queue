@@ -5,6 +5,7 @@ if (typeof browser === "undefined") {
 
 const input = document.getElementById("videoId");
 const addBtn = document.getElementById("add");
+const nextBtn = document.getElementById("next");
 const list = document.getElementById("queue");
 const loadBtn = document.getElementById("loadFile");
 const fileInput = document.getElementById("fileInput");
@@ -19,9 +20,11 @@ function shuffleArray(array) {
 
 function renderQueue(queue, current) {
     list.innerHTML = "";
-    queue.forEach((item, i) => {
+    // well this is probably a dumb way to do it but vibe coding so
+    const reordered = queue.slice(current).concat(queue.slice(0, current));
+    reordered.forEach((item, i) => {
         const li = document.createElement("li");
-        li.textContent = item.title + (i === current ? " <- now" : "");
+        li.textContent = item.title;
         list.appendChild(li);
     });
 }
@@ -36,6 +39,10 @@ addBtn.addEventListener("click", async () => {
     await browser.storage.local.set({ queue });
     renderQueue(queue, data.current ?? 0);
     input.value = "";
+});
+
+nextBtn.addEventListener("click", async () => {
+    playNextVideo();
 });
 
 loadBtn.addEventListener("click", () => fileInput.click());
@@ -76,11 +83,12 @@ async function playNextVideo() {
         await browser.storage.local.set({ current });
         browser.tabs.sendMessage(tab.id, { type: "playVideo", tab: tab.id, id: queue[current].id });
         console.log("sendMessage: ", tab.id, { type: "playVideo", tab: tab.id, id: queue[current].id });
+        renderQueue(queue, current);
         videoTimeout = setTimeout(() => {
             console.log("Error:", queue[current].id, queue[current].title);
             console.log("Video did NOT start playing within timeout");
             playNextVideo();
-        }, 10000); // 10s
+        }, 15000); // 15s
     } else {
         console.log("Queue is empty.");
     }
