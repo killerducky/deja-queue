@@ -61,6 +61,8 @@ fileInput.addEventListener("change", async (e) => {
     reader.readAsText(file);
 });
 
+let videoTimeout;
+
 async function playNextVideo() {
     const data = await browser.storage.local.get(["queue", "current"]);
     console.log("playNextVideo data:", data);
@@ -74,50 +76,21 @@ async function playNextVideo() {
         await browser.storage.local.set({ current });
         browser.tabs.sendMessage(tab.id, { type: "playVideo", tab: tab.id, id: queue[current].id });
         console.log("sendMessage: ", tab.id, { type: "playVideo", tab: tab.id, id: queue[current].id });
-        console.log("Play: ", queue[current].title, queue[current].id);
-        // await new Promise((resolve) => setTimeout(resolve, 3000));
-        // if (!(await waitForPlayableVideo(tab.id))) {
-        //     console.log("Video failed, skipping:", videoId);
-        //     // recursively call for next video
-        //     playNextVideo(queue, current + 1);
-        // } else {
-        //     console.log("Video is playing:", videoId);
-        // }
+        videoTimeout = setTimeout(() => {
+            console.log("Error:", queue[current].id, queue[current].title);
+            console.log("Video did NOT start playing within timeout");
+            playNextVideo();
+        }, 10000); // 10s
     } else {
         console.log("Queue is empty.");
     }
 }
 
-// function waitForPlayableVideo(tabId, timeout = 5000) {
-//     return new Promise((resolve) => {
-//         let done = false;
-
-//         function listener(msg, sender) {
-//             if (sender.tab?.id !== tabId) {
-//                 console.log("Ignoring message from different tab:", msg, sender);
-//                 return;
-//             }
-//             if (msg.type === "videoPlaying") {
-//                 done = true;
-//                 browser.runtime.onMessage.removeListener(listener);
-//                 resolve(true);
-//             }
-//         }
-
-//         browser.runtime.onMessage.addListener(listener);
-
-//         setTimeout(() => {
-//             if (!done) {
-//                 console.log("timeout");
-//                 browser.runtime.onMessage.removeListener(listener);
-//                 resolve(false);
-//             }
-//         }, timeout);
-//     });
-// }
-
 browser.runtime.onMessage.addListener((msg, sender) => {
     console.log("options.js received message:", msg);
+    if (msg.type === "videoPlaying") {
+        clearTimeout(videoTimeout);
+    }
     if (msg.type === "videoEnded") {
         console.log("Controller: video ended, moving to next");
         playNextVideo();
