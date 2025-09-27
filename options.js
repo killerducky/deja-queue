@@ -116,11 +116,8 @@ browser.runtime.onMessage.addListener((msg, sender) => {
     let notFiltered = data.queue.filter((v) => !v.title.includes("Heatley"));
     let keepCount = Math.ceil(filtered.length * 0.25);
     let keepList = shuffleArray(filtered).slice(0, keepCount);
-    console.log(notFiltered, keepList);
-    // data.queue = shuffleArray([...notFiltered, ...keepList]);
     data.queue = shuffleArray(notFiltered.concat(keepList));
     console.log(`Keep ${keepCount} of ${filtered.length} Heatley vids plus ${notFiltered.length} others`);
-    console.log(data.queue);
     data.current = 0;
     await browser.storage.local.set(data);
     // data = await browser.storage.local.get(["queue", "current"]);
