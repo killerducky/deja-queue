@@ -48,7 +48,6 @@ nextBtn.addEventListener("click", async () => {
 loadBtn.addEventListener("click", () => fileInput.click());
 
 fileInput.addEventListener("change", async (e) => {
-    console.log("hi");
     const file = e.target.files[0];
     console.log(file);
     if (!file) return;
@@ -88,7 +87,7 @@ async function playNextVideo() {
             console.log("Error:", queue[current].id, queue[current].title);
             console.log("Video did NOT start playing within timeout");
             playNextVideo();
-        }, 15000); // 15s
+        }, 15000); // 15s -- Fixed some bugs so now this could be reduced
     } else {
         console.log("Queue is empty.");
     }
@@ -103,11 +102,6 @@ browser.runtime.onMessage.addListener((msg, sender) => {
         console.log("Controller: video ended, moving to next");
         playNextVideo();
     }
-    if (msg.type === "setQueue") {
-        queue = msg.queue;
-        currentIndex = 0;
-        playNextVideo();
-    }
 });
 
 // Initial load
@@ -117,7 +111,16 @@ browser.runtime.onMessage.addListener((msg, sender) => {
     // const url = browser.runtime.getURL("videos_debug.json");
     const resp = await fetch(url);
     data.queue = await resp.json();
-    data.queue = shuffleArray(data.queue);
+    console.log(data.queue);
+    let filtered = data.queue.filter((v) => v.title.includes("Heatley"));
+    let notFiltered = data.queue.filter((v) => !v.title.includes("Heatley"));
+    let keepCount = Math.ceil(filtered.length * 0.25);
+    let keepList = shuffleArray(filtered).slice(0, keepCount);
+    console.log(notFiltered, keepList);
+    // data.queue = shuffleArray([...notFiltered, ...keepList]);
+    data.queue = shuffleArray(notFiltered.concat(keepList));
+    console.log(`Keep ${keepCount} of ${filtered.length} Heatley vids plus ${notFiltered.length} others`);
+    console.log(data.queue);
     data.current = 0;
     await browser.storage.local.set(data);
     // data = await browser.storage.local.get(["queue", "current"]);

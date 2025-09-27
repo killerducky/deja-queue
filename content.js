@@ -9,7 +9,7 @@ function attachListener() {
     if (!video) return;
     if (video === lastVideo) return;
     lastVideo = video;
-    console.log("attachListener video:", video);
+    console.log("attachListener");
     if (!video.paused && !video.ended && video.readyState > 2) {
         console.log("Video already playing on attach");
         browser.runtime.sendMessage({ type: "videoPlaying" });
