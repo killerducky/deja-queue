@@ -44,7 +44,7 @@ function renderQueue(queue, current) {
 }
 
 addBtn.addEventListener("click", async () => {
-    const id = input.value.trim();
+    let id = getVideoIdFromInput(input.value.trim());
     if (!id) return;
     if (DBDATA.queue.find((v) => v.id === id)) {
         alert("Video already in DB");
@@ -97,6 +97,16 @@ async function playNextVideo() {
     }
 }
 
+function getVideoIdFromInput(input) {
+    if (input.startsWith("http")) {
+        const params = new URL(input).searchParams;
+        const videoId = params.get("v");
+        return videoId;
+    } else {
+        return input;
+    }
+}
+
 browser.runtime.onMessage.addListener((msg, sender) => {
     console.log("options.js received message:", msg, sender);
     if (msg.type === "videoPlaying") {
@@ -104,8 +114,7 @@ browser.runtime.onMessage.addListener((msg, sender) => {
     }
     if (msg.type === "videoEnded") {
         console.log("Controller: video ended, moving to next");
-        const params = new URL(sender.url).searchParams;
-        const videoId = params.get("v");
+        const videoId = getVideoIdFromInput(sender.url);
         // check in case some other video was actually playing, don't want to credit that
         if (videoId && DBDATA.queue[DBDATA.current] && videoId === DBDATA.queue[DBDATA.current].id) {
             DBDATA.queue[DBDATA.current].playCnt = (DBDATA.queue[DBDATA.current].playCnt || 0) + 1;
