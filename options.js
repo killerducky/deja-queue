@@ -20,13 +20,21 @@ function shuffleArray(array) {
 
 function renderQueue(queue, current) {
     list.innerHTML = "";
-    // well this is probably a dumb way to do it but vibe coding so
-    const reordered = queue.slice(current).concat(queue.slice(0, current));
-    reordered.forEach((item, i) => {
+    for (let i = 0; i < queue.length && i < 10; i++) {
+        const item = queue[(current + i) % queue.length];
         const li = document.createElement("li");
-        li.textContent = item.title;
+        li.style.display = "flex";
+        li.style.alignItems = "center";
+        li.style.gap = "8px";
         list.appendChild(li);
-    });
+        let thumb = document.createElement("img");
+        thumb.src = `https://i.ytimg.com/vi/${item.id}/default.jpg`;
+        thumb.style.width = "70px";
+        li.appendChild(thumb);
+        let p = document.createElement("p");
+        p.textContent = item.title || item.id;
+        li.appendChild(p);
+    }
 }
 
 addBtn.addEventListener("click", async () => {
