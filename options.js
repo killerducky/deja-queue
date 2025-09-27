@@ -5,7 +5,11 @@ if (typeof browser === "undefined") {
     var browser = chrome; // var so it's global
 }
 
-let data = { queue: [], current: 0 };
+let DBDATA = { queue: [], current: 0 };
+
+const url = browser.runtime.getURL(".env.json");
+const resp = await fetch(url);
+const env = await resp.json();
 
 const input = document.getElementById("videoId");
 const addBtn = document.getElementById("add");
@@ -34,22 +38,35 @@ function renderQueue(queue, current) {
         thumb.style.width = "70px";
         li.appendChild(thumb);
         let p = document.createElement("p");
-        p.textContent = item.title || item.id;
+        p.textContent = item.title || item.yt?.snippet?.title || item.id;
         li.appendChild(p);
     }
 }
 
 addBtn.addEventListener("click", async () => {
-    alert("not working for now");
-    // const id = input.value.trim();
-    // if (!id) return;
-    // const data = await browser.storage.local.get(["queue", "current"]);
-    // let queue = data.queue || [];
-    // queue.push({ id: id, title: id });
-    // console.log(queue);
-    // await browser.storage.local.set({ queue });
-    // renderQueue(queue, data.current ?? 0);
-    // input.value = "";
+    const id = input.value.trim();
+    if (!id) return;
+    if (DBDATA.queue.find((v) => v.id === id)) {
+        alert("Video already in DB");
+        return;
+    }
+    const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${id}&key=${env.API_KEY}`;
+    console.log(url);
+    const response = await fetch(url);
+    const data = await response.json();
+    if (data.items.length > 0) {
+        let item = {
+            id: data.items[0].id,
+            yt: data.items[0],
+        };
+        console.log(item);
+        DBDATA.queue.splice(DBDATA.current + 1, 0, item);
+        await db.saveVideos([item]);
+        renderQueue(DBDATA.queue, DBDATA.current);
+    } else {
+        alert("Video not found");
+    }
+    input.value = "";
 });
 
 nextBtn.addEventListener("click", async () => {
@@ -59,19 +76,20 @@ nextBtn.addEventListener("click", async () => {
 let videoTimeout;
 
 async function playNextVideo() {
-    console.log("playNextVideo data:", data);
+    console.log("playNextVideo data:", DBDATA);
 
-    if (data.queue.length > 0) {
-        data.current = (data.current + 1) % data.queue.length; // wrap around
+    if (DBDATA.queue.length > 0) {
+        DBDATA.current = (DBDATA.current + 1) % DBDATA.queue.length; // wrap around
         const [tab] = await browser.tabs.query({ url: "*://www.youtube.com/*" });
         if (!tab) return;
-        browser.tabs.sendMessage(tab.id, { type: "playVideo", tab: tab.id, id: data.queue[data.current].id });
-        console.log("sendMessage: ", tab.id, { type: "playVideo", tab: tab.id, id: data.queue[data.current].id });
-        renderQueue(data.queue, data.current);
+        browser.tabs.sendMessage(tab.id, { type: "playVideo", tab: tab.id, id: DBDATA.queue[DBDATA.current].id });
+        console.log("sendMessage: ", tab.id, { type: "playVideo", tab: tab.id, id: DBDATA.queue[DBDATA.current].id });
+        renderQueue(DBDATA.queue, DBDATA.current);
         videoTimeout = setTimeout(() => {
-            console.log("Error:", data.queue[data.current].id, data.queue[data.current].title);
+            console.log("Error:", DBDATA.queue[DBDATA.current].id, DBDATA.queue[DBDATA.current].title);
             console.log("Video did NOT start playing within timeout");
-            data.queue[data.current].errCnt = (data.queue[data.current].errCnt || 0) + 1;
+            DBDATA.queue[DBDATA.current].errCnt = (DBDATA.queue[DBDATA.current].errCnt || 0) + 1;
+            db.saveVideos([DBDATA.queue[DBDATA.current]]);
             playNextVideo();
         }, 15000); // 15s -- Fixed some bugs so now this could be reduced
     } else {
@@ -89,12 +107,13 @@ browser.runtime.onMessage.addListener((msg, sender) => {
         const params = new URL(sender.url).searchParams;
         const videoId = params.get("v");
         // check in case some other video was actually playing, don't want to credit that
-        if (videoId && data.queue[data.current] && videoId === data.queue[data.current].id) {
-            data.queue[data.current].playCnt = (data.queue[data.current].playCnt || 0) + 1;
-            data.queue[data.current].lastPlayDate = Date.now();
-            if (data.queue[data.current].playCnt == 1) {
-                data.queue[data.current].firstPlayDate = Date.now();
+        if (videoId && DBDATA.queue[DBDATA.current] && videoId === DBDATA.queue[DBDATA.current].id) {
+            DBDATA.queue[DBDATA.current].playCnt = (DBDATA.queue[DBDATA.current].playCnt || 0) + 1;
+            DBDATA.queue[DBDATA.current].lastPlayDate = Date.now();
+            if (DBDATA.queue[DBDATA.current].playCnt == 1) {
+                DBDATA.queue[DBDATA.current].firstPlayDate = Date.now();
             }
+            db.saveVideos([DBDATA.queue[DBDATA.current]]);
         }
         playNextVideo();
     }
@@ -121,7 +140,7 @@ function importVideos(file) {
     reader.onload = async (e) => {
         try {
             const data = JSON.parse(e.target.result);
-            await db.saveVideos(data); // replaces DB contents
+            await db.saveVideos(data); // only replaces each id with new content
             console.log("Videos imported successfully");
         } catch (err) {
             console.error("Failed to import videos:", err);
@@ -157,15 +176,15 @@ document.getElementById("importBtn").addEventListener("click", () => {
         await db.saveVideos(videos);
         console.log(`Seeded DB with ${videos.length} videos`);
     }
-    data.queue = await db.loadVideos();
-    console.log(data.queue);
-    let filtered = data.queue.filter((v) => v.yt.snippet.title.includes("Heatley"));
-    let notFiltered = data.queue.filter((v) => !v.yt.snippet.title.includes("Heatley"));
+    DBDATA.queue = await db.loadVideos();
+    console.log(DBDATA.queue);
+    let filtered = DBDATA.queue.filter((v) => v.yt.snippet.title.includes("Heatley"));
+    let notFiltered = DBDATA.queue.filter((v) => !v.yt.snippet.title.includes("Heatley"));
     let keepCount = Math.ceil(filtered.length * 0.25);
     let keepList = shuffleArray(filtered).slice(0, keepCount);
-    data.queue = shuffleArray(notFiltered.concat(keepList));
+    DBDATA.queue = shuffleArray(notFiltered.concat(keepList));
     console.log(`Keep ${keepCount} of ${filtered.length} Heatley vids plus ${notFiltered.length} others`);
-    data.current = 0;
+    DBDATA.current = 0;
     // data = await browser.storage.local.get(["queue", "current"]);
-    renderQueue(data.queue || [], data.current ?? 0);
+    renderQueue(DBDATA.queue || [], DBDATA.current ?? 0);
 })();

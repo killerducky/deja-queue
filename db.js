@@ -17,6 +17,7 @@ function openDB() {
 }
 
 export async function saveVideos(videos) {
+    console.log(`Saving ${videos.length} videos`);
     const db = await openDB();
     return new Promise((resolve, reject) => {
         const tx = db.transaction("videos", "readwrite");
