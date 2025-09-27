@@ -23,10 +23,13 @@
     <body>
         <input id="videoId" type="text" placeholder="YouTube Video ID" />
         <button id="add">Add to Queue</button>
-        <button id="loadFile">Load from JSON</button>
+        <button id="deleteBtn">Delete DB</button>
+        <button id="exportBtn">Export DB</button>
+        <input type="file" id="importFile" accept="application/json" />
+        <button id="importBtn">Import DB</button>
         <input id="fileInput" type="file" accept=".json" style="display: none" />
         <button id="next">Next</button>
         <ul id="queue"></ul>
-        <script src="options.js"></script>
+        <script type="module" src="options.js"></script>
     </body>
 </html>
