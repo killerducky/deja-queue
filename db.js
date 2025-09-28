@@ -2,16 +2,55 @@
 
 function openDB() {
     return new Promise((resolve, reject) => {
-        const request = indexedDB.open("YouTubeDJ", 1);
+        const request = indexedDB.open("YouTubeDJ", 2);
 
         request.onupgradeneeded = (event) => {
             const db = event.target.result;
             if (!db.objectStoreNames.contains("videos")) {
                 db.createObjectStore("videos", { keyPath: "id" });
             }
+            if (!db.objectStoreNames.contains("log")) {
+                const logStore = db.createObjectStore("log", { autoIncrement: true });
+                // Optional: create an index on videoId for easy queries
+                logStore.createIndex("videoId", "videoId", { unique: false });
+            }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+export async function saveLog(entries) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction("log", "readwrite");
+        const store = tx.objectStore("log");
+        entries.forEach((e) => store.add(e));
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+    });
+}
+
+export async function getLastNLogs(n) {
+    return new Promise(async (resolve, reject) => {
+        const db = await openDB(); // your function that opens the DB
+        const tx = db.transaction("log", "readonly");
+        const store = tx.objectStore("log");
+
+        const result = [];
+        // Open a cursor in reverse order (largest key first)
+        const request = store.openCursor(null, "prev");
+
+        request.onsuccess = (event) => {
+            const cursor = event.target.result;
+            if (cursor && result.length < n) {
+                result.push(cursor.value);
+                cursor.continue();
+            } else {
+                resolve(result);
+            }
         };
 
-        request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
     });
 }

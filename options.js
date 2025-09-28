@@ -6,6 +6,7 @@ if (typeof browser === "undefined") {
 }
 
 let DBDATA = { queue: [], current: 0 };
+let LISTLEN = 5;
 
 const url = browser.runtime.getURL(".env.json");
 const resp = await fetch(url);
@@ -14,7 +15,8 @@ const env = await resp.json();
 const input = document.getElementById("videoId");
 const addBtn = document.getElementById("add");
 const nextBtn = document.getElementById("next");
-const list = document.getElementById("queue");
+const queueEl = document.getElementById("queue");
+const logEl = document.getElementById("log");
 
 function shuffleArray(array) {
     for (let i = array.length - 1; i > 0; i--) {
@@ -28,8 +30,25 @@ function date2String(d) {
     return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
-function renderQueue(queue, current) {
-    list.innerHTML = "";
+async function renderQueue(queue, current) {
+    let videoList = [];
+    for (let i = 0; i < queue.length && i < LISTLEN; i++) {
+        videoList.push(queue[(current + i) % queue.length]);
+    }
+    table(queueEl, videoList);
+    let log = await db.getLastNLogs(LISTLEN);
+    let logVideoList = [];
+    for (let entry of log) {
+        // TODO: The queue doesn't even have all the vidoes because of the filter?
+        // For now this will mostly work
+        logVideoList.push(queue.find((v) => v.id === entry.id));
+    }
+
+    table(logEl, logVideoList);
+}
+
+function table(htmlEl, videoList) {
+    htmlEl.innerHTML = "";
 
     // Create table
     const table = document.createElement("table");
@@ -52,8 +71,7 @@ function renderQueue(queue, current) {
 
     // Body
     const tbody = document.createElement("tbody");
-    for (let i = 0; i < queue.length && i < 10; i++) {
-        const item = queue[(current + i) % queue.length];
+    for (let item of videoList) {
         const row = document.createElement("tr");
 
         // Thumbnail cell
@@ -97,7 +115,7 @@ function renderQueue(queue, current) {
     table.appendChild(tbody);
 
     // Append to container
-    list.appendChild(table);
+    htmlEl.appendChild(table);
 }
 
 addBtn.addEventListener("click", async () => {
@@ -119,7 +137,7 @@ addBtn.addEventListener("click", async () => {
         console.log(item);
         DBDATA.queue.splice(DBDATA.current + 1, 0, item);
         await db.saveVideos([item]);
-        renderQueue(DBDATA.queue, DBDATA.current);
+        await renderQueue(DBDATA.queue, DBDATA.current);
     } else {
         alert("Video not found");
     }
@@ -141,7 +159,7 @@ async function playNextVideo() {
         if (!tab) return;
         browser.tabs.sendMessage(tab.id, { type: "playVideo", tab: tab.id, id: DBDATA.queue[DBDATA.current].id });
         console.log("sendMessage: ", tab.id, { type: "playVideo", tab: tab.id, id: DBDATA.queue[DBDATA.current].id });
-        renderQueue(DBDATA.queue, DBDATA.current);
+        await renderQueue(DBDATA.queue, DBDATA.current);
         videoTimeout = setTimeout(() => {
             console.log("Error:", DBDATA.queue[DBDATA.current].id, DBDATA.queue[DBDATA.current].title);
             console.log("Video did NOT start playing within timeout");
@@ -164,7 +182,23 @@ function getVideoIdFromInput(input) {
     }
 }
 
-browser.runtime.onMessage.addListener((msg, sender) => {
+async function logPlay(video) {
+    let now = Date.now();
+    video.playCnt = (video.playCnt || 0) + 1;
+    video.lastPlayDate = now;
+    if (video.playCnt == 1) {
+        video.firstPlayDate = Date.now();
+    }
+    await db.saveVideos([video]);
+    const logEntry = {
+        id: video.id,
+        timestamp: now,
+        event: "play",
+    };
+    await db.saveLog([logEntry]);
+}
+
+browser.runtime.onMessage.addListener(async (msg, sender) => {
     const videoId = getVideoIdFromInput(sender.url);
     console.log("options.js received message:", msg, videoId);
     if (msg.type === "videoPlaying") {
@@ -174,12 +208,7 @@ browser.runtime.onMessage.addListener((msg, sender) => {
         console.log("Controller: video ended, moving to next");
         // check in case some other video was actually playing, don't want to credit that
         if (videoId && DBDATA.queue[DBDATA.current] && videoId === DBDATA.queue[DBDATA.current].id) {
-            DBDATA.queue[DBDATA.current].playCnt = (DBDATA.queue[DBDATA.current].playCnt || 0) + 1;
-            DBDATA.queue[DBDATA.current].lastPlayDate = Date.now();
-            if (DBDATA.queue[DBDATA.current].playCnt == 1) {
-                DBDATA.queue[DBDATA.current].firstPlayDate = Date.now();
-            }
-            db.saveVideos([DBDATA.queue[DBDATA.current]]);
+            await logPlay(DBDATA.queue[DBDATA.current]);
         }
         playNextVideo();
     }
