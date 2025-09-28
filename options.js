@@ -385,7 +385,7 @@ function rating2days(rating) {
 }
 
 function scoreVideo(video) {
-    if (video.errCnt && video.errCnt >= 3) return -10000; // too many errors, don't play
+    if (video.errCnt && video.errCnt >= 3) return -100; // too many errors, don't play
     let now = Date.now();
     if (!video.rating) video.rating = 7;
     let score = video.rating * 10 + Math.random();
@@ -406,7 +406,12 @@ function plotRatings(videos) {
             },
         },
     ];
-    Plotly.newPlot("ratings-chart", traces, { title: "Ratings Distribution", xaxis: { title: "Rating" }, yaxis: { title: "Count" } });
+    const layout = {
+        title: "Ratings Distribution",
+        xaxis: { title: "Rating" },
+        yaxis: { title: "Count", type: "log" }, // 👈 log scale
+    };
+    Plotly.newPlot("ratings-chart", traces, layout);
 }
 
 function plotScores(videos) {
@@ -420,7 +425,12 @@ function plotScores(videos) {
             },
         },
     ];
-    Plotly.newPlot("scores-chart", traces, { title: "Ratings Distribution", xaxis: { title: "Rating" }, yaxis: { title: "Count" } });
+    const layout = {
+        title: "Scores Distribution",
+        xaxis: { title: "Score" },
+        yaxis: { title: "Count", type: "log" }, // 👈 log scale
+    };
+    Plotly.newPlot("scores-chart", traces, layout);
 }
 
 // Initial load
@@ -434,9 +444,6 @@ function plotScores(videos) {
         console.log(`Seeded DB with ${videos.length} videos`);
     }
     DBDATA.queue = await db.loadVideos();
-    let filtered = DBDATA.queue.filter((v) => v.yt.snippet.title.includes("Heatley"));
-    filtered.forEach((v) => (v.rating = 6.5));
-    db.saveVideos(filtered);
     DBDATA.queue.forEach((v) => {
         v.score = scoreVideo(v);
     });
@@ -445,6 +452,5 @@ function plotScores(videos) {
     plotRatings(DBDATA.queue);
     plotScores(DBDATA.queue);
     DBDATA.current = 0;
-    // data = await browser.storage.local.get(["queue", "current"]);
     renderQueue(DBDATA.queue || [], DBDATA.current ?? 0);
 })();
