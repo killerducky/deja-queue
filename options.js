@@ -272,38 +272,50 @@ async function addYoutubeInfo(video) {
     }
 }
 
-// do {
-// let url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&pageToken=${nextPageToken}&playlistId=${playlistId}&key=${apiKey}`;
-// let res = await fetch(url);
-// let data = await res.json();
+async function addPlaylistVideos(playlistId) {
+    let nextPageToken = "";
+    let videos = [];
+    do {
+        let url =
+            `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails` +
+            `&maxResults=50&pageToken=${nextPageToken}&playlistId=${playlistId}&key=${env.API_KEY}`;
+        let res = await fetch(url);
+        let data = await res.json();
+        console.log("addPlaylistVideos raw: ", data);
 
-// fs.appendFileSync("data.jsonl", JSON.stringify(data) + "\n");
-
-// videos.push(
-//     ...data.items.map((item) => ({
-//         id: item.snippet.resourceId.videoId,
-//         title: item.snippet.title,
-//         tags: playlistTags,
-//         yt: item,
-//     }))
-// );
-// } while (nextPageToken);
+        videos.push(
+            ...data.items.map((item) => ({
+                id: item.snippet.resourceId.videoId,
+                yt: item,
+            }))
+        );
+    } while (nextPageToken);
+    console.log("addPlaylistVideos: ", videos);
+    db.saveVideos(videos);
+}
 
 addBtn.addEventListener("click", async () => {
-    let id = getVideoIdFromInput(input.value.trim());
-    if (!id) return;
-    if (DBDATA.queue.find((v) => v.id === id)) {
-        alert("Video already in DB, moving to front of queue");
+    let response = getVideoIdFromInput(input.value.trim());
+    if (!response.id) return;
+    if (response.type == "video") {
+        if (DBDATA.queue.find((v) => v.id === response.id)) {
+            alert("Video already in DB, moving to front of queue");
+        }
+        let item = { id: response.id };
+        await addYoutubeInfo(item);
+        if (!item.yt) {
+            alert("Failed to fetch video info, please check the ID");
+            return;
+        }
+        console.log(item);
+        DBDATA.queue.splice(DBDATA.current + 1, 0, item);
+        await renderQueue(DBDATA.queue, DBDATA.current);
+    } else if (response.type == "playlist") {
+        await addPlaylistVideos(response.id);
+    } else {
+        alert("Error: could not parse input");
     }
-    let item = { id: id };
-    await addYoutubeInfo(item);
-    if (!item.yt) {
-        alert("Failed to fetch video info, please check the ID");
-        return;
-    }
-    console.log(item);
-    DBDATA.queue.splice(DBDATA.current + 1, 0, item);
-    await renderQueue(DBDATA.queue, DBDATA.current);
+
     input.value = "";
 });
 
@@ -347,10 +359,16 @@ async function playNextVideo(offset = 1) {
 function getVideoIdFromInput(input) {
     if (input.startsWith("http")) {
         const params = new URL(input).searchParams;
+        const listId = params.get("list");
         const videoId = params.get("v");
-        return videoId;
+        if (listId) {
+            return { type: "playlist", id: listId };
+        } else {
+            return { type: "video", id: videoId };
+        }
     } else {
-        return input;
+        // assume raw video id
+        return { type: "video", id: input };
     }
 }
 
@@ -373,7 +391,7 @@ async function logEvent(video, event) {
 }
 
 browser.runtime.onMessage.addListener(async (msg, sender) => {
-    const videoId = getVideoIdFromInput(sender.url);
+    const videoId = getVideoIdFromInput(sender.url).id;
     console.log("options.js received message:", msg, videoId);
     if (msg.type === "videoPlaying") {
         clearTimeout(videoTimeout);
