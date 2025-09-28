@@ -101,7 +101,7 @@ async function renderQueue(queue, current) {
             await addYoutubeInfo(video);
         }
     }
-    table(queueEl, videoList);
+    table(queueEl, videoList, 1);
     let log = await db.getLastNLogs(LISTLEN);
     let logVideoList = [];
     for (let entry of log) {
@@ -113,7 +113,7 @@ async function renderQueue(queue, current) {
             await addYoutubeInfo(video);
         }
     }
-    table(logEl, logVideoList);
+    table(logEl, logVideoList, 0);
 }
 
 function formatDuration(isoDuration) {
@@ -132,7 +132,7 @@ function formatDuration(isoDuration) {
     }
 }
 
-function table(htmlEl, videoList) {
+function table(htmlEl, videoList, clickable) {
     htmlEl.innerHTML = "";
 
     // Create table
@@ -156,7 +156,7 @@ function table(htmlEl, videoList) {
 
     // Body
     const tbody = document.createElement("tbody");
-    for (let item of videoList) {
+    for (let [index, item] of videoList.entries()) {
         const row = document.createElement("tr");
 
         // Thumbnail cell
@@ -167,6 +167,11 @@ function table(htmlEl, videoList) {
         thumbCell.appendChild(thumb);
         thumbCell.style.padding = "6px";
         row.appendChild(thumbCell);
+        if (clickable) {
+            thumb.addEventListener("click", () => {
+                playNextVideo(index);
+            });
+        }
 
         // Title cell
         const titleCell = document.createElement("td");
@@ -304,9 +309,9 @@ playBtn.addEventListener("click", async () => {
 
 let videoTimeout;
 
-async function playNextVideo() {
+async function playNextVideo(offset = 1) {
     if (DBDATA.queue.length > 0) {
-        DBDATA.current = (DBDATA.current + 1) % DBDATA.queue.length; // wrap around
+        DBDATA.current = (DBDATA.current + offset) % DBDATA.queue.length; // wrap around
         const [tab] = await browser.tabs.query({ url: "*://www.youtube.com/*" });
         if (!tab) return;
         browser.tabs.sendMessage(tab.id, { type: "playVideo", tab: tab.id, id: DBDATA.queue[DBDATA.current].id });
