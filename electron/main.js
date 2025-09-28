@@ -4,9 +4,21 @@ const createWindow = () => {
     const win = new BrowserWindow({
         width: 800,
         height: 600,
+        webPreferences: {
+            preload: __dirname + "/preload.js", // inject our bridge script
+            nodeIntegration: false,
+            contextIsolation: true,
+        },
     });
+    // win.loadFile("index.html");
+    win.loadURL("https://www.youtube.com");
 
-    win.loadFile("index.html");
+    setTimeout(() => {
+        win.webContents.executeJavaScript("window.ytControl.pause()");
+    }, 5000);
+
+    // Get current time
+    win.webContents.executeJavaScript("window.ytControl.getTime()").then((t) => console.log("Current time:", t));
 };
 
 app.whenReady().then(() => {
