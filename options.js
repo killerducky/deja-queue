@@ -190,14 +190,15 @@ function table(htmlEl, videoList) {
         input.max = "10";
         input.step = "0.5";
         input.value = item.rating ?? "7";
-        input.addEventListener("blur", async () => {
+        async function saveRating() {
             const newValue = parseFloat(input.value);
             if (!isNaN(newValue)) {
                 item.rating = newValue;
                 await db.saveVideos([item]);
                 console.log("Saved new rating", newValue, "for", item.id);
             }
-        });
+        }
+        input.addEventListener("change", () => saveRating());
         div.appendChild(downBtn);
         div.appendChild(input);
         div.appendChild(upBtn);
@@ -262,6 +263,7 @@ async function playNextVideo() {
         browser.tabs.sendMessage(tab.id, { type: "playVideo", tab: tab.id, id: DBDATA.queue[DBDATA.current].id });
         console.log("sendMessage: ", tab.id, { type: "playVideo", tab: tab.id, id: DBDATA.queue[DBDATA.current].id });
         await renderQueue(DBDATA.queue, DBDATA.current);
+        if (videoTimeout) clearTimeout(videoTimeout);
         videoTimeout = setTimeout(() => {
             console.log("Error:", DBDATA.queue[DBDATA.current].id, DBDATA.queue[DBDATA.current].title);
             console.log("Video did NOT start playing within timeout");
@@ -388,9 +390,37 @@ function scoreVideo(video) {
     if (!video.rating) video.rating = 7;
     let score = video.rating * 10 + Math.random();
     if (video.lastPlayDate && now - video.lastPlayDate < rating2days(video.rating) * 24 * 3600 * 1000) {
-        score -= 1000; // recently played, big penalty
+        score -= 50; // recently played, big penalty
     }
     return score;
+}
+
+function plotRatings(videos) {
+    const ratings = videos.map((v) => v.rating || 7);
+    const traces = [
+        {
+            x: ratings,
+            type: "histogram",
+            xbins: {
+                size: 0.5,
+            },
+        },
+    ];
+    Plotly.newPlot("ratings-chart", traces, { title: "Ratings Distribution", xaxis: { title: "Rating" }, yaxis: { title: "Count" } });
+}
+
+function plotScores(videos) {
+    const scores = videos.map((v) => v.score);
+    const traces = [
+        {
+            x: scores,
+            type: "histogram",
+            xbins: {
+                size: 5,
+            },
+        },
+    ];
+    Plotly.newPlot("scores-chart", traces, { title: "Ratings Distribution", xaxis: { title: "Rating" }, yaxis: { title: "Count" } });
 }
 
 // Initial load
@@ -412,6 +442,8 @@ function scoreVideo(video) {
     });
     DBDATA.queue.sort((a, b) => b.score - a.score);
     console.log(DBDATA.queue);
+    plotRatings(DBDATA.queue);
+    plotScores(DBDATA.queue);
     DBDATA.current = 0;
     // data = await browser.storage.local.get(["queue", "current"]);
     renderQueue(DBDATA.queue || [], DBDATA.current ?? 0);

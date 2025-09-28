@@ -52,21 +52,27 @@
         <link rel="icon" type="image/x-icon" href="favicon.ico" />
     </head>
     <body>
-        <input id="videoId" type="text" placeholder="YouTube Video ID" />
-        <button id="add">Add to Queue</button>
         <button id="pause">Pause</button>
         <button id="play">Play</button>
         <button id="next">Next</button>
+        <input id="videoId" type="text" placeholder="YouTube Video ID" />
+        <button id="add">Add to Queue</button>
         <br />
+        <h2>Queue</h2>
+        <ul id="queue"></ul>
+        <h2>Log</h2>
+        <ul id="log"></ul>
+        <h2>Ratings</h2>
+        <div id="ratings-chart"></div>
+        <h2>Scores</h2>
+        <div id="scores-chart"></div>
         <button id="deleteBtn">Delete DB</button>
         <button id="exportBtn">Export DB</button>
         <input type="file" id="importFile" accept="application/json" />
         <button id="importBtn">Import DB</button>
         <input id="fileInput" type="file" accept=".json" style="display: none" />
-        <h2>Queue</h2>
-        <ul id="queue"></ul>
-        <h2>Log</h2>
-        <ul id="log"></ul>
+        <!-- <script src="https://cdn.plot.ly/plotly-3.1.0.min.js"></script> -->
+        <script src="./plotly-3.1.0.min.js"></script>
         <script type="module" src="options.js"></script>
     </body>
 </html>
