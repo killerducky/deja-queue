@@ -268,9 +268,26 @@ async function addYoutubeInfo(video) {
     // console.log(data);
     if (data.items.length > 0) {
         video.yt = data.items[0];
+        await db.saveVideos([video]);
     }
-    await db.saveVideos([video]);
 }
+
+// do {
+// let url = `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet&maxResults=50&pageToken=${nextPageToken}&playlistId=${playlistId}&key=${apiKey}`;
+// let res = await fetch(url);
+// let data = await res.json();
+
+// fs.appendFileSync("data.jsonl", JSON.stringify(data) + "\n");
+
+// videos.push(
+//     ...data.items.map((item) => ({
+//         id: item.snippet.resourceId.videoId,
+//         title: item.snippet.title,
+//         tags: playlistTags,
+//         yt: item,
+//     }))
+// );
+// } while (nextPageToken);
 
 addBtn.addEventListener("click", async () => {
     let id = getVideoIdFromInput(input.value.trim());
@@ -278,19 +295,15 @@ addBtn.addEventListener("click", async () => {
     if (DBDATA.queue.find((v) => v.id === id)) {
         alert("Video already in DB, moving to front of queue");
     }
-    const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${id}&key=${env.API_KEY}`;
-    console.log(url);
-    const response = await fetch(url);
-    const data = await response.json();
-    if (data.items.length > 0) {
-        let item = { id: id };
-        await addYoutubeInfo(item);
-        console.log(item);
-        DBDATA.queue.splice(DBDATA.current + 1, 0, item);
-        await renderQueue(DBDATA.queue, DBDATA.current);
-    } else {
-        alert("Video not found");
+    let item = { id: id };
+    await addYoutubeInfo(item);
+    if (!item.yt) {
+        alert("Failed to fetch video info, please check the ID");
+        return;
     }
+    console.log(item);
+    DBDATA.queue.splice(DBDATA.current + 1, 0, item);
+    await renderQueue(DBDATA.queue, DBDATA.current);
     input.value = "";
 });
 
