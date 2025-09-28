@@ -95,7 +95,11 @@ export function handleSteppers(chartContainerEl) {
 async function renderQueue(queue, current) {
     let videoList = [];
     for (let i = 0; i < queue.length && i < LISTLEN; i++) {
-        videoList.push(queue[(current + i) % queue.length]);
+        let video = queue[(current + i) % queue.length];
+        videoList.push(video);
+        if (!video?.yt?.contentDetails) {
+            await addYoutubeInfo(video);
+        }
     }
     table(queueEl, videoList);
     let log = await db.getLastNLogs(LISTLEN);
@@ -103,10 +107,28 @@ async function renderQueue(queue, current) {
     for (let entry of log) {
         // TODO: The queue doesn't even have all the vidoes because of the filter?
         // For now this will mostly work
-        logVideoList.push(queue.find((v) => v.id === entry.id));
+        let video = queue.find((v) => v.id === entry.id);
+        logVideoList.push(video);
+        if (!video?.yt?.contentDetails) {
+            await addYoutubeInfo(video);
+        }
     }
-
     table(logEl, logVideoList);
+}
+
+function formatDuration(isoDuration) {
+    const match = isoDuration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+    if (!match) return "0:00";
+
+    const hours = parseInt(match[1] || "0", 10);
+    const minutes = parseInt(match[2] || "0", 10);
+    const seconds = parseInt(match[3] || "0", 10);
+
+    if (hours > 0) {
+        return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+    } else {
+        return `${minutes}:${seconds.toString().padStart(2, "0")}`;
+    }
 }
 
 function table(htmlEl, videoList) {
@@ -120,7 +142,7 @@ function table(htmlEl, videoList) {
     // Header
     const thead = document.createElement("thead");
     const headerRow = document.createElement("tr");
-    ["Thumb", "Title", "Last Played", "Play Count", "Rating"].forEach((col) => {
+    ["Thumb", "Title", "Dur", "Last Played", "Play Count", "Rating"].forEach((col) => {
         const th = document.createElement("th");
         th.textContent = col;
         th.style.borderBottom = "1px solid #ccc";
@@ -150,6 +172,13 @@ function table(htmlEl, videoList) {
         titleCell.textContent = item.title || item.yt?.snippet?.title || item.id;
         titleCell.style.padding = "6px";
         row.appendChild(titleCell);
+
+        // Dur cell
+        const durCell = document.createElement("td");
+        durCell.textContent = formatDuration(item.yt?.contentDetails?.duration) || "—";
+        durCell.style.padding = "6px";
+        durCell.style.textAlign = "center";
+        row.appendChild(durCell);
 
         // Last Played cell
         const lastPlayedCell = document.createElement("td");
@@ -214,25 +243,33 @@ function table(htmlEl, videoList) {
     htmlEl.appendChild(table);
 }
 
+async function addYoutubeInfo(video) {
+    console.log("Fetching YouTube info for", video.id);
+    const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${video.id}&key=${env.API_KEY}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    // console.log(data);
+    if (data.items.length > 0) {
+        video.yt = data.items[0];
+    }
+    await db.saveVideos([video]);
+}
+
 addBtn.addEventListener("click", async () => {
     let id = getVideoIdFromInput(input.value.trim());
     if (!id) return;
     if (DBDATA.queue.find((v) => v.id === id)) {
-        alert("Video already in DB");
-        return;
+        alert("Video already in DB, moving to front of queue");
     }
     const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet&id=${id}&key=${env.API_KEY}`;
     console.log(url);
     const response = await fetch(url);
     const data = await response.json();
     if (data.items.length > 0) {
-        let item = {
-            id: data.items[0].id,
-            yt: data.items[0],
-        };
+        let item = { id: id };
+        await addYoutubeInfo(item);
         console.log(item);
         DBDATA.queue.splice(DBDATA.current + 1, 0, item);
-        await db.saveVideos([item]);
         await renderQueue(DBDATA.queue, DBDATA.current);
     } else {
         alert("Video not found");
