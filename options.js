@@ -117,6 +117,7 @@ async function renderQueue(queue, current) {
 }
 
 function formatDuration(isoDuration) {
+    if (!isoDuration) return "—";
     const match = isoDuration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
     if (!match) return "0:00";
 
@@ -142,7 +143,7 @@ function table(htmlEl, videoList) {
     // Header
     const thead = document.createElement("thead");
     const headerRow = document.createElement("tr");
-    ["Thumb", "Title", "Dur", "Last Played", "Play Count", "Rating"].forEach((col) => {
+    ["Thumb", "Title", "Dur", "Last Played", "Play Count", "Rating", "Interval"].forEach((col) => {
         const th = document.createElement("th");
         th.textContent = col;
         th.style.borderBottom = "1px solid #ccc";
@@ -233,6 +234,17 @@ function table(htmlEl, videoList) {
         div.appendChild(upBtn);
         cell.appendChild(div);
         row.appendChild(cell);
+
+        let intervalCell = document.createElement("td");
+        intervalCell.style.textAlign = "center";
+        function updateInterval() {
+            intervalCell.textContent = input.value ? rating2days(parseFloat(input.value)) + "d" : "—";
+        }
+        updateInterval();
+        input.addEventListener("change", () => {
+            updateInterval();
+        });
+        row.appendChild(intervalCell);
 
         tbody.appendChild(row);
     }
@@ -412,6 +424,7 @@ document.getElementById("importBtn").addEventListener("click", () => {
 });
 
 function rating2days(rating) {
+    if (rating >= 9.0) return 1.0 / 24;
     if (rating >= 8.5) return 0.5;
     if (rating >= 8.0) return 1;
     if (rating >= 7.5) return 2;
