@@ -24,23 +24,80 @@ function shuffleArray(array) {
     return array;
 }
 
+function date2String(d) {
+    return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
 function renderQueue(queue, current) {
     list.innerHTML = "";
+
+    // Create table
+    const table = document.createElement("table");
+    table.style.borderCollapse = "collapse";
+    table.style.width = "100%";
+
+    // Header
+    const thead = document.createElement("thead");
+    const headerRow = document.createElement("tr");
+    ["Thumbnail", "Title", "Last Played", "Play Count"].forEach((col) => {
+        const th = document.createElement("th");
+        th.textContent = col;
+        th.style.borderBottom = "1px solid #ccc";
+        th.style.padding = "6px";
+        th.style.textAlign = "left";
+        headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    // Body
+    const tbody = document.createElement("tbody");
     for (let i = 0; i < queue.length && i < 10; i++) {
         const item = queue[(current + i) % queue.length];
-        const li = document.createElement("li");
-        li.style.display = "flex";
-        li.style.alignItems = "center";
-        li.style.gap = "8px";
-        list.appendChild(li);
-        let thumb = document.createElement("img");
+        const row = document.createElement("tr");
+
+        // Thumbnail cell
+        const thumbCell = document.createElement("td");
+        const thumb = document.createElement("img");
         thumb.src = `https://i.ytimg.com/vi/${item.id}/default.jpg`;
         thumb.style.width = "70px";
-        li.appendChild(thumb);
-        let p = document.createElement("p");
-        p.textContent = item.title || item.yt?.snippet?.title || item.id;
-        li.appendChild(p);
+        thumbCell.appendChild(thumb);
+        thumbCell.style.padding = "6px";
+        row.appendChild(thumbCell);
+
+        // Title cell
+        const titleCell = document.createElement("td");
+        titleCell.textContent = item.title || item.yt?.snippet?.title || item.id;
+        titleCell.style.padding = "6px";
+        row.appendChild(titleCell);
+
+        // Last Played cell
+        const lastPlayedCell = document.createElement("td");
+        if (item.lastPlayDate) {
+            const d = new Date(item.lastPlayDate);
+            lastPlayedCell.textContent = date2String(d);
+        } else {
+            lastPlayedCell.textContent = "—";
+        }
+        lastPlayedCell.style.width = "140px";
+        lastPlayedCell.style.padding = "6px";
+        lastPlayedCell.style.textAlign = "center";
+        row.appendChild(lastPlayedCell);
+
+        // Play count cell
+        const playCntCell = document.createElement("td");
+        playCntCell.textContent = item.playCnt ?? 0;
+        playCntCell.style.width = "50px";
+        playCntCell.style.padding = "6px";
+        playCntCell.style.textAlign = "center";
+        row.appendChild(playCntCell);
+
+        tbody.appendChild(row);
     }
+    table.appendChild(tbody);
+
+    // Append to container
+    list.appendChild(table);
 }
 
 addBtn.addEventListener("click", async () => {
@@ -91,7 +148,7 @@ async function playNextVideo() {
             DBDATA.queue[DBDATA.current].errCnt = (DBDATA.queue[DBDATA.current].errCnt || 0) + 1;
             db.saveVideos([DBDATA.queue[DBDATA.current]]);
             playNextVideo();
-        }, 15000); // 15s -- Fixed some bugs so now this could be reduced
+        }, 15000); // 15s -- Could probably reduce but actually kinda nice to notice when it happens
     } else {
         console.log("Queue is empty.");
     }
@@ -108,13 +165,13 @@ function getVideoIdFromInput(input) {
 }
 
 browser.runtime.onMessage.addListener((msg, sender) => {
-    console.log("options.js received message:", msg, sender);
+    const videoId = getVideoIdFromInput(sender.url);
+    console.log("options.js received message:", msg, videoId);
     if (msg.type === "videoPlaying") {
         clearTimeout(videoTimeout);
     }
     if (msg.type === "videoEnded") {
         console.log("Controller: video ended, moving to next");
-        const videoId = getVideoIdFromInput(sender.url);
         // check in case some other video was actually playing, don't want to credit that
         if (videoId && DBDATA.queue[DBDATA.current] && videoId === DBDATA.queue[DBDATA.current].id) {
             DBDATA.queue[DBDATA.current].playCnt = (DBDATA.queue[DBDATA.current].playCnt || 0) + 1;

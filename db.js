@@ -34,7 +34,10 @@ export async function loadVideos() {
         const tx = db.transaction("videos", "readonly");
         const store = tx.objectStore("videos");
         const req = store.getAll();
-        req.onsuccess = () => resolve(req.result);
+        req.onsuccess = () => {
+            const filtered = req.result.filter((v) => !v.errCnt || v.errCnt < 1);
+            resolve(filtered);
+        };
         req.onerror = () => reject(req.error);
     });
 }
