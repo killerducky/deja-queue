@@ -16,3 +16,7 @@ It should open a new tab with something like:
 `moz-extension://1fca52e4-13ce-4fec-9141-bcb140f4a5c0/options.html`
 
 Paste video or playlist links and click "Add to Queue"
+
+You must have another tab open on youtube. If you have multiple youtube tabs open it talks to the first one.
+
+Big gotcha: The DB is deleted every time you close Firefox or unload the extension! Use Export often!

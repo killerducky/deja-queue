@@ -433,7 +433,8 @@ function importVideos(file) {
     reader.onload = async (e) => {
         try {
             const data = JSON.parse(e.target.result);
-            await db.saveVideos(data); // only replaces each id with new content
+            await db.saveVideos(data.videos); // only replaces each id with new content
+            await db.saveLog(data.log);
             console.log("Videos imported successfully");
         } catch (err) {
             console.error("Failed to import videos:", err);
@@ -521,14 +522,6 @@ function plotScores(videos) {
 
 // Initial load
 (async () => {
-    if (!(await db.hasAnyVideos())) {
-        // First run → seed from bundled JSON
-        const url = browser.runtime.getURL("videos.json");
-        const resp = await fetch(url);
-        const videos = await resp.json();
-        await db.saveVideos(videos);
-        console.log(`Seeded DB with ${videos.length} videos`);
-    }
     DBDATA.queue = await db.loadVideos();
     DBDATA.queue.forEach((v) => {
         v.score = scoreVideo(v);

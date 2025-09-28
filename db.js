@@ -22,10 +22,11 @@ function openDB() {
 
 export async function saveLog(entries) {
     const db = await openDB();
+    const entriesArray = Array.isArray(entries) ? entries : [entries];
     return new Promise((resolve, reject) => {
         const tx = db.transaction("log", "readwrite");
         const store = tx.objectStore("log");
-        entries.forEach((e) => store.add(e));
+        entriesArray.forEach((e) => store.add(e));
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);
     });
