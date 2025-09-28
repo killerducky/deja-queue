@@ -4,8 +4,9 @@ if (typeof browser === "undefined") {
 }
 
 let lastVideo = null;
+let video = null;
 function attachListener() {
-    const video = document.querySelector("video");
+    video = document.querySelector("video");
     if (!video) return;
     if (video === lastVideo) return;
     lastVideo = video;
@@ -44,5 +45,9 @@ browser.runtime.onMessage.addListener((msg) => {
     if (msg.type === "playVideo") {
         console.log("Navigating to:", msg.id);
         window.location.href = `https://www.youtube.com/watch?v=${msg.id}`;
+    } else if (msg.type === "pauseVideo") {
+        video.pause();
+    } else if (msg.type === "resumeVideo") {
+        video.play();
     }
 });

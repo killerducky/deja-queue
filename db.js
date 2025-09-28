@@ -56,12 +56,13 @@ export async function getLastNLogs(n) {
 }
 
 export async function saveVideos(videos) {
-    console.log(`Saving ${videos.length} videos`);
+    // console.log(`Saving ${videos.length} videos`);
+    const videoArray = Array.isArray(videos) ? videos : [videos];
     const db = await openDB();
     return new Promise((resolve, reject) => {
         const tx = db.transaction("videos", "readwrite");
         const store = tx.objectStore("videos");
-        videos.forEach((v) => store.put(v));
+        videoArray.forEach((v) => store.put(v));
         tx.oncomplete = () => resolve();
         tx.onerror = () => reject(tx.error);
     });
@@ -74,8 +75,8 @@ export async function loadVideos() {
         const store = tx.objectStore("videos");
         const req = store.getAll();
         req.onsuccess = () => {
-            const filtered = req.result.filter((v) => !v.errCnt || v.errCnt < 1);
-            resolve(filtered);
+            let results = req.result;
+            resolve(results);
         };
         req.onerror = () => reject(req.error);
     });

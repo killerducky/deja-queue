@@ -1,5 +1,7 @@
 import * as db from "./db.js";
 
+// Error: YXpJcFeaUwY Like A Prayer [8 Bit Tribute to Madonna] - 8 Bit Universe
+
 // Cross-browser shim
 if (typeof browser === "undefined") {
     var browser = chrome; // var so it's global
@@ -7,6 +9,7 @@ if (typeof browser === "undefined") {
 
 let DBDATA = { queue: [], current: 0 };
 let LISTLEN = 5;
+let MAXLOGDUMP = 99999;
 
 const url = browser.runtime.getURL(".env.json");
 const resp = await fetch(url);
@@ -15,6 +18,8 @@ const env = await resp.json();
 const input = document.getElementById("videoId");
 const addBtn = document.getElementById("add");
 const nextBtn = document.getElementById("next");
+const pauseBtn = document.getElementById("pause");
+const playBtn = document.getElementById("play");
 const queueEl = document.getElementById("queue");
 const logEl = document.getElementById("log");
 
@@ -28,6 +33,63 @@ function shuffleArray(array) {
 
 function date2String(d) {
     return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+const parseAttr = (input, attrName, fallback) => {
+    const v = input.getAttribute(attrName);
+    if (v === null || v === "") return fallback;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : fallback;
+};
+
+export function handleSteppers(chartContainerEl) {
+    chartContainerEl.querySelectorAll(".number-stepper").forEach((container) => {
+        const input = container.querySelector('input[type="number"]');
+        const btnUp = container.querySelector(".step-up");
+        const btnDown = container.querySelector(".step-down");
+
+        if (!input) return;
+
+        // get step/min/max dynamically in case they change
+        const getStep = () => parseAttr(input, "step", 1);
+        const getMin = () => parseAttr(input, "min", -Infinity);
+        const getMax = () => parseAttr(input, "max", Infinity);
+
+        const clamp = (v) => Math.min(getMax(), Math.max(getMin(), v));
+
+        const changeValue = (delta) => {
+            // Allow empty input: treat as 0 or min if defined
+            let val = input.value === "" ? (Number.isFinite(getMin()) && getMin() > -Infinity ? getMin() : 0) : Number(input.value);
+
+            if (!Number.isFinite(val)) val = 0;
+
+            const step = getStep();
+            // If step is 0 or NaN, default to 1
+            const effectiveStep = typeof step === "number" && step !== 0 && Number.isFinite(step) ? step : 1;
+
+            // add delta * step
+            let newVal = val + delta * effectiveStep;
+
+            // Align to step grid relative to min if min is finite (helps with non-integer steps)
+            const min = getMin();
+            if (Number.isFinite(min) && effectiveStep !== 0) {
+                // make sure (newVal - min) is a multiple of step (within floating tolerance)
+                const raw = Math.round((newVal - min) / effectiveStep) * effectiveStep + min;
+                newVal = raw;
+            }
+
+            newVal = clamp(newVal);
+
+            // If step or min cause decimal imprecision, format to reasonable decimal places
+            const decimals = (effectiveStep.toString().split(".")[1] || "").length;
+            input.value = Number.isFinite(decimals) && decimals > 0 ? newVal.toFixed(decimals) : String(Math.round(newVal));
+            input.dispatchEvent(new Event("change", { bubbles: true })); // let other listeners know value changed
+        };
+
+        // button handlers
+        btnUp && btnUp.addEventListener("click", () => changeValue(+1));
+        btnDown && btnDown.addEventListener("click", () => changeValue(-1));
+    });
 }
 
 async function renderQueue(queue, current) {
@@ -58,12 +120,12 @@ function table(htmlEl, videoList) {
     // Header
     const thead = document.createElement("thead");
     const headerRow = document.createElement("tr");
-    ["Thumbnail", "Title", "Last Played", "Play Count"].forEach((col) => {
+    ["Thumb", "Title", "Last Played", "Play Count", "Rating"].forEach((col) => {
         const th = document.createElement("th");
         th.textContent = col;
         th.style.borderBottom = "1px solid #ccc";
         th.style.padding = "6px";
-        th.style.textAlign = "left";
+        th.style.textAlign = "center";
         headerRow.appendChild(th);
     });
     thead.appendChild(headerRow);
@@ -110,9 +172,42 @@ function table(htmlEl, videoList) {
         playCntCell.style.textAlign = "center";
         row.appendChild(playCntCell);
 
+        let cell = document.createElement("td");
+        let div = document.createElement("div");
+        div.className = "number-stepper";
+        const downBtn = document.createElement("button");
+        downBtn.className = "step-btn step-down";
+        downBtn.type = "button";
+        downBtn.innerHTML = "&minus;";
+        const upBtn = document.createElement("button");
+        upBtn.className = "step-btn step-up";
+        upBtn.type = "button";
+        upBtn.innerHTML = "&plus;";
+
+        let input = document.createElement("input");
+        input.type = "number";
+        input.min = "1";
+        input.max = "10";
+        input.step = "0.5";
+        input.value = item.rating ?? "7";
+        input.addEventListener("blur", async () => {
+            const newValue = parseFloat(input.value);
+            if (!isNaN(newValue)) {
+                item.rating = newValue;
+                await db.saveVideos([item]);
+                console.log("Saved new rating", newValue, "for", item.id);
+            }
+        });
+        div.appendChild(downBtn);
+        div.appendChild(input);
+        div.appendChild(upBtn);
+        cell.appendChild(div);
+        row.appendChild(cell);
+
         tbody.appendChild(row);
     }
     table.appendChild(tbody);
+    handleSteppers(table);
 
     // Append to container
     htmlEl.appendChild(table);
@@ -145,14 +240,21 @@ addBtn.addEventListener("click", async () => {
 });
 
 nextBtn.addEventListener("click", async () => {
+    await logEvent(DBDATA.queue[DBDATA.current], "skip");
     playNextVideo();
+});
+pauseBtn.addEventListener("click", async () => {
+    const [tab] = await browser.tabs.query({ url: "*://www.youtube.com/*" });
+    browser.tabs.sendMessage(tab.id, { type: "pauseVideo", tab: tab.id });
+});
+playBtn.addEventListener("click", async () => {
+    const [tab] = await browser.tabs.query({ url: "*://www.youtube.com/*" });
+    browser.tabs.sendMessage(tab.id, { type: "resumeVideo", tab: tab.id });
 });
 
 let videoTimeout;
 
 async function playNextVideo() {
-    console.log("playNextVideo data:", DBDATA);
-
     if (DBDATA.queue.length > 0) {
         DBDATA.current = (DBDATA.current + 1) % DBDATA.queue.length; // wrap around
         const [tab] = await browser.tabs.query({ url: "*://www.youtube.com/*" });
@@ -165,8 +267,9 @@ async function playNextVideo() {
             console.log("Video did NOT start playing within timeout");
             DBDATA.queue[DBDATA.current].errCnt = (DBDATA.queue[DBDATA.current].errCnt || 0) + 1;
             db.saveVideos([DBDATA.queue[DBDATA.current]]);
+            logEvent(DBDATA.queue[DBDATA.current], "error");
             playNextVideo();
-        }, 15000); // 15s -- Could probably reduce but actually kinda nice to notice when it happens
+        }, 20000); // 20s -- Still some problems...
     } else {
         console.log("Queue is empty.");
     }
@@ -182,10 +285,12 @@ function getVideoIdFromInput(input) {
     }
 }
 
-async function logPlay(video) {
+async function logEvent(video, event) {
     let now = Date.now();
-    video.playCnt = (video.playCnt || 0) + 1;
-    video.lastPlayDate = now;
+    video.lastPlayDate = now; // includes errors and skips
+    if (event == "play") {
+        video.playCnt = (video.playCnt || 0) + 1;
+    }
     if (video.playCnt == 1) {
         video.firstPlayDate = Date.now();
     }
@@ -193,7 +298,7 @@ async function logPlay(video) {
     const logEntry = {
         id: video.id,
         timestamp: now,
-        event: "play",
+        event: event,
     };
     await db.saveLog([logEntry]);
 }
@@ -205,18 +310,24 @@ browser.runtime.onMessage.addListener(async (msg, sender) => {
         clearTimeout(videoTimeout);
     }
     if (msg.type === "videoEnded") {
-        console.log("Controller: video ended, moving to next");
+        // console.log("Controller: video ended, moving to next");
         // check in case some other video was actually playing, don't want to credit that
         if (videoId && DBDATA.queue[DBDATA.current] && videoId === DBDATA.queue[DBDATA.current].id) {
-            await logPlay(DBDATA.queue[DBDATA.current]);
+            await logEvent(DBDATA.queue[DBDATA.current], "play");
         }
         playNextVideo();
     }
 });
 
-async function exportVideos() {
-    const videos = await db.loadVideos();
-    const blob = new Blob([JSON.stringify(videos, null, 2)], { type: "application/json" });
+async function exportDB() {
+    const videos = await db.loadVideos(false);
+    const log = await db.getLastNLogs(MAXLOGDUMP);
+    const exportData = {
+        videos,
+        log,
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
 
     const a = document.createElement("a");
@@ -249,7 +360,7 @@ async function deleteVideos() {
     // alert("Database deleted. Please reload the page.");
     alert("Disabled. LUL.");
 }
-document.getElementById("exportBtn").addEventListener("click", exportVideos);
+document.getElementById("exportBtn").addEventListener("click", exportDB);
 document.getElementById("deleteBtn").addEventListener("click", deleteVideos);
 
 document.getElementById("importBtn").addEventListener("click", () => {
@@ -260,6 +371,27 @@ document.getElementById("importBtn").addEventListener("click", () => {
         alert("Please select a file first");
     }
 });
+
+function rating2days(rating) {
+    if (rating >= 8.5) return 0.5;
+    if (rating >= 8.0) return 1;
+    if (rating >= 7.5) return 2;
+    if (rating >= 7.0) return 3;
+    if (rating >= 6.5) return 7;
+    if (rating >= 6.0) return 28;
+    return 365;
+}
+
+function scoreVideo(video) {
+    if (video.errCnt && video.errCnt >= 3) return -10000; // too many errors, don't play
+    let now = Date.now();
+    if (!video.rating) video.rating = 7;
+    let score = video.rating * 10 + Math.random();
+    if (video.lastPlayDate && now - video.lastPlayDate < rating2days(video.rating) * 24 * 3600 * 1000) {
+        score -= 1000; // recently played, big penalty
+    }
+    return score;
+}
 
 // Initial load
 (async () => {
@@ -272,13 +404,14 @@ document.getElementById("importBtn").addEventListener("click", () => {
         console.log(`Seeded DB with ${videos.length} videos`);
     }
     DBDATA.queue = await db.loadVideos();
-    console.log(DBDATA.queue);
     let filtered = DBDATA.queue.filter((v) => v.yt.snippet.title.includes("Heatley"));
-    let notFiltered = DBDATA.queue.filter((v) => !v.yt.snippet.title.includes("Heatley"));
-    let keepCount = Math.ceil(filtered.length * 0.25);
-    let keepList = shuffleArray(filtered).slice(0, keepCount);
-    DBDATA.queue = shuffleArray(notFiltered.concat(keepList));
-    console.log(`Keep ${keepCount} of ${filtered.length} Heatley vids plus ${notFiltered.length} others`);
+    filtered.forEach((v) => (v.rating = 6.5));
+    db.saveVideos(filtered);
+    DBDATA.queue.forEach((v) => {
+        v.score = scoreVideo(v);
+    });
+    DBDATA.queue.sort((a, b) => b.score - a.score);
+    console.log(DBDATA.queue);
     DBDATA.current = 0;
     // data = await browser.storage.local.get(["queue", "current"]);
     renderQueue(DBDATA.queue || [], DBDATA.current ?? 0);
