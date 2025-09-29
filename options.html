@@ -48,6 +48,12 @@
                 width: 25px;
                 height: auto;
             }
+            .gridjs-td {
+                max-width: 250px;
+            }
+            .gridjs-tr {
+                height: 3lh;
+            }
         </style>
         <link rel="icon" type="image/x-icon" href="favicon.ico" />
     </head>
@@ -68,6 +74,9 @@
         <div id="scores-chart"></div>
         <h2>Cooldown</h2>
         <div id="cooldown-chart"></div>
+        <h2>Database</h2>
+        <div id="database-grid"></div>
+        <h2>Import/Export</h2>
         <button id="deleteBtn">Delete DB</button>
         <button id="exportBtn">Export DB</button>
         <input type="file" id="importFile" accept="application/json" />
@@ -75,6 +84,7 @@
         <input id="fileInput" type="file" accept=".json" style="display: none" />
         <!-- <script src="https://cdn.plot.ly/plotly-3.1.0.min.js"></script> -->
         <script src="./plotly-3.1.0.min.js"></script>
+        <script src="./gridjs.umd.js"></script>
         <script type="module" src="options.js"></script>
     </body>
 </html>

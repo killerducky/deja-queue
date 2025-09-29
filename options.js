@@ -11,7 +11,8 @@ let DBDATA = { queue: [], current: 0 };
 let LISTLEN = 5;
 let MAXLOGDUMP = 99999;
 let DIVERSITY_FACTOR = 12; // e.g. 6.5 + 1.2 will overcome 7.5 sometimes
-let LONG_DELAY_BONUS = 2.5; // half a half a rating point per doubling of delay
+let LONG_DELAY_TIME = 7;
+let LONG_DELAY_BONUS = 2.5; // half a half a rating point per doubling
 let INIT_DAYS_SINCE = 365; // One year is plenty to get a new video played
 let DEFAULT_RATING = 7.5;
 
@@ -40,7 +41,7 @@ function cooldownFactor(daysSince, rating) {
         // 28 days overdue: +3LONG_DELAY_BONUS
         // 56 days overdue: +4LONG_DELAY_BONUS
         // 365 days overdue: +14 = 5.6x LONG_DELAY_BONUS
-        let log2 = Math.log1p(daysOverdue / 7) / Math.log(2);
+        let log2 = Math.log1p(daysOverdue / LONG_DELAY_TIME) / Math.log(2);
         return log2 * LONG_DELAY_BONUS;
     } else {
         return 0;
@@ -631,6 +632,27 @@ function plotCooldownFactor(videos) {
     Plotly.newPlot("cooldown-chart", traces, layout);
 }
 
+function renderGrid(queue) {
+    let columns = ["Thumb", "Title", "Rating", "Score", "ErrCnt", "ID"];
+    let data = [];
+    for (let video of queue) {
+        const thumb = document.createElement("img");
+        thumb.src = `https://i.ytimg.com/vi/${video.id}/default.jpg`;
+        thumb.style.width = "70px";
+
+        data.push([thumb, video.title || video.yt?.snippet?.title || video.id, video.rating.toFixed(1), video.score.toFixed(1), video.errCnt ?? 0, video.id]);
+    }
+    new gridjs.Grid({
+        columns: columns,
+        data: data,
+        pagination: {
+            limit: 10,
+        },
+        sort: true,
+        search: true,
+    }).render(document.getElementById("database-grid"));
+}
+
 // Initial load
 (async () => {
     DBDATA.queue = await db.loadVideos();
@@ -642,6 +664,7 @@ function plotCooldownFactor(videos) {
     plotRatings(DBDATA.queue);
     plotScores(DBDATA.queue);
     plotCooldownFactor(DBDATA.queue);
+    renderGrid(DBDATA.queue);
     DBDATA.current = 0;
     renderQueue(DBDATA.queue || [], DBDATA.current ?? 0);
 })();
