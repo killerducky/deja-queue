@@ -13,15 +13,15 @@ function attachListener() {
     console.log("attachListener");
     if (!video.paused && !video.ended && video.readyState > 2) {
         console.log("Video already playing on attach");
-        browser.runtime.sendMessage({ type: "videoPlaying" });
+        browser.runtime.sendMessage({ type: "videoPlaying", duration: video.duration });
     }
     video.onplay = () => {
         console.log("sendMessage videoPlaying (onplay)");
-        browser.runtime.sendMessage({ type: "videoPlaying" });
+        browser.runtime.sendMessage({ type: "videoPlaying", duration: video.duration });
     };
     video.onplaying = () => {
         console.log("sendMessage videoPlaying");
-        browser.runtime.sendMessage({ type: "videoPlaying" });
+        browser.runtime.sendMessage({ type: "videoPlaying", duration: video.duration });
     };
     video.onended = () => {
         console.log("sendMessage videoEnded");

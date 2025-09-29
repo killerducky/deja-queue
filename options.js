@@ -10,6 +10,7 @@ if (typeof browser === "undefined") {
 let DBDATA = { queue: [], current: 0 };
 let LISTLEN = 5;
 let MAXLOGDUMP = 99999;
+let DIVERSITY_FACTOR = 12;
 
 const url = browser.runtime.getURL(".env.json");
 const resp = await fetch(url);
@@ -116,14 +117,22 @@ async function renderQueue(queue, current) {
     table(logEl, logVideoList, 0);
 }
 
-function formatDuration(isoDuration) {
-    if (!isoDuration) return "—";
-    const match = isoDuration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-    if (!match) return "0:00";
-
-    const hours = parseInt(match[1] || "0", 10);
-    const minutes = parseInt(match[2] || "0", 10);
-    const seconds = parseInt(match[3] || "0", 10);
+function formatDuration(isoDuration, isoFormat = true) {
+    let hours;
+    let minutes;
+    let seconds;
+    if (isoFormat) {
+        if (!isoDuration) return "—";
+        const match = isoDuration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+        if (!match) return "0:00";
+        hours = parseInt(match[1] || "0", 10);
+        minutes = parseInt(match[2] || "0", 10);
+        seconds = parseInt(match[3] || "0", 10);
+    } else {
+        hours = isoDuration >= 3600 ? Math.floor(isoDuration / 3600) : 0;
+        minutes = Math.floor((isoDuration % 3600) / 60);
+        seconds = Math.floor(isoDuration % 60);
+    }
 
     if (hours > 0) {
         return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
@@ -181,7 +190,11 @@ function table(htmlEl, videoList, clickable) {
 
         // Dur cell
         const durCell = document.createElement("td");
-        durCell.textContent = formatDuration(item.yt?.contentDetails?.duration) || "—";
+        if (item.scrapedDuration) {
+            durCell.textContent = formatDuration(item.scrapedDuration, false);
+        } else {
+            durCell.textContent = formatDuration(item.yt?.contentDetails?.duration) || "—";
+        }
         durCell.style.padding = "6px";
         durCell.style.textAlign = "center";
         row.appendChild(durCell);
@@ -392,15 +405,22 @@ async function logEvent(video, event) {
 
 browser.runtime.onMessage.addListener(async (msg, sender) => {
     const videoId = getVideoIdFromInput(sender.url).id;
+    const currVideo = DBDATA.queue[DBDATA.current];
     console.log("options.js received message:", msg, videoId);
     if (msg.type === "videoPlaying") {
         clearTimeout(videoTimeout);
+        console.log(videoId, currVideo);
+        if (videoId && currVideo && videoId === currVideo.id && !currVideo.yt?.contentDetails?.duration && !currVideo.scrapedDuration) {
+            currVideo.scrapedDuration = msg.duration;
+            console.log("Scraped duration:", currVideo.scrapedDuration);
+            await db.saveVideos([currVideo]);
+        }
     }
     if (msg.type === "videoEnded") {
         // console.log("Controller: video ended, moving to next");
         // check in case some other video was actually playing, don't want to credit that
-        if (videoId && DBDATA.queue[DBDATA.current] && videoId === DBDATA.queue[DBDATA.current].id) {
-            await logEvent(DBDATA.queue[DBDATA.current], "play");
+        if (videoId && currVideo && videoId === currVideo.id) {
+            await logEvent(currVideo, "play");
         }
         playNextVideo();
     }
@@ -475,7 +495,7 @@ function scoreVideo(video) {
     if (video.errCnt && video.errCnt >= 3) return -100; // too many errors, don't play
     let now = Date.now();
     if (!video.rating) video.rating = 7;
-    let score = video.rating * 10 + Math.random();
+    let score = video.rating * 10 + Math.random() * DIVERSITY_FACTOR;
     if (video.lastPlayDate && now - video.lastPlayDate < rating2days(video.rating) * 24 * 3600 * 1000) {
         score -= 50; // recently played, big penalty
     }
@@ -502,24 +522,30 @@ function plotRatings(videos) {
 }
 
 function plotScores(videos) {
-    const scores = videos.map((v) => v.score);
-    const traces = [
-        {
-            x: scores,
+    // Get unique ratings
+    const ratings = [...new Set(videos.map((v) => v.rating ?? 7))].sort((a, b) => a - b);
+
+    // Create a trace for each rating
+    const traces = ratings.map((r) => {
+        const scoresForRating = videos.filter((v) => (v.rating ?? 7) === r).map((v) => v.score);
+        return {
+            x: scoresForRating,
             type: "histogram",
-            xbins: {
-                size: 5,
-            },
-        },
-    ];
+            name: `Rating ${r}`,
+            marker: { color: `hsl(${r * 36}, 70%, 50%)` }, // different color per rating
+            xbins: { size: 2 },
+        };
+    });
+
     const layout = {
         title: "Scores Distribution",
         xaxis: { title: "Score" },
-        yaxis: { title: "Count", type: "log" }, // 👈 log scale
+        yaxis: { title: "Count" },
+        barmode: "stack",
     };
+
     Plotly.newPlot("scores-chart", traces, layout);
 }
-
 // Initial load
 (async () => {
     DBDATA.queue = await db.loadVideos();
