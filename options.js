@@ -11,6 +11,9 @@ let DBDATA = { queue: [], current: 0 };
 let LISTLEN = 5;
 let MAXLOGDUMP = 99999;
 let DIVERSITY_FACTOR = 12;
+let LONG_DELAY_BONUS = 5;
+let INIT_DAYS_SINCE = 365; // One year is plenty to get a new video played
+let DEFAULT_RATING = 7;
 
 const url = browser.runtime.getURL(".env.json");
 const resp = await fetch(url);
@@ -237,7 +240,7 @@ function table(htmlEl, videoList, clickable) {
         input.min = "1";
         input.max = "10";
         input.step = "0.5";
-        input.value = item.rating ?? "7";
+        input.value = item.rating ?? DEFAULT_RATING;
         async function saveRating() {
             const newValue = parseFloat(input.value);
             if (!isNaN(newValue)) {
@@ -409,10 +412,8 @@ browser.runtime.onMessage.addListener(async (msg, sender) => {
     console.log("options.js received message:", msg, videoId);
     if (msg.type === "videoPlaying") {
         clearTimeout(videoTimeout);
-        console.log(videoId, currVideo);
         if (videoId && currVideo && videoId === currVideo.id && !currVideo.yt?.contentDetails?.duration && !currVideo.scrapedDuration) {
             currVideo.scrapedDuration = msg.duration;
-            console.log("Scraped duration:", currVideo.scrapedDuration);
             await db.saveVideos([currVideo]);
         }
     }
@@ -491,19 +492,36 @@ function rating2days(rating) {
     return 365;
 }
 
-function scoreVideo(video) {
-    if (video.errCnt && video.errCnt >= 3) return -100; // too many errors, don't play
-    let now = Date.now();
-    if (!video.rating) video.rating = 7;
-    let score = video.rating * 10 + Math.random() * DIVERSITY_FACTOR;
-    if (video.lastPlayDate && now - video.lastPlayDate < rating2days(video.rating) * 24 * 3600 * 1000) {
-        score -= 50; // recently played, big penalty
+function cooldownFactor(ratio) {
+    if (ratio < 1) {
+        const eased = Math.pow(ratio, 3);
+        return -50 * (1 - eased);
+    } else if (ratio > 1.5) {
+        // If not played after 1.5x the interval, start giving small bonus
+        let log2 = Math.log(ratio - 0.5) / Math.log(2);
+        // ratio = 1.5 -> 0 * LONG_DELAY_BONUS
+        // ratio = 2.5 -> 1 * LONG_DELAY_BONUS
+        // ratio = 4.5 -> 2 * LONG_DELAY_BONUS
+        // ratio = 8.5 -> 3 * LONG_DELAY_BONUS
+        return log2 * LONG_DELAY_BONUS;
+    } else {
+        return 0;
     }
+}
+
+function scoreVideo(video) {
+    if (video.errCnt && video.errCnt >= 3) return -10; // too many errors, don't play
+    let now = Date.now();
+    if (!video.rating) video.rating = DEFAULT_RATING;
+    let score = video.rating * 10 + Math.random() * DIVERSITY_FACTOR;
+    let daysSince = !video.lastPlayDate ? INIT_DAYS_SINCE : (now - video.lastPlayDate) / (24 * 3600 * 1000);
+    let T = rating2days(video.rating);
+    score += cooldownFactor(daysSince / T);
     return score;
 }
 
 function plotRatings(videos) {
-    const ratings = videos.map((v) => v.rating || 7);
+    const ratings = videos.map((v) => v.rating || DEFAULT_RATING);
     const traces = [
         {
             x: ratings,
@@ -523,11 +541,11 @@ function plotRatings(videos) {
 
 function plotScores(videos) {
     // Get unique ratings
-    const ratings = [...new Set(videos.map((v) => v.rating ?? 7))].sort((a, b) => a - b);
+    const ratings = [...new Set(videos.map((v) => v.rating ?? DEFAULT_RATING))].sort((a, b) => a - b);
 
     // Create a trace for each rating
     const traces = ratings.map((r) => {
-        const scoresForRating = videos.filter((v) => (v.rating ?? 7) === r).map((v) => v.score);
+        const scoresForRating = videos.filter((v) => (v.rating ?? DEFAULT_RATING) === r).map((v) => v.score);
         return {
             x: scoresForRating,
             type: "histogram",
@@ -546,6 +564,35 @@ function plotScores(videos) {
 
     Plotly.newPlot("scores-chart", traces, layout);
 }
+
+function plotCooldownFactor() {
+    // Generate sample x values
+    const xs = [];
+    const ys = [];
+    for (let i = 0; i <= 10; i += 0.01) {
+        xs.push(i);
+        ys.push(cooldownFactor(i));
+    }
+
+    // Build the trace
+    const trace = {
+        x: xs,
+        y: ys,
+        mode: "lines",
+        line: { color: "blue" },
+    };
+
+    // Layout
+    const layout = {
+        title: "Function Test Graph",
+        xaxis: { title: "x (daysSince/T)" },
+        yaxis: { title: "f(x)" },
+    };
+
+    // Plot
+    Plotly.newPlot("cooldown-chart", [trace], layout);
+}
+
 // Initial load
 (async () => {
     DBDATA.queue = await db.loadVideos();
@@ -556,6 +603,7 @@ function plotScores(videos) {
     console.log(DBDATA.queue);
     plotRatings(DBDATA.queue);
     plotScores(DBDATA.queue);
+    plotCooldownFactor();
     DBDATA.current = 0;
     renderQueue(DBDATA.queue || [], DBDATA.current ?? 0);
 })();
