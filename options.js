@@ -16,7 +16,8 @@ let INIT_DAYS_SINCE = 365; // One year is plenty to get a new video played
 let DEFAULT_RATING = 7;
 
 function rating2days(rating) {
-    if (rating >= 9.0) return 1.0 / 24;
+    if (rating >= 9.5) return 1.0 / 24;
+    if (rating >= 9.0) return 4.0 / 24;
     if (rating >= 8.5) return 0.5;
     if (rating >= 8.0) return 1;
     if (rating >= 7.5) return 2;
@@ -26,31 +27,41 @@ function rating2days(rating) {
     return 365;
 }
 
-function cooldownFactor(ratio) {
+function cooldownFactor(daysSince, rating) {
+    let T = rating2days(rating);
+    let ratio = daysSince / T;
+    let daysOverdue = daysSince - T * 1.5;
     if (ratio < 1) {
         const eased = Math.pow(ratio, 3);
         return -50 * (1 - eased);
-    } else if (ratio > 1.5) {
-        // If not played after 1.5x the interval, start giving small bonus
-        let log2 = Math.log(ratio - 0.5) / Math.log(2);
-        // ratio = 1.5 -> 0 * LONG_DELAY_BONUS
-        // ratio = 2.5 -> 1 * LONG_DELAY_BONUS
-        // ratio = 4.5 -> 2 * LONG_DELAY_BONUS
-        // ratio = 8.5 -> 3 * LONG_DELAY_BONUS
+    } else if (daysOverdue > 0) {
+        // 7 days overdue:  +1LONG_DELAY_BONUS
+        // 14 days overdue: +2LONG_DELAY_BONUS
+        // 28 days overdue: +3LONG_DELAY_BONUS
+        // 56 days overdue: +4LONG_DELAY_BONUS
+        // 365 days overdue: +14 = 5.6x LONG_DELAY_BONUS
+        let log2 = Math.log1p(daysOverdue / 7) / Math.log(2);
         return log2 * LONG_DELAY_BONUS;
     } else {
         return 0;
     }
 }
 
-function scoreVideo(video) {
+// split out so we can test eaiser
+function scoreHelper(daysSince, rating, noise = true) {
+    let score = 0;
+    score += rating * 10;
+    score += !noise ? 0 : Math.random() * DIVERSITY_FACTOR;
+    score += cooldownFactor(daysSince, rating);
+    return score;
+}
+
+function scoreVideo(video, noise = true) {
     if (video.errCnt && video.errCnt >= 3) return -10; // too many errors, don't play
     let now = Date.now();
     if (!video.rating) video.rating = DEFAULT_RATING;
-    let score = video.rating * 10 + Math.random() * DIVERSITY_FACTOR;
     let daysSince = !video.lastPlayDate ? INIT_DAYS_SINCE : (now - video.lastPlayDate) / (24 * 3600 * 1000);
-    let T = rating2days(video.rating);
-    score += cooldownFactor(daysSince / T);
+    let score = scoreHelper(daysSince, video.rating, noise);
     return score;
 }
 
@@ -565,32 +576,39 @@ function plotScores(videos) {
     Plotly.newPlot("scores-chart", traces, layout);
 }
 
-function plotCooldownFactor() {
-    // Generate sample x values
-    const xs = [];
-    const ys = [];
-    for (let i = 0; i <= 10; i += 0.01) {
-        xs.push(i);
-        ys.push(cooldownFactor(i));
-    }
+function plotCooldownFactor(videos) {
+    const ratings = [...new Set(videos.map((v) => v.rating ?? DEFAULT_RATING))].sort((a, b) => a - b);
 
-    // Build the trace
-    const trace = {
-        x: xs,
-        y: ys,
-        mode: "lines",
-        line: { color: "blue" },
-    };
+    const traces = [];
+    for (let i = ratings.length - 1; i >= 0; i--) {
+        const rating = ratings[i];
+        const ys = [];
+        const xs = [];
+        for (let daysSince = 0; daysSince <= 365; daysSince += 0.1) {
+            // ys.push(cooldownFactor(d / rating2days(r)));
+            ys.push(scoreHelper(daysSince, rating, false));
+            xs.push(daysSince - rating2days(rating));
+            // xs.push(daysSince);
+        }
+        traces.push({
+            x: xs,
+            y: ys,
+            mode: "lines",
+            name: `Rating ${rating}`,
+            // line: { color: `hsl(${r * 36}, 70%, 50%)` },
+            marker: { color: `hsl(${rating * 36}, 70%, 50%)` }, // different color per rating
+        });
+    }
 
     // Layout
     const layout = {
         title: "Function Test Graph",
-        xaxis: { title: "x (daysSince/T)" },
-        yaxis: { title: "f(x)" },
+        xaxis: { title: { text: "days" }, range: [-5, 150] },
+        yaxis: { title: { text: "Cooldown penalty/bonus" } },
     };
 
     // Plot
-    Plotly.newPlot("cooldown-chart", [trace], layout);
+    Plotly.newPlot("cooldown-chart", traces, layout);
 }
 
 // Initial load
@@ -603,7 +621,7 @@ function plotCooldownFactor() {
     console.log(DBDATA.queue);
     plotRatings(DBDATA.queue);
     plotScores(DBDATA.queue);
-    plotCooldownFactor();
+    plotCooldownFactor(DBDATA.queue);
     DBDATA.current = 0;
     renderQueue(DBDATA.queue || [], DBDATA.current ?? 0);
 })();
