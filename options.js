@@ -10,10 +10,49 @@ if (typeof browser === "undefined") {
 let DBDATA = { queue: [], current: 0 };
 let LISTLEN = 5;
 let MAXLOGDUMP = 99999;
-let DIVERSITY_FACTOR = 12;
-let LONG_DELAY_BONUS = 5;
+let DIVERSITY_FACTOR = 12; // e.g. 6.5 + 1.2 will overcome 7.5 sometimes
+let LONG_DELAY_BONUS = 2.5; // half a half a rating point per doubling of delay
 let INIT_DAYS_SINCE = 365; // One year is plenty to get a new video played
 let DEFAULT_RATING = 7;
+
+function rating2days(rating) {
+    if (rating >= 9.0) return 1.0 / 24;
+    if (rating >= 8.5) return 0.5;
+    if (rating >= 8.0) return 1;
+    if (rating >= 7.5) return 2;
+    if (rating >= 7.0) return 3;
+    if (rating >= 6.5) return 7;
+    if (rating >= 6.0) return 28;
+    return 365;
+}
+
+function cooldownFactor(ratio) {
+    if (ratio < 1) {
+        const eased = Math.pow(ratio, 3);
+        return -50 * (1 - eased);
+    } else if (ratio > 1.5) {
+        // If not played after 1.5x the interval, start giving small bonus
+        let log2 = Math.log(ratio - 0.5) / Math.log(2);
+        // ratio = 1.5 -> 0 * LONG_DELAY_BONUS
+        // ratio = 2.5 -> 1 * LONG_DELAY_BONUS
+        // ratio = 4.5 -> 2 * LONG_DELAY_BONUS
+        // ratio = 8.5 -> 3 * LONG_DELAY_BONUS
+        return log2 * LONG_DELAY_BONUS;
+    } else {
+        return 0;
+    }
+}
+
+function scoreVideo(video) {
+    if (video.errCnt && video.errCnt >= 3) return -10; // too many errors, don't play
+    let now = Date.now();
+    if (!video.rating) video.rating = DEFAULT_RATING;
+    let score = video.rating * 10 + Math.random() * DIVERSITY_FACTOR;
+    let daysSince = !video.lastPlayDate ? INIT_DAYS_SINCE : (now - video.lastPlayDate) / (24 * 3600 * 1000);
+    let T = rating2days(video.rating);
+    score += cooldownFactor(daysSince / T);
+    return score;
+}
 
 const url = browser.runtime.getURL(".env.json");
 const resp = await fetch(url);
@@ -480,45 +519,6 @@ document.getElementById("importBtn").addEventListener("click", () => {
         alert("Please select a file first");
     }
 });
-
-function rating2days(rating) {
-    if (rating >= 9.0) return 1.0 / 24;
-    if (rating >= 8.5) return 0.5;
-    if (rating >= 8.0) return 1;
-    if (rating >= 7.5) return 2;
-    if (rating >= 7.0) return 3;
-    if (rating >= 6.5) return 7;
-    if (rating >= 6.0) return 28;
-    return 365;
-}
-
-function cooldownFactor(ratio) {
-    if (ratio < 1) {
-        const eased = Math.pow(ratio, 3);
-        return -50 * (1 - eased);
-    } else if (ratio > 1.5) {
-        // If not played after 1.5x the interval, start giving small bonus
-        let log2 = Math.log(ratio - 0.5) / Math.log(2);
-        // ratio = 1.5 -> 0 * LONG_DELAY_BONUS
-        // ratio = 2.5 -> 1 * LONG_DELAY_BONUS
-        // ratio = 4.5 -> 2 * LONG_DELAY_BONUS
-        // ratio = 8.5 -> 3 * LONG_DELAY_BONUS
-        return log2 * LONG_DELAY_BONUS;
-    } else {
-        return 0;
-    }
-}
-
-function scoreVideo(video) {
-    if (video.errCnt && video.errCnt >= 3) return -10; // too many errors, don't play
-    let now = Date.now();
-    if (!video.rating) video.rating = DEFAULT_RATING;
-    let score = video.rating * 10 + Math.random() * DIVERSITY_FACTOR;
-    let daysSince = !video.lastPlayDate ? INIT_DAYS_SINCE : (now - video.lastPlayDate) / (24 * 3600 * 1000);
-    let T = rating2days(video.rating);
-    score += cooldownFactor(daysSince / T);
-    return score;
-}
 
 function plotRatings(videos) {
     const ratings = videos.map((v) => v.rating || DEFAULT_RATING);
