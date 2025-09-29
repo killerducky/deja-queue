@@ -13,17 +13,17 @@ let MAXLOGDUMP = 99999;
 let DIVERSITY_FACTOR = 12; // e.g. 6.5 + 1.2 will overcome 7.5 sometimes
 let LONG_DELAY_BONUS = 2.5; // half a half a rating point per doubling of delay
 let INIT_DAYS_SINCE = 365; // One year is plenty to get a new video played
-let DEFAULT_RATING = 7;
+let DEFAULT_RATING = 7.5;
 
 function rating2days(rating) {
-    if (rating >= 9.5) return 1.0 / 24;
-    if (rating >= 9.0) return 4.0 / 24;
-    if (rating >= 8.5) return 0.5;
-    if (rating >= 8.0) return 1;
-    if (rating >= 7.5) return 2;
-    if (rating >= 7.0) return 3;
-    if (rating >= 6.5) return 7;
-    if (rating >= 6.0) return 28;
+    if (rating >= 10) return 1.0 / 24;
+    if (rating >= 9.5) return 4.0 / 24;
+    if (rating >= 9.0) return 0.5;
+    if (rating >= 8.5) return 1;
+    if (rating >= 8.0) return 2;
+    if (rating >= 7.5) return 3;
+    if (rating >= 7.0) return 7;
+    if (rating >= 6.5) return 28;
     return 365;
 }
 
@@ -533,21 +533,41 @@ document.getElementById("importBtn").addEventListener("click", () => {
 
 function plotRatings(videos) {
     const ratings = videos.map((v) => v.rating || DEFAULT_RATING);
-    const traces = [
-        {
-            x: ratings,
-            type: "histogram",
-            xbins: {
-                size: 0.5,
-            },
-        },
-    ];
+
+    // Count how many videos for each rating
+    const counts = {};
+    ratings.forEach((r) => {
+        r = parseFloat(r.toFixed(1)); // normalize e.g. 7 → 7.0
+        counts[r] = (counts[r] || 0) + 1;
+    });
+
+    // Extract sorted rating values
+    const xs = Object.keys(counts)
+        .map(Number)
+        .sort((a, b) => a - b);
+
+    // Y counts
+    const ys = xs.map((r) => counts[r]);
+    const ticktext = xs.map((r) => {
+        const days = rating2days(r);
+        const totalTime = formatDuration(counts[r] * 3 * 60, false);
+        const time = formatDuration((counts[r] * 3 * 60) / days, false);
+        return `${r}<br>${totalTime}/${days}d<br>${time}`;
+    });
+
+    const trace = {
+        x: xs,
+        y: ys,
+        type: "bar",
+    };
+
     const layout = {
         title: "Ratings Distribution",
-        xaxis: { title: "Rating" },
-        yaxis: { title: "Count", type: "log" }, // 👈 log scale
+        xaxis: { title: "Rating", tickvals: xs, ticktext: ticktext },
+        yaxis: { title: "Count", type: "log" },
     };
-    Plotly.newPlot("ratings-chart", traces, layout);
+
+    Plotly.newPlot("ratings-chart", [trace], layout);
 }
 
 function plotScores(videos) {
