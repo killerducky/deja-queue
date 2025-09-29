@@ -16,6 +16,36 @@ let LONG_DELAY_BONUS = 2.5; // half a half a rating point per doubling
 let INIT_DAYS_SINCE = 365; // One year is plenty to get a new video played
 let DEFAULT_RATING = 7.5;
 
+// vibe coded. Well it works so ok.
+function rating2color(rating) {
+    // https://colorbrewer2.org/#type=sequential&scheme=GnBu&n=9
+    let colors = ["#f7fcf0", "#e0f3db", "#ccebc5", "#a8ddb5", "#7bccc4", "#4eb3d3", "#2b8cbe", "#0868ac", "#084081"].reverse();
+
+    // https://www.vis4.net/palettes/#/9|s|7c316f,7be9ff,98cbff|ffffe0,ff005e,93003a|1|1
+    // let colors = ["#7c316f", "#81477e", "#865b8d", "#896f9c", "#8c82ac", "#8d95bd", "#8ea8ce", "#8ebbe1", "#98cbff"];
+    let colormap = {};
+    for (let i = 0, r = 9.0; i < colors.length; i++) {
+        colormap[r] = colors[i];
+        r -= 0.5;
+    }
+
+    // Get all rating keys as numbers
+    const keys = Object.keys(colormap).map(Number);
+
+    // Find the key with minimal distance to rating
+    let closest = keys[0];
+    let minDiff = Math.abs(rating - closest);
+
+    for (let k of keys) {
+        const diff = Math.abs(rating - k);
+        if (diff < minDiff) {
+            minDiff = diff;
+            closest = k;
+        }
+    }
+    return colormap[closest];
+}
+
 function rating2days(rating) {
     if (rating >= 10) return 1.0 / 24;
     if (rating >= 9.5) return 4.0 / 24;
@@ -555,11 +585,12 @@ function plotRatings(videos) {
         const time = formatDuration((counts[r] * 3 * 60) / days, false);
         return `${r}<br>${totalTime}/${days}d<br>${time}`;
     });
-
+    const colors = xs.map((r) => rating2color(r));
     const trace = {
         x: xs,
         y: ys,
         type: "bar",
+        marker: { color: colors },
     };
 
     const layout = {
@@ -581,8 +612,8 @@ function plotScores(videos) {
         return {
             x: scoresForRating,
             type: "histogram",
-            name: `Rating ${r}`,
-            marker: { color: `hsl(${r * 36}, 70%, 50%)` }, // different color per rating
+            name: `Rating ${r.toFixed(1)}`,
+            marker: { color: rating2color(r) },
             xbins: { size: 2 },
         };
     });
@@ -615,9 +646,8 @@ function plotCooldownFactor(videos) {
             x: xs,
             y: ys,
             mode: "lines",
-            name: `Rating ${rating}`,
-            // line: { color: `hsl(${r * 36}, 70%, 50%)` },
-            marker: { color: `hsl(${rating * 36}, 70%, 50%)` }, // different color per rating
+            name: `Rating ${rating.toFixed(1)}`,
+            line: { color: rating2color(rating) },
         });
     }
 
@@ -741,10 +771,12 @@ async function moveVideoToFront(id) {
     });
     DBDATA.queue.sort((a, b) => b.score - a.score);
     console.log(DBDATA.queue);
+    renderGrid(DBDATA.queue);
+    DBDATA.queue = DBDATA.queue.filter((v) => (v.errCnt ?? 0) < 3);
+    console.log(DBDATA.queue);
     plotRatings(DBDATA.queue);
     plotScores(DBDATA.queue);
     plotCooldownFactor(DBDATA.queue);
-    renderGrid(DBDATA.queue);
     DBDATA.current = 0;
     renderQueue(DBDATA.queue || [], DBDATA.current ?? 0);
 })();
