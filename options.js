@@ -58,7 +58,7 @@ function scoreHelper(daysSince, rating, noise = true) {
 }
 
 function scoreVideo(video, noise = true) {
-    if (video.errCnt && video.errCnt >= 3) return -10; // too many errors, don't play
+    if (video.errCnt && video.errCnt >= 3) return 0; // too many errors, don't play
     let now = Date.now();
     if (!video.rating) video.rating = DEFAULT_RATING;
     let daysSince = !video.lastPlayDate ? INIT_DAYS_SINCE : (now - video.lastPlayDate) / (24 * 3600 * 1000);
@@ -366,7 +366,7 @@ addBtn.addEventListener("click", async () => {
     if (!response.id) return;
     if (response.type == "video") {
         if (DBDATA.queue.find((v) => v.id === response.id)) {
-            alert("Video already in DB, moving to front of queue");
+            alert("Video already in DB");
         }
         let item = { id: response.id };
         await addYoutubeInfo(item);
@@ -375,7 +375,7 @@ addBtn.addEventListener("click", async () => {
             return;
         }
         console.log(item);
-        DBDATA.queue.splice(DBDATA.current + 1, 0, item);
+        moveVideoToFront(item.id);
         await renderQueue(DBDATA.queue, DBDATA.current);
     } else if (response.type == "playlist") {
         await addPlaylistVideos(response.id);
@@ -632,17 +632,31 @@ function plotCooldownFactor(videos) {
     Plotly.newPlot("cooldown-chart", traces, layout);
 }
 
+let currentGridInfo = null;
 function renderGrid(queue) {
-    let columns = ["Thumb", "Title", "Rating", "Score", "ErrCnt", "ID"];
+    const menu = document.getElementById("gridMenu");
+    let columns = [
+        {
+            name: "Thumb",
+            formatter: (videoId, row) => {
+                const thumb = document.createElement("img");
+                thumb.src = `https://i.ytimg.com/vi/${videoId}/default.jpg`;
+                thumb.style.width = "70px";
+                return gridjs.html(thumb.outerHTML);
+            },
+        },
+        "Title",
+        // "Dur",  dur is kinda annoying, do this later
+        "Rating",
+        "Score",
+        "ErrCnt",
+    ];
+
     let data = [];
     for (let video of queue) {
-        const thumb = document.createElement("img");
-        thumb.src = `https://i.ytimg.com/vi/${video.id}/default.jpg`;
-        thumb.style.width = "70px";
-
-        data.push([thumb, video.title || video.yt?.snippet?.title || video.id, video.rating.toFixed(1), video.score.toFixed(1), video.errCnt ?? 0, video.id]);
+        data.push([video.id, video.title || video.yt?.snippet?.title || video.id, video.rating.toFixed(1), video.score.toFixed(1), video.errCnt ?? 0]);
     }
-    new gridjs.Grid({
+    const grid = new gridjs.Grid({
         columns: columns,
         data: data,
         pagination: {
@@ -651,6 +665,72 @@ function renderGrid(queue) {
         sort: true,
         search: true,
     }).render(document.getElementById("database-grid"));
+
+    grid.on("cellClick", (e, cellData, column, rowArray) => {
+        e.stopPropagation();
+        currentGridInfo = { e, cellData, column, rowArray };
+        menu.style.top = e.pageY + "px";
+        menu.style.left = e.pageX + "px";
+        menu.style.display = "block";
+    });
+
+    document.addEventListener("click", (evt) => {
+        if (!menu.contains(evt.target)) {
+            menu.style.display = "none";
+        }
+    });
+
+    menu.addEventListener("click", (e) => {
+        e.stopPropagation();
+    });
+
+    document.getElementById("menuPlay").addEventListener("click", async () => {
+        menu.style.display = "none";
+        let id = currentGridInfo.rowArray._cells[0].data;
+        console.log("Play video", id);
+        moveVideoToFront(id);
+    });
+
+    document.getElementById("menuEdit").addEventListener("click", async () => {
+        menu.style.display = "none";
+        console.log("currentGridInfo", currentGridInfo);
+        let id = currentGridInfo.rowArray._cells[0].data;
+        if (currentGridInfo.column.name != "ErrCnt") {
+            alert("For now can only edit ErrCnt");
+            return;
+        }
+        const idx = DBDATA.queue.findIndex((v) => v.id === id);
+        if (idx === -1) {
+            alert("Error: Cannot find in DBDATA");
+            return;
+        }
+        let video = DBDATA.queue[idx];
+        const input = prompt(`Enter new ErrCnt for "${video.title || video.id}":`, video.errCnt ?? 0);
+        if (input === null) return; // user cancelled
+        const newValue = parseInt(input, 10);
+        if (isNaN(newValue)) return;
+        video.errCnt = newValue;
+        await db.saveVideos(DBDATA.queue[idx]);
+
+        grid.updateConfig({
+            data: DBDATA.queue.map((v) => [v.id, v.title || v.yt?.snippet?.title || v.id, v.rating.toFixed(1), v.score.toFixed(1), v.errCnt ?? 0]),
+        }).forceRender();
+    });
+
+    document.addEventListener("keydown", (evt) => {
+        if (evt.key === "Escape") {
+            menu.style.display = "none";
+        }
+    });
+}
+
+async function moveVideoToFront(id) {
+    const idx = DBDATA.queue.findIndex((v) => v.id === id);
+    if (idx !== -1 && idx !== DBDATA.current) {
+        const [video] = DBDATA.queue.splice(idx, 1);
+        DBDATA.queue.splice(DBDATA.current + 1, 0, video);
+        await renderQueue(DBDATA.queue, DBDATA.current);
+    }
 }
 
 // Initial load
