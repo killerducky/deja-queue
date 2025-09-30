@@ -52,12 +52,6 @@
                 width: 25px;
                 height: auto;
             }
-            .gridjs-td {
-                max-width: 250px;
-            }
-            .gridjs-tr {
-                height: 3lh;
-            }
         </style>
         <link rel="icon" type="image/x-icon" href="favicon.ico" />
     </head>
@@ -86,20 +80,10 @@
         <input type="file" id="importFile" accept="application/json" />
         <button id="importBtn">Import DB</button>
         <input id="fileInput" type="file" accept=".json" style="display: none" />
-
-        <div
-            id="gridMenu"
-            style="position: absolute; display: none; background: white; border: 1px solid #ccc; box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2); z-index: 1000"
-        >
-            <ul style="list-style: none; margin: 0; padding: 5px">
-                <li id="menuPlay" style="padding: 5px; cursor: pointer">Queue next</li>
-                <li id="menuEdit" style="padding: 5px; cursor: pointer">Edit Video</li>
-            </ul>
-        </div>
-
-        <!-- <script src="https://cdn.plot.ly/plotly-3.1.0.min.js"></script> -->
         <script src="./plotly-3.1.0.min.js"></script>
         <script src="./gridjs.umd.js"></script>
+        <link href="./tabulator.min.css" rel="stylesheet" />
+        <script src="./tabulator.min.js"></script>
         <script type="module" src="options.js"></script>
     </body>
 </html>
