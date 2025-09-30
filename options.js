@@ -7,7 +7,7 @@ if (typeof browser === "undefined") {
     var browser = chrome; // var so it's global
 }
 
-let DBDATA = { queue: [], current: 0 };
+let DBDATA = { queue: [] };
 let LISTLEN = 5;
 let MAXLOGDUMP = 99999;
 let DIVERSITY_FACTOR = 12; // e.g. 6.5 + 1.2 will overcome 7.5 sometimes
@@ -178,10 +178,10 @@ export function handleSteppers(chartContainerEl) {
     });
 }
 
-async function renderQueue(queue, current) {
+async function renderQueue(queue) {
     let videoList = [];
     for (let i = 0; i < queue.length && i < LISTLEN; i++) {
-        let video = queue[(current + i) % queue.length];
+        let video = queue[i % queue.length];
         videoList.push(video);
         if (!video?.yt?.contentDetails) {
             await addYoutubeInfo(video);
@@ -410,8 +410,8 @@ addBtn.addEventListener("click", async () => {
                 return;
             }
             console.log(video);
-            DBDATA.queue.splice(DBDATA.current + 1, 0, video);
-            await renderQueue(DBDATA.queue, DBDATA.current);
+            DBDATA.queue.splice(1, 0, video);
+            await renderQueue(DBDATA.queue);
         }
     } else if (response.type == "playlist") {
         await addPlaylistVideos(response.id);
@@ -423,7 +423,7 @@ addBtn.addEventListener("click", async () => {
 });
 
 nextBtn.addEventListener("click", async () => {
-    await logEvent(DBDATA.queue[DBDATA.current], "skip");
+    await logEvent(DBDATA.queue[0], "skip");
     playNextVideo();
 });
 pauseBtn.addEventListener("click", async () => {
@@ -438,25 +438,28 @@ playBtn.addEventListener("click", async () => {
 let videoTimeout;
 
 async function playNextVideo(offset = 1) {
-    if (DBDATA.queue.length > 0) {
-        DBDATA.current = (DBDATA.current + offset) % DBDATA.queue.length; // wrap around
-        const [tab] = await browser.tabs.query({ url: "*://www.youtube.com/*" });
-        if (!tab) return;
-        browser.tabs.sendMessage(tab.id, { type: "playVideo", tab: tab.id, id: DBDATA.queue[DBDATA.current].id });
-        console.log("sendMessage: ", tab.id, { type: "playVideo", tab: tab.id, id: DBDATA.queue[DBDATA.current].id });
-        await renderQueue(DBDATA.queue, DBDATA.current);
-        if (videoTimeout) clearTimeout(videoTimeout);
-        videoTimeout = setTimeout(() => {
-            console.log("Error:", DBDATA.queue[DBDATA.current].id, DBDATA.queue[DBDATA.current].title);
-            console.log("Video did NOT start playing within timeout");
-            DBDATA.queue[DBDATA.current].errCnt = (DBDATA.queue[DBDATA.current].errCnt || 0) + 1;
-            db.saveVideos([DBDATA.queue[DBDATA.current]]);
-            logEvent(DBDATA.queue[DBDATA.current], "error");
-            playNextVideo();
-        }, 20000); // 20s -- Still some problems...
-    } else {
-        console.log("Queue is empty.");
+    if (DBDATA.queue.length == 0) {
+        console.log("Queue empty", offset);
+        return;
     }
+    offset = offset % DBDATA.queue.length; // deal with very small queues
+    const cut = DBDATA.queue.splice(0, offset);
+    DBDATA.queue.push(...cut);
+
+    const [tab] = await browser.tabs.query({ url: "*://www.youtube.com/*" });
+    if (!tab) return;
+    browser.tabs.sendMessage(tab.id, { type: "playVideo", tab: tab.id, id: DBDATA.queue[0].id });
+    console.log("sendMessage: ", tab.id, { type: "playVideo", tab: tab.id, id: DBDATA.queue[0].id });
+    await renderQueue(DBDATA.queue);
+    if (videoTimeout) clearTimeout(videoTimeout);
+    videoTimeout = setTimeout(() => {
+        console.log("Error:", DBDATA.queue[0].id, DBDATA.queue[0].title);
+        console.log("Video did NOT start playing within timeout");
+        DBDATA.queue[0].errCnt = (DBDATA.queue[0].errCnt || 0) + 1;
+        db.saveVideos([DBDATA.queue[0]]);
+        logEvent(DBDATA.queue[0], "error");
+        playNextVideo();
+    }, 20000); // 20s -- Still some problems...
 }
 
 function getVideoIdFromInput(input) {
@@ -495,7 +498,7 @@ async function logEvent(video, event) {
 
 browser.runtime.onMessage.addListener(async (msg, sender) => {
     const videoId = getVideoIdFromInput(sender.url).id;
-    const currVideo = DBDATA.queue[DBDATA.current];
+    const currVideo = DBDATA.queue[0];
     console.log("options.js received message:", msg, videoId);
     if (msg.type === "videoPlaying") {
         clearTimeout(videoTimeout);
@@ -762,14 +765,13 @@ function renderGrid(queue) {
 
 async function moveVideoToFront(id) {
     const idx = DBDATA.queue.findIndex((v) => v.id === id);
-    if (idx !== -1 && idx !== DBDATA.current) {
-        const [video] = DBDATA.queue.splice(idx, 1);
-        if (idx < DBDATA.current) {
-            DBDATA.current--;
-        }
-        DBDATA.queue.splice(DBDATA.current + 1, 0, video);
-        await renderQueue(DBDATA.queue, DBDATA.current);
+    if (idx === -1) {
+        console.log("Error could not find ", id);
+        return;
     }
+    const [video] = DBDATA.queue.splice(idx, 1);
+    DBDATA.queue.unshift(video);
+    await renderQueue(DBDATA.queue);
 }
 
 // Initial load
@@ -784,6 +786,5 @@ async function moveVideoToFront(id) {
     plotRatings(DBDATA.queue);
     plotScores(DBDATA.queue);
     plotCooldownFactor(DBDATA.queue);
-    DBDATA.current = 0;
-    renderQueue(DBDATA.queue || [], DBDATA.current ?? 0);
+    renderQueue(DBDATA.queue || []);
 })();
