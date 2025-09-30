@@ -11,12 +11,14 @@ let DBDATA = { queue: [], filtered: [] };
 let LISTLEN = 5;
 let MAXLOGDUMP = 99999;
 let DIVERSITY_FACTOR = 12; // e.g. 6.5 + 1.2 will overcome 7.5 sometimes
+// let DIVERSITY_FACTOR = 24;
 let LONG_DELAY_TIME = 7;
 let LONG_DELAY_BONUS = 2.5; // half a half a rating point per doubling
 let INIT_DAYS_SINCE = 365; // One year is plenty to get a new video played
 let DEFAULT_RATING = 7.5;
 let COOLDOWN_JITTER_START = 3; // Subtract N days from the interval
 let COOLDOWN_JITTER_RATE = 0.2; // Add up to X% jitter to that part of the interval
+let RATING_FACTOR = 10;
 
 // vibe coded. Well it works so ok.
 function rating2color(rating) {
@@ -93,7 +95,7 @@ function cooldownFactor(daysSince, rating, noise = true) {
     let daysOverdue = daysSince - T * 1.5;
     if (ratio < 1) {
         const eased = Math.pow(ratio, 3);
-        return -50 * (1 - eased);
+        return -5 * RATING_FACTOR * (1 - eased);
     } else if (daysOverdue > 0) {
         // 7 days overdue:  +1LONG_DELAY_BONUS
         // 14 days overdue: +2LONG_DELAY_BONUS
@@ -110,7 +112,7 @@ function cooldownFactor(daysSince, rating, noise = true) {
 // split out so we can test eaiser
 function scoreHelper(daysSince, rating, noise = true) {
     let score = 0;
-    score += rating * 10;
+    score += rating * RATING_FACTOR;
     score += !noise ? 0 : Math.random() * DIVERSITY_FACTOR;
     score += cooldownFactor(daysSince, rating, noise);
     return score;
@@ -121,6 +123,10 @@ function scoreVideo(video, noise = true) {
     let now = Date.now();
     if (!video.rating) video.rating = DEFAULT_RATING;
     let daysSince = !video.lastPlayDate ? INIT_DAYS_SINCE : (now - video.lastPlayDate) / (24 * 3600 * 1000);
+    if (video.delay) {
+        // if e.g. a big playlist is added, user clicks "delay" and they will be randomized into the backlog uniformly
+        daysSince += rating2days(video.rating) * Math.random();
+    }
     let score = scoreHelper(daysSince, video.rating, noise);
     return score;
 }
@@ -132,6 +138,7 @@ const env = await resp.json();
 const input = document.getElementById("videoId");
 const addBtn = document.getElementById("add");
 const nextBtn = document.getElementById("next");
+const delayBtn = document.getElementById("delay");
 const pauseBtn = document.getElementById("pause");
 const playBtn = document.getElementById("play");
 const queueEl = document.getElementById("queue");
@@ -454,6 +461,10 @@ nextBtn.addEventListener("click", async () => {
     await logEvent(DBDATA.queue[0], "skip");
     playNextVideo();
 });
+delayBtn.addEventListener("click", async () => {
+    await logEvent(DBDATA.queue[0], "delay");
+    playNextVideo();
+});
 pauseBtn.addEventListener("click", async () => {
     const [tab] = await browser.tabs.query({ url: "*://www.youtube.com/*" });
     browser.tabs.sendMessage(tab.id, { type: "pauseVideo", tab: tab.id });
@@ -509,6 +520,7 @@ function getVideoIdFromInput(input) {
 async function logEvent(video, event) {
     let now = Date.now();
     video.lastPlayDate = now; // includes errors and skips
+    video.delay = event === "delay";
     if (event == "play") {
         video.playCnt = (video.playCnt || 0) + 1;
     }
