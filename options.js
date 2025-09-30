@@ -7,7 +7,7 @@ if (typeof browser === "undefined") {
     var browser = chrome; // var so it's global
 }
 
-let DBDATA = { queue: [] };
+let DBDATA = { queue: [], filtered: [] };
 let LISTLEN = 5;
 let MAXLOGDUMP = 99999;
 let DIVERSITY_FACTOR = 12; // e.g. 6.5 + 1.2 will overcome 7.5 sometimes
@@ -15,6 +15,8 @@ let LONG_DELAY_TIME = 7;
 let LONG_DELAY_BONUS = 2.5; // half a half a rating point per doubling
 let INIT_DAYS_SINCE = 365; // One year is plenty to get a new video played
 let DEFAULT_RATING = 7.5;
+let COOLDOWN_JITTER_START = 3; // Subtract N days from the interval
+let COOLDOWN_JITTER_RATE = 0.2; // Add up to X% jitter to that part of the interval
 
 // vibe coded. Well it works so ok.
 function rating2color(rating) {
@@ -54,13 +56,19 @@ function rating2days(rating) {
     if (rating >= 8.0) return 2;
     if (rating >= 7.5) return 3;
     if (rating >= 7.0) return 7;
-    if (rating >= 6.5) return 28;
-    if (rating >= 6.0) return 180;
+    if (rating >= 6.5) return 30;
+    if (rating >= 6.0) return 90;
     return 365;
 }
 
-function cooldownFactor(daysSince, rating) {
+function cooldownFactor(daysSince, rating, noise = true) {
     let T = rating2days(rating);
+    if (noise) {
+        let T1 = T - COOLDOWN_JITTER_START;
+        if (T1 > 0) {
+            T += T1 * Math.random() * COOLDOWN_JITTER_RATE;
+        }
+    }
     let ratio = daysSince / T;
     let daysOverdue = daysSince - T * 1.5;
     if (ratio < 1) {
@@ -84,12 +92,12 @@ function scoreHelper(daysSince, rating, noise = true) {
     let score = 0;
     score += rating * 10;
     score += !noise ? 0 : Math.random() * DIVERSITY_FACTOR;
-    score += cooldownFactor(daysSince, rating);
+    score += cooldownFactor(daysSince, rating, noise);
     return score;
 }
 
 function scoreVideo(video, noise = true) {
-    if (video.errCnt && video.errCnt >= 3) return 0; // too many errors, don't play
+    if (video.errCnt && video.errCnt >= 3) return -10; // too many errors, don't play
     let now = Date.now();
     if (!video.rating) video.rating = DEFAULT_RATING;
     let daysSince = !video.lastPlayDate ? INIT_DAYS_SINCE : (now - video.lastPlayDate) / (24 * 3600 * 1000);
@@ -590,8 +598,8 @@ function plotRatings(videos) {
     const ys = xs.map((r) => counts[r]);
     const ticktext = xs.map((r) => {
         const days = rating2days(r);
-        const totalTime = formatDuration(counts[r] * 3 * 60, false);
-        const time = formatDuration((counts[r] * 3 * 60) / days, false);
+        const totalTime = formatDuration(counts[r] * 3, false); // hack: Send minutes not seconds
+        const time = formatDuration((counts[r] * 3) / days, false);
         return `${r}<br>${totalTime}/${days}d<br>${time}`;
     });
     const colors = xs.map((r) => rating2color(r));
@@ -782,9 +790,9 @@ async function moveVideoToFront(id) {
     });
     DBDATA.queue.sort((a, b) => b.score - a.score);
     renderGrid(DBDATA.queue);
-    DBDATA.queue = DBDATA.queue.filter((v) => (v.errCnt ?? 0) < 3);
-    plotRatings(DBDATA.queue);
-    plotScores(DBDATA.queue);
-    plotCooldownFactor(DBDATA.queue);
+    DBDATA.filtered = DBDATA.queue.filter((v) => (v.errCnt ?? 0) < 3);
+    plotRatings(DBDATA.filtered);
+    plotScores(DBDATA.filtered);
+    plotCooldownFactor(DBDATA.filtered);
     renderQueue(DBDATA.queue || []);
 })();
