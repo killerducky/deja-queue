@@ -739,63 +739,6 @@ function renderGrid(queue) {
     });
 
     return;
-
-    // grid.on("cellClick", (e, cellData, column, rowArray) => {
-    //     e.stopPropagation();
-    //     currentGridInfo = { e, cellData, column, rowArray };
-    //     menu.style.top = e.pageY + "px";
-    //     menu.style.left = e.pageX + "px";
-    //     menu.style.display = "block";
-    // });
-
-    // document.addEventListener("click", (evt) => {
-    //     if (!menu.contains(evt.target)) {
-    //         menu.style.display = "none";
-    //     }
-    // });
-
-    // menu.addEventListener("click", (e) => {
-    //     e.stopPropagation();
-    // });
-
-    // document.getElementById("menuPlay").addEventListener("click", async () => {
-    //     menu.style.display = "none";
-    //     let id = currentGridInfo.rowArray._cells[0].data;
-    //     console.log("Play video", id);
-    //     moveVideoToFront(id);
-    // });
-
-    // document.getElementById("menuEdit").addEventListener("click", async () => {
-    //     menu.style.display = "none";
-    //     console.log("currentGridInfo", currentGridInfo);
-    //     let id = currentGridInfo.rowArray._cells[0].data;
-    //     if (currentGridInfo.column.name != "ErrCnt") {
-    //         alert("For now can only edit ErrCnt");
-    //         return;
-    //     }
-    //     const idx = DBDATA.queue.findIndex((v) => v.id === id);
-    //     if (idx === -1) {
-    //         alert("Error: Cannot find in DBDATA");
-    //         return;
-    //     }
-    //     let video = DBDATA.queue[idx];
-    //     const input = prompt(`Enter new ErrCnt for "${video.title || video.id}":`, video.errCnt ?? 0);
-    //     if (input === null) return; // user cancelled
-    //     const newValue = parseInt(input, 10);
-    //     if (isNaN(newValue)) return;
-    //     video.errCnt = newValue;
-    //     await db.saveVideos(DBDATA.queue[idx]);
-
-    //     grid.updateConfig({
-    //         data: DBDATA.queue.map((v) => [v.id, v.title || v.yt?.snippet?.title || v.id, v.rating.toFixed(1), v.score.toFixed(1), v.errCnt ?? 0]),
-    //     }).forceRender();
-    // });
-
-    // document.addEventListener("keydown", (evt) => {
-    //     if (evt.key === "Escape") {
-    //         menu.style.display = "none";
-    //     }
-    // });
 }
 
 async function moveVideoToFront(id) {
