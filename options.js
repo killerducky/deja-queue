@@ -21,10 +21,30 @@ let COOLDOWN_JITTER_RATE = 0.2; // Add up to X% jitter to that part of the inter
 // vibe coded. Well it works so ok.
 function rating2color(rating) {
     // https://colorbrewer2.org/#type=sequential&scheme=GnBu&n=9
-    let colors = ["#f7fcf0", "#e0f3db", "#ccebc5", "#a8ddb5", "#7bccc4", "#4eb3d3", "#2b8cbe", "#0868ac", "#084081"].reverse();
+    // let colors = ["#f7fcf0", "#e0f3db", "#ccebc5", "#a8ddb5", "#7bccc4", "#4eb3d3", "#2b8cbe", "#0868ac", "#084081"].reverse();
+    // https://colorbrewer2.org/?type=qualitative&scheme=Paired&n=9
+    // let colors = ["#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00", "#cab2d6"];
+    // https://colorbrewer2.org/?type=qualitative&scheme=Set1&n=9
+    // let colors = ["#e41a1c", "#377eb8", "#4daf4a", "#984ea3", "#ff7f00", "#ffff33", "#a65628", "#f781bf", "#999999"];
+
+    // https://www.learnui.design/tools/data-color-picker.html
+    // let colors = ["#003f5c", "#2f4b7c", "#665191", "#a05195", "#d45087", "#f95d6a", "#ff7c43", "#ffa600"].reverse();
 
     // https://www.vis4.net/palettes/#/9|s|7c316f,7be9ff,98cbff|ffffe0,ff005e,93003a|1|1
     // let colors = ["#7c316f", "#81477e", "#865b8d", "#896f9c", "#8c82ac", "#8d95bd", "#8ea8ce", "#8ebbe1", "#98cbff"];
+
+    const colors = [
+        "hsl(204, 90%, 11%)",
+        "hsl(219, 39%, 29%)",
+        "hsl(250, 27%, 41%)",
+        "hsl(306, 41%, 52%)",
+        "hsl(346, 63%, 64%)",
+        "hsl(20, 70%, 65%)",
+        "hsl(55, 80%, 45%)",
+        "hsl(85, 80%, 40%)",
+        "hsl(105, 80%, 45%)",
+    ].reverse();
+
     let colormap = {};
     for (let i = 0, r = 9.0; i < colors.length; i++) {
         colormap[r] = colors[i];
@@ -679,7 +699,6 @@ function plotCooldownFactor(videos) {
     Plotly.newPlot("cooldown-chart", traces, layout);
 }
 
-let currentGridInfo = null;
 let tabulator = null;
 function renderGrid(queue) {
     const menu = document.getElementById("gridMenu");
@@ -697,7 +716,7 @@ function renderGrid(queue) {
                 return img;
             },
         },
-        { title: "Title", field: "title", formatter: "textarea", width: 500 },
+        { title: "Title", field: "title", formatter: "textarea", width: 500, headerFilter: "input" },
         { title: "Rating", field: "rating", hozAlign: "right" },
         { title: "Score", field: "score", hozAlign: "right" },
         { title: "ErrCnt", field: "errCnt", hozAlign: "right", editor: "number" },
@@ -741,6 +760,24 @@ function renderGrid(queue) {
     return;
 }
 
+function calcStringSimilarity(queue) {
+    let list = [];
+    for (let a of queue) {
+        for (let b of queue) {
+            if (a === b) continue;
+            const similarityScore = stringSimilarity.compareTwoStrings(a.yt?.snippet?.title, b.yt?.snippet?.title);
+            list.push({ similarityScore, a, b });
+        }
+    }
+    list.sort((a, b) => b.similarityScore - a.similarityScore);
+    let n = 0;
+    for (let ss of list) {
+        console.log(ss.similarityScore, ss.a.yt?.snippet?.title, ss.b.yt?.snippet?.title);
+        n++;
+        if (n > 100) break;
+    }
+}
+
 async function moveVideoToFront(id) {
     const idx = DBDATA.queue.findIndex((v) => v.id === id);
     if (idx === -1) {
@@ -764,5 +801,6 @@ async function moveVideoToFront(id) {
     plotRatings(DBDATA.filtered);
     plotScores(DBDATA.filtered);
     plotCooldownFactor(DBDATA.filtered);
+    // calcStringSimilarity(DBDATA.queue);
     renderQueue(DBDATA.queue || []);
 })();
