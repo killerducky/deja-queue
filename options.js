@@ -55,6 +55,7 @@ function rating2days(rating) {
     if (rating >= 7.5) return 3;
     if (rating >= 7.0) return 7;
     if (rating >= 6.5) return 28;
+    if (rating >= 6.0) return 180;
     return 365;
 }
 
@@ -393,20 +394,25 @@ async function addPlaylistVideos(playlistId) {
 
 addBtn.addEventListener("click", async () => {
     let response = getVideoIdFromInput(input.value.trim());
-    if (!response.id) return;
+    if (!response.id) {
+        alert("Could not find on youtube");
+        return;
+    }
     if (response.type == "video") {
         if (DBDATA.queue.find((v) => v.id === response.id)) {
             alert("Video already in DB");
+            moveVideoToFront(response.id);
+        } else {
+            let video = { id: response.id };
+            await addYoutubeInfo(video);
+            if (!video.yt) {
+                alert("Failed to fetch video info, please check the ID");
+                return;
+            }
+            console.log(video);
+            DBDATA.queue.splice(DBDATA.current + 1, 0, video);
+            await renderQueue(DBDATA.queue, DBDATA.current);
         }
-        let item = { id: response.id };
-        await addYoutubeInfo(item);
-        if (!item.yt) {
-            alert("Failed to fetch video info, please check the ID");
-            return;
-        }
-        console.log(item);
-        moveVideoToFront(item.id);
-        await renderQueue(DBDATA.queue, DBDATA.current);
     } else if (response.type == "playlist") {
         await addPlaylistVideos(response.id);
     } else {
@@ -758,6 +764,9 @@ async function moveVideoToFront(id) {
     const idx = DBDATA.queue.findIndex((v) => v.id === id);
     if (idx !== -1 && idx !== DBDATA.current) {
         const [video] = DBDATA.queue.splice(idx, 1);
+        if (idx < DBDATA.current) {
+            DBDATA.current--;
+        }
         DBDATA.queue.splice(DBDATA.current + 1, 0, video);
         await renderQueue(DBDATA.queue, DBDATA.current);
     }
@@ -770,10 +779,8 @@ async function moveVideoToFront(id) {
         v.score = scoreVideo(v);
     });
     DBDATA.queue.sort((a, b) => b.score - a.score);
-    console.log(DBDATA.queue);
     renderGrid(DBDATA.queue);
     DBDATA.queue = DBDATA.queue.filter((v) => (v.errCnt ?? 0) < 3);
-    console.log(DBDATA.queue);
     plotRatings(DBDATA.queue);
     plotScores(DBDATA.queue);
     plotCooldownFactor(DBDATA.queue);
