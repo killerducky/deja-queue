@@ -20,7 +20,6 @@ let COOLDOWN_JITTER_START = 3; // Subtract N days from the interval
 let COOLDOWN_JITTER_RATE = 0.2; // Add up to X% jitter to that part of the interval
 let RATING_FACTOR = 10;
 
-// vibe coded. Well it works so ok.
 function rating2color(rating) {
     // https://colorbrewer2.org/#type=sequential&scheme=GnBu&n=9
     // let colors = ["#f7fcf0", "#e0f3db", "#ccebc5", "#a8ddb5", "#7bccc4", "#4eb3d3", "#2b8cbe", "#0868ac", "#084081"].reverse();
@@ -30,19 +29,39 @@ function rating2color(rating) {
     // let colors = ["#e41a1c", "#377eb8", "#4daf4a", "#984ea3", "#ff7f00", "#ffff33", "#a65628", "#f781bf", "#999999"];
     // https://colorbrewer2.org/#type=diverging&scheme=RdBu&n=11
     // const colors = ["#67001f", "#b2182b", "#d6604d", "#f4a582", "#fddbc7", "#f7f7f7", "#d1e5f0", "#92c5de", "#4393c3", "#2166ac", "#053061"];
+    // const colors = ["#67001f", "#b2182b", "#d6604d", "#f4a582", "#fddbc7", "#d1e5f0", "#92c5de", "#4393c3", "#2166ac", "#053061"];
+
+    // https://colorbrewer2.org/#type=diverging&scheme=RdBu&n=9
+    // const colors = ['#b2182b','#d6604d','#f4a582','#fddbc7','#f7f7f7','#d1e5f0','#92c5de','#4393c3','#2166ac']
+    // const colors = ["#b2182b", "#d6604d", "#f4a582", /*"#fddbc7", "#f7f7f7",*/ "#d1e5f0", "#92c5de", "#4393c3", "#2166ac"];
+    // const colors = ["#b2182b", "#d6604d", "#f4a582", /*"#fddbc7", "#f7f7f7", "#d1e5f0",*/ "#92c5de", "#4393c3", "#2166ac"];
+
     const colors = [
         "hsla(342, 100%, 20%, 1.00)",
         "hsla(353, 76%, 40%, 1.00)",
         "hsla(8, 63%, 57%, 1.00)",
-        "hsla(18, 84%, 68%, 1.00)",
-        "hsla(32, 65%, 75%, 1.00)",
-        "hsla(0, 0%, 70%, 1.00)",
+        // "hsla(18, 84%, 68%, 1.00)",
+        // "hsla(32, 60%, 68%, 1.00)",
+        // "hsla(0, 0%, 65%, 1.00)",
         "hsla(201, 50%, 70%, 1.00)",
         "hsla(200, 63%, 60%, 1.00)",
         "hsla(203, 66%, 47%, 1.00)",
         "hsla(210, 70%, 36%, 1.00)",
         "hsla(212, 90%, 20%, 1.00)",
     ];
+    //     const colors = [
+    //     "hsla(342, 100%, 20%, 1.00)",
+    //     "hsla(353, 76%, 40%, 1.00)",
+    //     "hsla(8, 70%, 57%, 1.00)",
+    //     "hsla(18, 68%, 60%, 1.00)",
+    //     "hsla(32, 50%, 55%, 1.00)",
+    //     "hsla(0, 0%, 60%, 1.00)",
+    //     "hsla(201, 50%, 70%, 1.00)",
+    //     "hsla(200, 63%, 60%, 1.00)",
+    //     "hsla(203, 66%, 47%, 1.00)",
+    //     "hsla(210, 70%, 36%, 1.00)",
+    //     "hsla(212, 90%, 20%, 1.00)",
+    // ];
 
     // https://www.learnui.design/tools/data-color-picker.html
     // let colors = ["#003f5c", "#2f4b7c", "#665191", "#a05195", "#d45087", "#f95d6a", "#ff7c43", "#ffa600"].reverse();
@@ -63,7 +82,7 @@ function rating2color(rating) {
     // ].reverse();
 
     let colormap = {};
-    for (let i = 0, r = 9.5; i < colors.length; i++) {
+    for (let i = 0, r = 8.5; i < colors.length; i++) {
         colormap[r] = colors[i];
         r -= 0.5;
     }
@@ -277,6 +296,7 @@ function formatDuration(isoDuration, isoFormat = true) {
 }
 
 function table(htmlEl, videoList, clickable) {
+    let now = Date.now();
     htmlEl.innerHTML = "";
 
     // Create table
@@ -330,6 +350,7 @@ function table(htmlEl, videoList, clickable) {
         } else {
             durCell.textContent = formatDuration(item.yt?.contentDetails?.duration) || "—";
         }
+
         durCell.style.padding = "6px";
         durCell.style.textAlign = "center";
         row.appendChild(durCell);
@@ -338,7 +359,10 @@ function table(htmlEl, videoList, clickable) {
         const lastPlayedCell = document.createElement("td");
         if (item.lastPlayDate) {
             const d = new Date(item.lastPlayDate);
-            lastPlayedCell.textContent = date2String(d);
+            lastPlayedCell.innerHTML = "";
+            let daysSince = (now - d) / (24 * 3600 * 1000);
+            lastPlayedCell.innerHTML += `${daysSince.toFixed(1)} days ago`;
+            lastPlayedCell.innerHTML += "<br>" + date2String(d);
         } else {
             lastPlayedCell.textContent = "—";
         }
