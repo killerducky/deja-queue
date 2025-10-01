@@ -716,7 +716,27 @@ function plotRatings(videos) {
     const layout = {
         title: "Ratings Distribution",
         xaxis: { title: "Rating", tickvals: xs, ticktext: ticktext },
-        yaxis: { title: "Count", type: "log" },
+        yaxis: { title: "Count" },
+        updatemenus: [
+            {
+                y: 1,
+                x: 1.15,
+                yanchor: "top",
+                xanchor: "right",
+                buttons: [
+                    {
+                        method: "relayout",
+                        args: ["yaxis.type", "linear"],
+                        label: "Linear",
+                    },
+                    {
+                        method: "relayout",
+                        args: ["yaxis.type", "log"],
+                        label: "Log",
+                    },
+                ],
+            },
+        ],
     };
 
     Plotly.newPlot("ratings-chart", [trace], layout);
@@ -747,7 +767,8 @@ function plotRatings(videos) {
         barmode: "stack",
         title: "Ratings Breakdown",
         xaxis: { title: "Count" },
-        yaxis: { showticklabels: false },
+        yaxis: { showticklabels: false, fixedrange: true, range: [-0.5, 0.5] },
+        margin: { t: 15, b: 15 },
     };
 
     Plotly.newPlot("interval-chart", traces2, layout2);
