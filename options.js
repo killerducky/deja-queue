@@ -154,16 +154,22 @@ function scoreHelper(daysSince, rating, noise = true, salt = "salt") {
     return score;
 }
 
-function scoreVideo(video, noise = true) {
-    if (video.errCnt && video.errCnt >= 3) return -10; // too many errors, don't play
+function calcDaysSince(video) {
     let now = Date.now();
     let salt = `${video.id}${video.lastPlayDate}`;
-    if (!video.rating) video.rating = DEFAULT_RATING;
     let daysSince = !video.lastPlayDate ? INIT_DAYS_SINCE : (now - video.lastPlayDate) / (24 * 3600 * 1000);
     if (video.delay) {
         // if e.g. a big playlist is added, user clicks "delay" and they will be randomized into the backlog uniformly
         daysSince += rating2days(video.rating) * hashRandom(`${salt}delay`);
     }
+    return daysSince;
+}
+
+function scoreVideo(video, noise = true) {
+    if (video.errCnt && video.errCnt >= 3) return -10; // too many errors, don't play
+    let salt = `${video.id}${video.lastPlayDate}`;
+    if (!video.rating) video.rating = DEFAULT_RATING;
+    let daysSince = calcDaysSince(video);
     let score = scoreHelper(daysSince, video.rating, noise, salt);
     return score;
 }
@@ -353,13 +359,13 @@ function table(htmlEl, videoList, clickable) {
 
     // Body
     const tbody = document.createElement("tbody");
-    for (let [index, item] of videoList.entries()) {
+    for (let [index, video] of videoList.entries()) {
         const row = document.createElement("tr");
 
         // Thumbnail cell
         const thumbCell = document.createElement("td");
         const thumb = document.createElement("img");
-        thumb.src = `https://i.ytimg.com/vi/${item.id}/default.jpg`;
+        thumb.src = `https://i.ytimg.com/vi/${video.id}/default.jpg`;
         thumb.style.width = "70px";
         thumbCell.appendChild(thumb);
         thumbCell.style.padding = "6px";
@@ -372,16 +378,16 @@ function table(htmlEl, videoList, clickable) {
 
         // Title cell
         const titleCell = document.createElement("td");
-        titleCell.textContent = item.title || item.yt?.snippet?.title || item.id;
+        titleCell.textContent = video.title || video.yt?.snippet?.title || video.id;
         titleCell.style.padding = "6px";
         row.appendChild(titleCell);
 
         // Dur cell
         const durCell = document.createElement("td");
-        if (item.scrapedDuration) {
-            durCell.textContent = formatDuration(item.scrapedDuration, false);
+        if (video.scrapedDuration) {
+            durCell.textContent = formatDuration(video.scrapedDuration, false);
         } else {
-            durCell.textContent = formatDuration(item.yt?.contentDetails?.duration) || "—";
+            durCell.textContent = formatDuration(video.yt?.contentDetails?.duration) || "—";
         }
 
         durCell.style.padding = "6px";
@@ -390,12 +396,14 @@ function table(htmlEl, videoList, clickable) {
 
         // Last Played cell
         const lastPlayedCell = document.createElement("td");
-        if (item.lastPlayDate) {
-            const d = new Date(item.lastPlayDate);
+        if (video.lastPlayDate) {
+            const d = new Date(video.lastPlayDate);
+            let daysSince = calcDaysSince(video);
+            let due = rating2days(video.rating) - daysSince;
             lastPlayedCell.innerHTML = "";
-            let daysSince = (now - d) / (24 * 3600 * 1000);
-            lastPlayedCell.innerHTML += `${daysSince.toFixed(1)} days ago`;
-            lastPlayedCell.innerHTML += "<br>" + date2String(d);
+            lastPlayedCell.innerHTML += date2String(d);
+            lastPlayedCell.innerHTML += "<br>";
+            lastPlayedCell.innerHTML += `due: ${due.toFixed(1)} days`;
         } else {
             lastPlayedCell.textContent = "—";
         }
@@ -406,7 +414,7 @@ function table(htmlEl, videoList, clickable) {
 
         // Play count cell
         const playCntCell = document.createElement("td");
-        playCntCell.textContent = item.playCnt ?? 0;
+        playCntCell.textContent = video.playCnt ?? 0;
         playCntCell.style.width = "50px";
         playCntCell.style.padding = "6px";
         playCntCell.style.textAlign = "center";
@@ -429,13 +437,13 @@ function table(htmlEl, videoList, clickable) {
         input.min = "1";
         input.max = "10";
         input.step = "0.5";
-        input.value = (item.rating ?? DEFAULT_RATING).toFixed(1);
+        input.value = (video.rating ?? DEFAULT_RATING).toFixed(1);
         async function saveRating() {
             const newValue = parseFloat(input.value);
             if (!isNaN(newValue)) {
-                item.rating = newValue;
-                await db.saveVideos([item]);
-                console.log("Saved new rating", newValue, "for", item.id);
+                video.rating = newValue;
+                await db.saveVideos([video]);
+                console.log("Saved new rating", newValue, "for", video.id);
             }
         }
         input.addEventListener("change", () => saveRating());
