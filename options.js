@@ -167,6 +167,7 @@ function calcDaysSince(video) {
 
 function scoreVideo(video, noise = true) {
     if (video.errCnt && video.errCnt >= 3) return -10; // too many errors, don't play
+    if (video.dup) return -9; // Ignore dups
     let salt = `${video.id}${video.lastPlayDate}`;
     if (!video.rating) video.rating = DEFAULT_RATING;
     let daysSince = calcDaysSince(video);
@@ -226,7 +227,12 @@ function hashRandom(str) {
 }
 
 function date2String(d) {
-    return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+    let yy = `${String(d.getFullYear()).padStart(4, "0")}`;
+    let MM = `${String(d.getMonth() + 1).padStart(2, "0")}`;
+    let dd = `${String(d.getDate()).padStart(2, "0")}`;
+    let hh = `${String(d.getHours()).padStart(2, "0")}`;
+    let mm = `${String(d.getMinutes()).padStart(2, "0")}`;
+    return `${yy}-${MM}-${dd} ${hh}:${mm}`;
 }
 
 const parseAttr = (input, attrName, fallback) => {
@@ -334,6 +340,20 @@ function formatDuration(isoDuration, isoFormat = true) {
     }
 }
 
+function formatLastPlayDate(video) {
+    if (!video.lastPlayDate) {
+        return "—";
+    }
+    const d = new Date(video.lastPlayDate);
+    let daysSince = calcDaysSince(video);
+    let due = rating2days(video.rating) - daysSince;
+    let html = "";
+    html += date2String(d);
+    html += "<br>";
+    html += `due: ${due.toFixed(1)} days`;
+    return html;
+}
+
 function table(htmlEl, videoList, clickable) {
     let now = Date.now();
     htmlEl.innerHTML = "";
@@ -396,17 +416,7 @@ function table(htmlEl, videoList, clickable) {
 
         // Last Played cell
         const lastPlayedCell = document.createElement("td");
-        if (video.lastPlayDate) {
-            const d = new Date(video.lastPlayDate);
-            let daysSince = calcDaysSince(video);
-            let due = rating2days(video.rating) - daysSince;
-            lastPlayedCell.innerHTML = "";
-            lastPlayedCell.innerHTML += date2String(d);
-            lastPlayedCell.innerHTML += "<br>";
-            lastPlayedCell.innerHTML += `due: ${due.toFixed(1)} days`;
-        } else {
-            lastPlayedCell.textContent = "—";
-        }
+        lastPlayedCell.innerHTML = formatLastPlayDate(video);
         lastPlayedCell.style.width = "140px";
         lastPlayedCell.style.padding = "6px";
         lastPlayedCell.style.textAlign = "center";
@@ -849,7 +859,6 @@ function plotCooldownFactor(videos) {
 
 let tabulator = null;
 function renderGrid(queue) {
-    const menu = document.getElementById("gridMenu");
     let columns = [
         {
             title: "Thumb",
@@ -863,11 +872,25 @@ function renderGrid(queue) {
                 // return `<img src="https://i.ytimg.com/vi/${videoId}/default.jpg" style="width:70px;">`;
                 return img;
             },
+            cellClick: async function (e, cell) {
+                console.log("Clicked", cell.getField(), "=", cell.getValue(), "row id:", cell.getRow().getData().id, ")");
+                const idx = DBDATA.queue.findIndex((v) => v.id === cell.getRow().getData().id);
+                if (idx === -1) {
+                    alert("Error: Cannot find in DBDATA");
+                    return;
+                }
+                let video = DBDATA.queue[idx];
+                moveVideoToFront(video.id);
+                alert("Added to front of queue");
+            },
         },
-        { title: "Title", field: "title", formatter: "textarea", width: 500, headerFilter: "input" },
-        { title: "Rating", field: "rating", hozAlign: "right" },
-        { title: "Score", field: "score", hozAlign: "right" },
-        { title: "ErrCnt", field: "errCnt", hozAlign: "right", editor: "number" },
+        { title: "Title", field: "title", formatter: "textarea", width: 300, headerFilter: "input" },
+        { title: "R", field: "rating", hozAlign: "center" },
+        { title: "S", field: "score", hozAlign: "center" },
+        { title: "E", field: "errCnt", hozAlign: "center", editor: "number" },
+        { title: "Dup", field: "dup", hozAlign: "left", editor: "input" },
+        { title: "ID", field: "id", hozAlign: "left" },
+        { title: "Last Played", field: "lastPlayDate", hozAlign: "center", formatter: "html" },
     ];
 
     const data = queue.map((video) => ({
@@ -876,6 +899,8 @@ function renderGrid(queue) {
         rating: video.rating.toFixed(1),
         score: video.score.toFixed(1),
         errCnt: video.errCnt ?? 0,
+        dup: video.dup,
+        lastPlayDate: formatLastPlayDate(video),
     }));
 
     if (tabulator) {
@@ -888,23 +913,25 @@ function renderGrid(queue) {
         columns: columns,
         pagination: "local",
         paginationSize: 10,
-        layout: "fitColumns",
+        layout: "fitData",
         movableColumns: true,
     });
     tabulator.on("cellEdited", async (cell) => {
         console.log("Edited", cell.getField(), "=", cell.getValue(), "(old:", cell.getOldValue(), "row id:", cell.getRow().getData().id, ")");
+        const idx = DBDATA.queue.findIndex((v) => v.id === cell.getRow().getData().id);
+        if (idx === -1) {
+            alert("Error: Cannot find in DBDATA");
+            return;
+        }
+        let video = DBDATA.queue[idx];
         if (cell.getField() == "errCnt") {
-            const idx = DBDATA.queue.findIndex((v) => v.id === cell.getRow().getData().id);
-            if (idx === -1) {
-                alert("Error: Cannot find in DBDATA");
-                return;
-            }
-            let video = DBDATA.queue[idx];
             video.errCnt = cell.getValue();
+            await db.saveVideos(video);
+        } else if (cell.getField() == "dup") {
+            video.dup = cell.getValue();
             await db.saveVideos(video);
         }
     });
-
     return;
 }
 
@@ -945,7 +972,9 @@ async function moveVideoToFront(id) {
     });
     DBDATA.queue.sort((a, b) => b.score - a.score);
     renderGrid(DBDATA.queue);
-    DBDATA.filtered = DBDATA.queue.filter((v) => (v.errCnt ?? 0) < 3);
+    // Remove errors and dups from graphs.
+    // But leave in actual Queue (with low score), so we don't e.g. add it again
+    DBDATA.filtered = DBDATA.queue.filter((v) => (v.errCnt ?? 0) < 3 && !v.dup);
     plotRatings(DBDATA.filtered);
     plotScores(DBDATA.filtered);
     plotCooldownFactor(DBDATA.filtered);
