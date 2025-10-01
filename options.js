@@ -10,15 +10,15 @@ if (typeof browser === "undefined") {
 let DBDATA = { queue: [], filtered: [] };
 let LISTLEN = 5;
 let MAXLOGDUMP = 99999;
-let DIVERSITY_FACTOR = 12; // e.g. 6.5 + 1.2 will overcome 7.5 sometimes
-// let DIVERSITY_FACTOR = 24;
+// let DIVERSITY_FACTOR = 12; // e.g. 6.5 + 1.2 will overcome 7.5 sometimes
+let DIVERSITY_FACTOR = 24;
 let LONG_DELAY_TIME = 7;
 let LONG_DELAY_BONUS = 2.5; // half a half a rating point per doubling
 let INIT_DAYS_SINCE = 365; // One year is plenty to get a new video played
 let DEFAULT_RATING = 7.5;
 let COOLDOWN_JITTER_START = 3; // Subtract N days from the interval
 let COOLDOWN_JITTER_RATE = 0.2; // Add up to X% jitter to that part of the interval
-let RATING_FACTOR = 10;
+let RATING_FACTOR = 1;
 
 function rating2color(rating) {
     // https://colorbrewer2.org/#type=sequential&scheme=GnBu&n=9
@@ -117,19 +117,20 @@ function rating2days(rating) {
     return 365;
 }
 
-function cooldownFactor(daysSince, rating, noise = true) {
+function cooldownFactor(daysSince, rating, noise = true, salt = "salt") {
     let T = rating2days(rating);
     if (noise) {
         let T1 = T - COOLDOWN_JITTER_START;
         if (T1 > 0) {
-            T += T1 * Math.random() * COOLDOWN_JITTER_RATE;
+            T += T1 * hashRandom(`${salt}cooldownJitter`) * COOLDOWN_JITTER_RATE;
         }
     }
     let ratio = daysSince / T;
     let daysOverdue = daysSince - T * 1.5;
     if (ratio < 1) {
         const eased = Math.pow(ratio, 3);
-        return -5 * RATING_FACTOR * (1 - eased);
+        return -50 * (1 - eased);
+        // return -10 * rating * (1 - eased);
     } else if (daysOverdue > 0) {
         // 7 days overdue:  +1LONG_DELAY_BONUS
         // 14 days overdue: +2LONG_DELAY_BONUS
@@ -144,24 +145,26 @@ function cooldownFactor(daysSince, rating, noise = true) {
 }
 
 // split out so we can test eaiser
-function scoreHelper(daysSince, rating, noise = true) {
+function scoreHelper(daysSince, rating, noise = true, salt = "salt") {
     let score = 0;
-    score += rating * RATING_FACTOR;
-    score += !noise ? 0 : Math.random() * DIVERSITY_FACTOR;
+    // Mix rating and DEFAULT_RATING, and multiply by 10
+    score += 10 * ((1 - RATING_FACTOR) * DEFAULT_RATING + RATING_FACTOR * rating);
     score += cooldownFactor(daysSince, rating, noise);
+    score += !noise ? 0 : hashRandom(`${salt}noise`) * DIVERSITY_FACTOR;
     return score;
 }
 
 function scoreVideo(video, noise = true) {
     if (video.errCnt && video.errCnt >= 3) return -10; // too many errors, don't play
     let now = Date.now();
+    let salt = `${video.id}${video.lastPlayDate}`;
     if (!video.rating) video.rating = DEFAULT_RATING;
     let daysSince = !video.lastPlayDate ? INIT_DAYS_SINCE : (now - video.lastPlayDate) / (24 * 3600 * 1000);
     if (video.delay) {
         // if e.g. a big playlist is added, user clicks "delay" and they will be randomized into the backlog uniformly
-        daysSince += rating2days(video.rating) * Math.random();
+        daysSince += rating2days(video.rating) * hashRandom(`${salt}delay`);
     }
-    let score = scoreHelper(daysSince, video.rating, noise);
+    let score = scoreHelper(daysSince, video.rating, noise, salt);
     return score;
 }
 
@@ -184,6 +187,35 @@ function shuffleArray(array) {
         [array[i], array[j]] = [array[j], array[i]];
     }
     return array;
+}
+
+function fnv1a32(str) {
+    let hash = 0x811c9dc5; // FNV_offset_basis for 32-bit FNV-1a
+    const FNV_prime = 0x01000193; // FNV_prime for 32-bit FNV-1a
+
+    for (let i = 0; i < str.length; i++) {
+        hash ^= str.charCodeAt(i); // XOR with the current byte
+        hash = (hash * FNV_prime) >>> 0; // Multiply by FNV_prime and ensure 32-bit unsigned integer
+    }
+
+    return hash;
+}
+
+//
+// hashRandom:
+//
+// This is important to avoid rerolling the random numbers
+// Example:
+//
+// if (video.delay)
+//   daysSince += rating2days(video.rating) * hashRandom(`${salt}delay`);
+//
+// Suppose rating2days() = 300, and 150 days have passed.
+// If we reroll this part, every video like this will have a 50% chance to act like their cooldown is over.
+// Instead with hashRandom we don't reroll this every time.
+//
+function hashRandom(str) {
+    return fnv1a32(str) / 0xffffffff;
 }
 
 function date2String(d) {
@@ -867,7 +899,7 @@ async function moveVideoToFront(id) {
         return;
     }
     const [video] = DBDATA.queue.splice(idx, 1);
-    DBDATA.queue.unshift(video);
+    DBDATA.queue.splice(1, 0, video); // insert at index 1 (2nd spot)
     await renderQueue(DBDATA.queue);
 }
 
