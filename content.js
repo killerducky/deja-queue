@@ -49,5 +49,7 @@ browser.runtime.onMessage.addListener((msg) => {
         video.pause();
     } else if (msg.type === "resumeVideo") {
         video.play();
+    } else if (msg.type === "fastForward") {
+        video.currentTime += 30;
     }
 });

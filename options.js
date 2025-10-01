@@ -174,6 +174,7 @@ const env = await resp.json();
 
 const input = document.getElementById("videoId");
 const addBtn = document.getElementById("add");
+const fastForwardBtn = document.getElementById("fastForward");
 const nextBtn = document.getElementById("next");
 const delayBtn = document.getElementById("delay");
 const pauseBtn = document.getElementById("pause");
@@ -428,7 +429,7 @@ function table(htmlEl, videoList, clickable) {
         input.min = "1";
         input.max = "10";
         input.step = "0.5";
-        input.value = item.rating ?? DEFAULT_RATING;
+        input.value = (item.rating ?? DEFAULT_RATING).toFixed(1);
         async function saveRating() {
             const newValue = parseFloat(input.value);
             if (!isNaN(newValue)) {
@@ -543,6 +544,10 @@ pauseBtn.addEventListener("click", async () => {
 playBtn.addEventListener("click", async () => {
     const [tab] = await browser.tabs.query({ url: "*://www.youtube.com/*" });
     browser.tabs.sendMessage(tab.id, { type: "resumeVideo", tab: tab.id });
+});
+fastForwardBtn.addEventListener("click", async () => {
+    const [tab] = await browser.tabs.query({ url: "*://www.youtube.com/*" });
+    browser.tabs.sendMessage(tab.id, { type: "fastForward", tab: tab.id });
 });
 
 let videoTimeout;
