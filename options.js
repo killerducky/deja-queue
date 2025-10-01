@@ -40,7 +40,7 @@ function rating2color(rating) {
         "hsla(342, 100%, 20%, 1.00)",
         "hsla(353, 76%, 40%, 1.00)",
         "hsla(8, 63%, 57%, 1.00)",
-        // "hsla(18, 84%, 68%, 1.00)",
+        "hsla(18, 84%, 68%, 1.00)",
         // "hsla(32, 60%, 68%, 1.00)",
         // "hsla(0, 0%, 65%, 1.00)",
         "hsla(201, 50%, 70%, 1.00)",
@@ -82,7 +82,7 @@ function rating2color(rating) {
     // ].reverse();
 
     let colormap = {};
-    for (let i = 0, r = 8.5; i < colors.length; i++) {
+    for (let i = 0, r = 9.0; i < colors.length; i++) {
         colormap[r] = colors[i];
         r -= 0.5;
     }
@@ -671,7 +671,7 @@ function plotRatings(videos) {
         const days = rating2days(r);
         const totalTime = formatDuration(counts[r] * 3, false); // hack: Send minutes not seconds
         const time = formatDuration((counts[r] * 3) / days, false);
-        return `${r}<br>${totalTime}/${days}d<br>${time}`;
+        return `${r.toFixed(1)}<br>${totalTime}/${days}d<br>${time}`;
     });
     const colors = xs.map((r) => rating2color(r));
     const trace = {
@@ -688,6 +688,37 @@ function plotRatings(videos) {
     };
 
     Plotly.newPlot("ratings-chart", [trace], layout);
+
+    let loads = xs.map((r) => {
+        const days = rating2days(r);
+        const load = (counts[r] * 3) / 60 / days;
+        return load;
+    });
+
+    const xsRev = [...xs].reverse();
+    // const ysRev = [...ys].reverse();
+    const colorsRev = [...colors].reverse();
+    const loadsRev = [...loads].reverse();
+
+    // --- Plot 2: stacked horizontal bar ---
+    const traces2 = xsRev.map((r, i) => ({
+        name: `Rating ${r.toFixed(1)}`,
+        type: "bar",
+        orientation: "h",
+        x: [loadsRev[i]], // width of this segment
+        y: ["Ratings"], // single category
+        marker: { color: colorsRev[i] },
+        hovertemplate: `Rating ${r.toFixed(1)}<br>Hours/day: ${loadsRev[i].toFixed(1)}<extra></extra>`,
+    }));
+
+    const layout2 = {
+        barmode: "stack",
+        title: "Ratings Breakdown",
+        xaxis: { title: "Count" },
+        yaxis: { showticklabels: false },
+    };
+
+    Plotly.newPlot("interval-chart", traces2, layout2);
 }
 
 function plotScores(videos) {
