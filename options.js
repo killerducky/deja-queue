@@ -339,6 +339,13 @@ function formatDuration(isoDuration, isoFormat = true) {
         return `${minutes}:${seconds.toString().padStart(2, "0")}`;
     }
 }
+function formatVideoDuration(video) {
+    if (video.scrapedDuration) {
+        return formatDuration(video.scrapedDuration, false);
+    } else {
+        return formatDuration(video.yt?.contentDetails?.duration) || "—";
+    }
+}
 
 function formatLastPlayDate(video) {
     if (!video.lastPlayDate) {
@@ -404,11 +411,7 @@ function table(htmlEl, videoList, clickable) {
 
         // Dur cell
         const durCell = document.createElement("td");
-        if (video.scrapedDuration) {
-            durCell.textContent = formatDuration(video.scrapedDuration, false);
-        } else {
-            durCell.textContent = formatDuration(video.yt?.contentDetails?.duration) || "—";
-        }
+        durCell.textContent = formatVideoDuration(video);
 
         durCell.style.padding = "6px";
         durCell.style.textAlign = "center";
@@ -885,22 +888,32 @@ function renderGrid(queue) {
             },
         },
         { title: "Title", field: "title", formatter: "textarea", width: 300, headerFilter: "input" },
+        { title: "Dur", field: "dur", formatter: "textarea" },
         { title: "R", field: "rating", hozAlign: "center" },
         { title: "S", field: "score", hozAlign: "center" },
+        { title: "Last Played", field: "lastPlayDate", hozAlign: "center", formatter: "html" },
+        { title: "Cnt", field: "playCnt", hozAlign: "center" },
+        { title: "Int", field: "int", hozAlign: "center" },
+        { title: "Delay", field: "delay", hozAlign: "center" },
         { title: "E", field: "errCnt", hozAlign: "center", editor: "number" },
         { title: "Dup", field: "dup", hozAlign: "left", editor: "input" },
         { title: "ID", field: "id", hozAlign: "left" },
-        { title: "Last Played", field: "lastPlayDate", hozAlign: "center", formatter: "html" },
+        { title: "Channel", field: "videoOwnerChannelTitle", hozAlign: "left", headerFilter: "input" },
     ];
 
     const data = queue.map((video) => ({
         id: video.id,
         title: video.title || video.yt?.snippet?.title || video.id,
+        dur: formatVideoDuration(video),
         rating: video.rating.toFixed(1),
         score: video.score.toFixed(1),
+        playCnt: video.playCnt,
+        int: `${rating2days(video.rating)}d`,
+        delay: video.delay ? "✅" : "",
         errCnt: video.errCnt ?? 0,
         dup: video.dup,
         lastPlayDate: formatLastPlayDate(video),
+        videoOwnerChannelTitle: video?.yt?.snippet?.videoOwnerChannelTitle ?? video?.yt?.snippet?.channelTitle,
     }));
 
     if (tabulator) {
