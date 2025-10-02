@@ -175,9 +175,15 @@ function scoreVideo(video, noise = true) {
     return score;
 }
 
-const url = browser.runtime.getURL(".env.json");
-const resp = await fetch(url);
-const env = await resp.json();
+let env;
+try {
+    const url = browser.runtime.getURL(".env.json");
+    const resp = await fetch(url);
+    env = await resp.json();
+} catch (err) {
+    console.error("Failed to load .env.json", err);
+    alert("Could not load .env.json");
+}
 
 const input = document.getElementById("videoId");
 const addBtn = document.getElementById("add");
