@@ -10,11 +10,10 @@ if (typeof browser === "undefined") {
 let DBDATA = { queue: [], filtered: [] };
 let LISTLEN = 5;
 let MAXLOGDUMP = 99999;
-// let DIVERSITY_FACTOR = 12; // e.g. 6.5 + 1.2 will overcome 7.5 sometimes
 let DIVERSITY_FACTOR = 24;
 let LONG_DELAY_TIME = 7;
 let LONG_DELAY_BONUS = 2.5; // half a half a rating point per doubling
-let INIT_DAYS_SINCE = 365; // One year is plenty to get a new video played
+let INIT_FACTOR = 30;
 let DEFAULT_RATING = 7.5;
 let COOLDOWN_JITTER_START = 3; // Subtract N days from the interval
 let COOLDOWN_JITTER_RATE = 0.2; // Add up to X% jitter to that part of the interval
@@ -114,10 +113,14 @@ function rating2days(rating) {
     if (rating >= 7.0) return 7;
     if (rating >= 6.5) return 30;
     if (rating >= 6.0) return 90;
-    return 365;
+    if (rating >= 5.5) return 365;
+    return 365 * 3;
 }
 
 function cooldownFactor(daysSince, rating, noise = true, salt = "salt") {
+    if (daysSince == null) {
+        return INIT_FACTOR;
+    }
     let T = rating2days(rating);
     if (noise) {
         let T1 = T - COOLDOWN_JITTER_START;
@@ -155,9 +158,12 @@ function scoreHelper(daysSince, rating, noise = true, salt = "salt") {
 }
 
 function calcDaysSince(video) {
+    if (!video.lastPlayDate) {
+        return null;
+    }
     let now = Date.now();
     let salt = `${video.id}${video.lastPlayDate}`;
-    let daysSince = !video.lastPlayDate ? INIT_DAYS_SINCE : (now - video.lastPlayDate) / (24 * 3600 * 1000);
+    let daysSince = (now - video.lastPlayDate) / (24 * 3600 * 1000);
     if (video.delay) {
         // if e.g. a big playlist is added, user clicks "delay" and they will be randomized into the backlog uniformly
         daysSince += rating2days(video.rating) * hashRandom(`${salt}delay`);
@@ -504,6 +510,8 @@ async function addYoutubeInfo(video) {
     }
 }
 
+// https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&id=YOUR_PLAYLIST_ID&key=YOUR_API_KEY
+
 async function addPlaylistVideos(playlistId) {
     let nextPageToken = "";
     let videos = [];
@@ -639,6 +647,7 @@ async function logEvent(video, event) {
     await db.saveLog([logEntry]);
 }
 
+let lastEndedVideoId = null;
 browser.runtime.onMessage.addListener(async (msg, sender) => {
     const videoId = getVideoIdFromInput(sender.url).id;
     const currVideo = DBDATA.queue[0];
@@ -651,6 +660,10 @@ browser.runtime.onMessage.addListener(async (msg, sender) => {
         }
     }
     if (msg.type === "videoEnded") {
+        if (lastEndedVideoId === videoId) {
+            console.log("Duplicate videoEnded ignored for", videoId);
+            return;
+        }
         // console.log("Controller: video ended, moving to next");
         // check in case some other video was actually playing, don't want to credit that
         if (videoId && currVideo && videoId === currVideo.id) {
@@ -705,12 +718,16 @@ async function deleteVideos() {
 document.getElementById("exportBtn").addEventListener("click", exportDB);
 document.getElementById("deleteBtn").addEventListener("click", deleteVideos);
 
-document.getElementById("importBtn").addEventListener("click", () => {
-    const fileInput = document.getElementById("importFile");
-    if (fileInput.files.length > 0) {
-        importVideos(fileInput.files[0]);
-    } else {
-        alert("Please select a file first");
+const importBtn = document.getElementById("importBtn");
+const importFile = document.getElementById("importFile");
+
+importBtn.addEventListener("click", () => {
+    importFile.click();
+});
+
+importFile.addEventListener("change", () => {
+    if (importFile.files.length > 0) {
+        importVideos(importFile.files[0]);
     }
 });
 

@@ -81,6 +81,9 @@
                 justify-content: center;
                 align-items: center;
             }
+            .tabulator-tableholder {
+                height: 680px;
+            }
             /* .tabulator-col-title-holder {
                 display: flex;
                 flex-direction: column;
@@ -124,9 +127,8 @@
             <h2>Import/Export</h2>
             <button id="deleteBtn">Delete DB</button>
             <button id="exportBtn">Export DB</button>
-            <input type="file" id="importFile" accept="application/json" />
             <button id="importBtn">Import DB</button>
-            <input id="fileInput" type="file" accept=".json" style="display: none" />
+            <input type="file" id="importFile" accept="application/json" style="display: none" />
         </div>
     </body>
     <script src="./plotly-3.1.0.min.js"></script>
