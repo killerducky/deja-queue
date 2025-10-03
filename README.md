@@ -5,9 +5,9 @@ You can paste individual video or playlist links into the options page, add them
 
 Features:
 
--   Automatically selects videos to play based on:
-    -   Rating
-    -   How recently the video was last played
+- Automatically selects videos to play based on:
+  - Rating
+  - How recently the video was last played
 
 ---
 
@@ -37,19 +37,19 @@ A new tab should open with a URL like:
 
 ## Usage
 
--   Paste a video or playlist link into the options page and click **Add to Queue**.
--   You must already have a YouTube tab open.
-    -   If multiple YouTube tabs are open, the extension will talk to the first one.
--   Ensure autoplay is allowed for YouTube:
-    1. Go to `www.youtube.com`
-    2. Click the permission icon to the left of the URL
-    3. Set Autoplay to Allow Audio and Video
+- Paste a video or playlist link into the options page and click **Add to Queue**.
+- You must already have a YouTube tab open.
+  - If multiple YouTube tabs are open, the extension will talk to the first one.
+- Ensure autoplay is allowed for YouTube:
+  1. Go to `www.youtube.com`
+  2. Click the permission icon to the left of the URL
+  3. Set Autoplay to Allow Audio and Video
 
 ## Change Firefox storage settings
 
--   ⚠️ By default the database is deleted every time you close Firefox or unload the extension.
-    -   Use Export often to save your queue.
--   Change default to keep the database:
-    -   Set the folowing in `about:config`:
-        -   `extensions.webextensions.keepStorageOnUninstall = true`
-        -   `extensions.webextensions.keepUuidOnUninstall = true`
+- ⚠️ By default the database is deleted every time you close Firefox or unload the extension.
+  - Use Export often to save your queue.
+- Change default to keep the database:
+  - Set the folowing in `about:config`:
+    - `extensions.webextensions.keepStorageOnUninstall = true`
+    - `extensions.webextensions.keepUuidOnUninstall = true`
