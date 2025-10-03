@@ -306,6 +306,10 @@ export function handleSteppers(chartContainerEl) {
 }
 
 async function renderQueue(queue) {
+    if (queue.length == 0) {
+        console.log("Empty queue, nothing to render");
+        return;
+    }
     let videoList = [];
     for (let i = 0; i < queue.length && i < LISTLEN; i++) {
         let video = queue[i % queue.length];
