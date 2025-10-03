@@ -255,6 +255,16 @@ const parseAttr = (input, attrName, fallback) => {
   return Number.isFinite(n) ? n : fallback;
 };
 
+function showToast(msg, duration = 5000) {
+  const container = document.getElementById("toast-container");
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.textContent = msg;
+  container.appendChild(toast);
+
+  setTimeout(() => toast.remove(), duration + fadeTime);
+}
+
 export function handleSteppers(chartContainerEl) {
   chartContainerEl.querySelectorAll(".number-stepper").forEach((container) => {
     const input = container.querySelector('input[type="number"]');
@@ -326,9 +336,6 @@ async function renderQueue() {
   for (let i = 0; i < DBDATA.queue.length && i < LISTLEN; i++) {
     let video = DBDATA.queue[i % DBDATA.queue.length];
     videoList.push(video);
-    if (!video?.yt?.contentDetails) {
-      await addYoutubeInfo(video);
-    }
   }
   table(queueEl, videoList, 1);
   let log = await db.getLastNLogs(LISTLEN);
@@ -336,9 +343,6 @@ async function renderQueue() {
   for (let entry of log) {
     let video = DBDATA.queue.find((v) => v.id === entry.id);
     logVideoList.push(video);
-    if (!video?.yt?.contentDetails) {
-      await addYoutubeInfo(video);
-    }
   }
   table(logEl, logVideoList, 0);
 }
@@ -405,6 +409,7 @@ function table(htmlEl, videoList, clickable) {
   [
     "Thumb",
     "Title",
+    "Track",
     "Dur",
     "Last Played",
     "Play Count",
@@ -446,10 +451,17 @@ function table(htmlEl, videoList, clickable) {
     titleCell.style.padding = "6px";
     row.appendChild(titleCell);
 
+    // trackNum cell
+    const trackNum = document.createElement("td");
+    let pos = video.yt?.snippet?.position;
+    trackNum.textContent = pos == null ? "—" : pos + 1;
+    trackNum.style.padding = "6px";
+    trackNum.style.textAlign = "center";
+    row.appendChild(trackNum);
+
     // Dur cell
     const durCell = document.createElement("td");
     durCell.textContent = formatVideoDuration(video);
-
     durCell.style.padding = "6px";
     durCell.style.textAlign = "center";
     row.appendChild(durCell);
@@ -576,16 +588,18 @@ async function addPlaylistVideos(playlistId) {
     let data = await res.json();
     console.log("addPlaylistVideos raw: ", data);
 
-    for (const yt of data.items) {
+    // moveVideoToFront needs to go backwards to work
+    for (const yt of [...data.items].reverse()) {
       let video = {
         id: yt.snippet.resourceId.videoId,
         playlistId: playlistId,
         yt: yt,
       };
-      playlist.videoIds.push(video.id);
+      // Due to going backwards, we need to go backwards here too
+      playlist.videoIds.unshift(video.id);
       if (DBDATA.queue.find((v) => v.id === video.id)) {
         // Exists already, just move up
-        moveVideoToFront(video.id);
+        await moveVideoToFront(video.id);
       } else {
         // Doesn't exist, add and move up
         newVideos.push(video);
@@ -613,7 +627,7 @@ addBtn.addEventListener("click", async () => {
   if (response.type == "video") {
     if (DBDATA.queue.find((v) => v.id === response.id)) {
       alert("Video already in DB");
-      moveVideoToFront(response.id);
+      await moveVideoToFront(response.id);
     } else {
       let video = { id: response.id };
       await addYoutubeInfo(video);
@@ -622,14 +636,14 @@ addBtn.addEventListener("click", async () => {
         return;
       }
       DBDATA.queue.splice(1, 0, video);
-      await renderQueue();
     }
   } else if (response.type == "playlist") {
     await addPlaylistVideos(response.id);
   } else {
     alert("Error: could not parse input");
+    return;
   }
-
+  await renderQueue();
   input.value = "";
 });
 
@@ -993,29 +1007,16 @@ function renderGrid(queue) {
         img.src = `https://i.ytimg.com/vi/${videoId}/default.jpg`;
         img.style.width = "70px";
         img.style.height = "54px";
-        // return `<img src="https://i.ytimg.com/vi/${videoId}/default.jpg" style="width:70px;">`;
         return img;
       },
       cellClick: async function (e, cell) {
-        console.log(
-          "Clicked",
-          cell.getField(),
-          "=",
-          cell.getValue(),
-          "row id:",
-          cell.getRow().getData().id,
-          ")"
-        );
-        const idx = DBDATA.queue.findIndex(
+        const video = DBDATA.queue.find(
           (v) => v.id === cell.getRow().getData().id
         );
-        if (idx === -1) {
-          alert("Error: Cannot find in DBDATA");
-          return;
-        }
-        let video = DBDATA.queue[idx];
-        moveVideoToFront(video.id);
-        alert("Added to front of queue");
+        if (!video) return alert("Error: Cannot find in DBDATA");
+        await moveVideoToFront(video.id);
+        await renderQueue();
+        showToast("Added to front of queue");
       },
     },
     {
@@ -1148,6 +1149,16 @@ async function renderPlaylists() {
         img.style.height = "54px";
         return img;
       },
+      cellClick: async function (e, cell) {
+        const plVideoIds = cell.getRow().getData().videoIds;
+        // console.log(plVideoIds);
+        // Adding to the front one at a time, so go backwards
+        for (let vid of [...plVideoIds].reverse()) {
+          await moveVideoToFront(vid);
+        }
+        await renderQueue();
+        alert("Added to front of queue");
+      },
       hozAlign: "center",
       vertAlign: "center",
       width: 90,
@@ -1184,50 +1195,6 @@ async function renderPlaylists() {
       formatter: (cell) => cell.getValue().toFixed(1),
       width: 80,
     },
-    // Cline was adding this but credits cut before could finish...
-    // {
-    //     title: "Actions",
-    //     formatter: () => {
-    //         const container = document.createElement("div");
-    //         container.style.display = "flex";
-    //         container.style.gap = "5px";
-
-    //         const syncBtn = document.createElement("button");
-    //         syncBtn.textContent = "Sync";
-    //         syncBtn.style.fontSize = "0.9em";
-    //         syncBtn.style.padding = "3px 8px";
-
-    //         const deleteBtn = document.createElement("button");
-    //         deleteBtn.textContent = "Delete";
-    //         deleteBtn.style.fontSize = "0.9em";
-    //         deleteBtn.style.padding = "3px 8px";
-    //         deleteBtn.style.backgroundColor = "#dc3545";
-    //         deleteBtn.style.color = "white";
-    //         deleteBtn.style.border = "none";
-
-    //         container.appendChild(syncBtn);
-    //         container.appendChild(deleteBtn);
-    //         return container;
-    //     },
-    //     cellClick: async function (e, cell) {
-    //         const target = e.target;
-    //         const playlist = cell.getRow().getData();
-
-    //         if (target.textContent === "Delete") {
-    //             if (confirm(`Delete playlist "${playlist.title}"?`)) {
-    //                 await db.deletePlaylist(playlist.id);
-    //                 console.log("Deleted playlist:", playlist.id);
-    //                 await renderPlaylists();
-    //             }
-    //         } else if (target.textContent === "Sync") {
-    //             console.log("Syncing playlist:", playlist.id);
-    //             await addPlaylistVideos(playlist.id);
-    //             alert(`Synced playlist "${playlist.title}"`);
-    //         }
-    //     },
-    //     width: 150,
-    //     hozAlign: "center",
-    // },
     { title: "ID", field: "id", hozAlign: "left", width: 150 },
   ];
 
@@ -1239,6 +1206,7 @@ async function renderPlaylists() {
     thumbnailUrl: playlist.thumbnailUrl,
     dateAdded: playlist.dateAdded,
     rating: playlist.rating,
+    videoIds: playlist.videoIds,
   }));
 
   if (playlistsTabulator) {
@@ -1264,22 +1232,7 @@ async function moveVideoToFront(id) {
   }
   const [video] = DBDATA.queue.splice(idx, 1);
   DBDATA.queue.splice(1, 0, video); // insert at index 1 (2nd spot)
-  await renderQueue();
 }
-
-//   "playlists": [
-//     {
-//       "id": "PLoAEg7BcaNc39a9hZwT8x_WSqna-0up3C",
-//       "title": "Trans-Siberian Orchestra: Beethoven's Last Night",
-//       "description": "",
-//       "channelTitle": "Joshua Lancelle (Josh)",
-//       "videoCount": 22,
-//       "thumbnailUrl": "https://i.ytimg.com/vi/dIYbS9EioRY/default.jpg",
-// "videos": [
-// {
-//   "id": "4Z74h1_l2ZU",
-//   "playlistId": "PLoAEg7BcaNc39a9hZwT8x_WSqna-0up3C",
-//   "yt": {
 
 // Initial load
 (async () => {
@@ -1296,7 +1249,7 @@ async function moveVideoToFront(id) {
     DBDATA.queue = [];
     let addedIds = new Set();
     const seenPlaylists = new Set();
-    console.log(validPlaylistIds);
+    // console.log(validPlaylistIds);
     // Iterate through fullQueue
     for (const video of origQueue) {
       // Find a video that belongs to an unseen playlist
@@ -1308,37 +1261,32 @@ async function moveVideoToFront(id) {
         // console.log("add playlist ", video.playlistId);
         const pl = playlistMap.get(video.playlistId);
         let plVids;
-        let allowDups = 1;
-        if (allowDups) {
-          plVids = pl.videoIds.map((id) => origQueue.find((v) => v.id === id));
-        } else {
-          plVids = pl.videoIds
-            .map((id) => origQueue.find((v) => v.id === id))
-            .filter((v) => v && !DBDATA.queue.find((q) => q.id === v.id));
-        }
-        console.log(plVids);
+        plVids = pl.videoIds.map((id) => origQueue.find((v) => v.id === id));
+        // console.log(plVids);
         DBDATA.queue.push(...plVids);
         plVids.forEach((v) => addedIds.add(v.id));
         seenPlaylists.add(video.playlistId);
       }
     }
-    let defaultCount = 0;
-    for (const v of origQueue) {
-      if (!addedIds.has(v.id)) {
-        DBDATA.queue.push(v);
-        addedIds.add(v.id);
-        defaultCount += 1;
-      }
-    }
-    DBDATA.playlists.push({
+    let defaultPlaylist = {
       id: "default",
       title: "Default",
       channelTitle: "",
-      videoCount: defaultCount,
+      videoCount: 0,
       thumbnailUrl: "",
       dateAdded: Date.now(),
       rating: DEFAULT_RATING,
-    });
+      videoIds: [],
+    };
+    for (const v of origQueue) {
+      if (!addedIds.has(v.id)) {
+        DBDATA.queue.push(v);
+        defaultPlaylist.videoIds.push(v.id);
+        defaultPlaylist.videoCount += 1;
+        addedIds.add(v.id);
+      }
+    }
+    DBDATA.playlists.push(defaultPlaylist);
   }
   renderGrid(DBDATA.queue);
   renderPlaylists();

@@ -84,6 +84,28 @@
       .database-container {
         height: 800px;
       }
+      #toast-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 9999;
+      }
+      .toast {
+        background: #333;
+        color: #fff;
+        padding: 10px 16px;
+        margin-top: 8px;
+        border-radius: 6px;
+        opacity: 0.9;
+        font-size: 14px;
+        animation: fadeout 5s ease forwards;
+      }
+      @keyframes fadeout {
+        to {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+      }
       /* .tabulator-col-title-holder {
                 display: flex;
                 flex-direction: column;
@@ -141,6 +163,7 @@
         style="display: none"
       />
     </div>
+    <div id="toast-container"></div>
   </body>
   <script src="./plotly-3.1.0.min.js"></script>
   <script src="./gridjs.umd.js"></script>
