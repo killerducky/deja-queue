@@ -40,9 +40,7 @@ async function closeDB() {
 }
 
 export async function saveLog(entries) {
-  if (!db) {
-    db = await openDB();
-  }
+  const db = await openDB();
   const entriesArray = Array.isArray(entries) ? entries : [entries];
   return new Promise((resolve, reject) => {
     const tx = db.transaction("log", "readwrite");
