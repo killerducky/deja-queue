@@ -8,7 +8,7 @@ if (typeof browser === "undefined") {
 }
 
 let DBDATA = { queue: [], filtered: [] };
-let LISTLEN = 5;
+let LISTLEN = 50;
 let MAXLOGDUMP = 99999;
 let DIVERSITY_FACTOR = 24;
 let LONG_DELAY_TIME = 7;
@@ -18,7 +18,7 @@ let DEFAULT_RATING = 7.5;
 let COOLDOWN_JITTER_START = 3; // Subtract N days from the interval
 let COOLDOWN_JITTER_RATE = 0.2; // Add up to X% jitter to that part of the interval
 let RATING_FACTOR = 1;
-let PLAYLIST_MODE = 1;
+let PLAYLIST_MODE = false;
 
 function rating2color(rating) {
   // https://colorbrewer2.org/#type=sequential&scheme=GnBu&n=9
@@ -199,6 +199,7 @@ const nextBtn = document.getElementById("next");
 const delayBtn = document.getElementById("delay");
 const pauseBtn = document.getElementById("pause");
 const playBtn = document.getElementById("play");
+const currentEl = document.getElementById("current");
 const queueEl = document.getElementById("queue");
 const logEl = document.getElementById("log");
 
@@ -327,24 +328,176 @@ export function handleSteppers(chartContainerEl) {
   });
 }
 
+let tabulatorCurrent = null;
+let tabulatorQueue = null;
+let tabulatorLog = null;
 async function renderQueue() {
   if (DBDATA.queue.length == 0) {
     console.log("Empty DBDATA.queue, nothing to render");
     return;
   }
-  let videoList = [];
-  for (let i = 0; i < DBDATA.queue.length && i < LISTLEN; i++) {
-    let video = DBDATA.queue[i % DBDATA.queue.length];
-    videoList.push(video);
-  }
-  table(queueEl, videoList, 1);
+  const [firstVideo, ...restVideos] = DBDATA.queue;
+  tabulatorCurrent = await table2(
+    tabulatorCurrent,
+    currentEl,
+    [firstVideo],
+    false
+  );
+  tabulatorQueue = await table2(tabulatorQueue, queueEl, restVideos, true);
   let log = await db.getLastNLogs(LISTLEN);
   let logVideoList = [];
   for (let entry of log) {
     let video = DBDATA.queue.find((v) => v.id === entry.id);
     logVideoList.push(video);
   }
-  table(logEl, logVideoList, 0);
+  tabulatorLog = await table2(tabulatorLog, logEl, logVideoList, true);
+}
+
+let tableColumns = {
+  thumb: {
+    title: "Thumb",
+    field: "id",
+    formatter: (cell) => {
+      let id = cell.getValue();
+      return `<img src="https://i.ytimg.com/vi/${id}/default.jpg" style="height:54px;cursor:pointer;">`;
+    },
+    width: 90,
+    cellClick: async (e, cell) => {
+      if (cell.getTable().options.custom.reorder) {
+        moveVideoToFront(cell.getRow().getData().id);
+        await renderQueue();
+      } else {
+        playNextVideo();
+      }
+    },
+  },
+  title: {
+    title: "Title",
+    field: "yt.snippet.title",
+    formatter: "textarea",
+    hozAlign: "left",
+    width: 250,
+  },
+  track: {
+    title: "Track",
+    field: "yt.snippet.position",
+  },
+  dur: {
+    title: "Dur",
+    formatter: (cell) => {
+      const video = cell.getRow().getData();
+      return formatVideoDuration(video);
+    },
+  },
+  lastPlayed: {
+    title: "Last Played",
+    formatter: (cell) => {
+      return formatLastPlayDate(cell.getRow().getData());
+    },
+  },
+  playCnt: {
+    title: "Play Count",
+    field: "playCnt",
+    formatter: "plaintext",
+  },
+  rating2: {
+    title: "Rating",
+    field: "rating",
+    editor: "number",
+    editorParams: {
+      step: 0.5,
+      min: 1,
+      max: 10,
+    },
+    formatter: (cell) => {
+      const val = cell.getValue() ?? DEFAULT_RATING;
+      return parseFloat(val).toFixed(1);
+    },
+    cellEdited: async (cell) => {
+      const video = cell.getRow().getData();
+      video.rating = cell.getValue();
+      await db.saveVideos([video]);
+      console.log("Saved new rating", video.rating, "for", video.id);
+      cell.getRow().update({ interval: rating2days(video.rating) + "d" });
+    },
+    width: 100,
+  },
+
+  rating: {
+    title: "Rating",
+    field: "rating",
+    formatter: (cell) => {
+      let video = cell.getRow().getData();
+      let div = document.createElement("div");
+      div.className = "number-stepper";
+      const downBtn = document.createElement("button");
+      downBtn.className = "step-btn step-down";
+      downBtn.type = "button";
+      downBtn.innerHTML = "&minus;";
+      const upBtn = document.createElement("button");
+      upBtn.className = "step-btn step-up";
+      upBtn.type = "button";
+      upBtn.innerHTML = "&plus;";
+
+      let input = document.createElement("input");
+      input.type = "number";
+      input.min = "1";
+      input.max = "10";
+      input.step = "0.5";
+      input.value = (video.rating ?? DEFAULT_RATING).toFixed(1);
+      async function saveRating() {
+        const newValue = parseFloat(input.value);
+        if (!isNaN(newValue)) {
+          video.rating = newValue;
+          await db.saveVideos([video]);
+          console.log("Saved new rating", newValue, "for", video.id);
+        }
+      }
+      input.addEventListener("change", () => saveRating());
+      div.appendChild(downBtn);
+      div.appendChild(input);
+      div.appendChild(upBtn);
+      return div;
+    },
+  },
+  interval: {
+    title: "Interval",
+    formatter: (cell) => {
+      return rating2days(cell.getRow().getData().rating) + "d";
+    },
+  },
+};
+
+async function table2(tabulator, htmlEl, videoList, reorder) {
+  if (tabulator) {
+    tabulator.replaceData(videoList);
+    return tabulator;
+  }
+
+  tabulator = new Tabulator(htmlEl, {
+    data: videoList,
+    custom: { reorder }, // custom property
+    columns: [
+      tableColumns.thumb,
+      tableColumns.title,
+      tableColumns.track,
+      tableColumns.dur,
+      tableColumns.lastPlayed,
+      tableColumns.playCnt,
+      tableColumns.rating,
+      tableColumns.interval,
+    ],
+    columnDefaults: {
+      hozAlign: "center",
+      vertAlign: "middle",
+    },
+    layout: "fitData",
+    movableColumns: true,
+    pagination: "local",
+    paginationSize: 5,
+    rowHeight: 68,
+  });
+  return tabulator;
 }
 
 function formatDuration(isoDuration, isoFormat = true) {
@@ -392,149 +545,6 @@ function formatLastPlayDate(video) {
   html += "<br>";
   html += `due: ${due.toFixed(1)} days`;
   return html;
-}
-
-function table(htmlEl, videoList, clickable) {
-  let now = Date.now();
-  htmlEl.innerHTML = "";
-
-  // Create table
-  const table = document.createElement("table");
-  table.style.borderCollapse = "collapse";
-  table.style.width = "100%";
-
-  // Header
-  const thead = document.createElement("thead");
-  const headerRow = document.createElement("tr");
-  [
-    "Thumb",
-    "Title",
-    "Track",
-    "Dur",
-    "Last Played",
-    "Play Count",
-    "Rating",
-    "Interval",
-  ].forEach((col) => {
-    const th = document.createElement("th");
-    th.textContent = col;
-    th.style.borderBottom = "1px solid #ccc";
-    th.style.padding = "6px";
-    th.style.textAlign = "center";
-    headerRow.appendChild(th);
-  });
-  thead.appendChild(headerRow);
-  table.appendChild(thead);
-
-  // Body
-  const tbody = document.createElement("tbody");
-  for (let [index, video] of videoList.entries()) {
-    const row = document.createElement("tr");
-
-    // Thumbnail cell
-    const thumbCell = document.createElement("td");
-    const thumb = document.createElement("img");
-    thumb.src = `https://i.ytimg.com/vi/${video.id}/default.jpg`;
-    thumb.style.width = "70px";
-    thumbCell.appendChild(thumb);
-    thumbCell.style.padding = "6px";
-    row.appendChild(thumbCell);
-    if (clickable) {
-      thumb.addEventListener("click", () => {
-        playNextVideo(index);
-      });
-    }
-
-    // Title cell
-    const titleCell = document.createElement("td");
-    titleCell.textContent = video.title || video.yt?.snippet?.title || video.id;
-    titleCell.style.padding = "6px";
-    row.appendChild(titleCell);
-
-    // trackNum cell
-    const trackNum = document.createElement("td");
-    let pos = video.yt?.snippet?.position;
-    trackNum.textContent = pos == null ? "—" : pos + 1;
-    trackNum.style.padding = "6px";
-    trackNum.style.textAlign = "center";
-    row.appendChild(trackNum);
-
-    // Dur cell
-    const durCell = document.createElement("td");
-    durCell.textContent = formatVideoDuration(video);
-    durCell.style.padding = "6px";
-    durCell.style.textAlign = "center";
-    row.appendChild(durCell);
-
-    // Last Played cell
-    const lastPlayedCell = document.createElement("td");
-    lastPlayedCell.innerHTML = formatLastPlayDate(video);
-    lastPlayedCell.style.width = "140px";
-    lastPlayedCell.style.padding = "6px";
-    lastPlayedCell.style.textAlign = "center";
-    row.appendChild(lastPlayedCell);
-
-    // Play count cell
-    const playCntCell = document.createElement("td");
-    playCntCell.textContent = video.playCnt ?? 0;
-    playCntCell.style.width = "50px";
-    playCntCell.style.padding = "6px";
-    playCntCell.style.textAlign = "center";
-    row.appendChild(playCntCell);
-
-    let cell = document.createElement("td");
-    let div = document.createElement("div");
-    div.className = "number-stepper";
-    const downBtn = document.createElement("button");
-    downBtn.className = "step-btn step-down";
-    downBtn.type = "button";
-    downBtn.innerHTML = "&minus;";
-    const upBtn = document.createElement("button");
-    upBtn.className = "step-btn step-up";
-    upBtn.type = "button";
-    upBtn.innerHTML = "&plus;";
-
-    let input = document.createElement("input");
-    input.type = "number";
-    input.min = "1";
-    input.max = "10";
-    input.step = "0.5";
-    input.value = (video.rating ?? DEFAULT_RATING).toFixed(1);
-    async function saveRating() {
-      const newValue = parseFloat(input.value);
-      if (!isNaN(newValue)) {
-        video.rating = newValue;
-        await db.saveVideos([video]);
-        console.log("Saved new rating", newValue, "for", video.id);
-      }
-    }
-    input.addEventListener("change", () => saveRating());
-    div.appendChild(downBtn);
-    div.appendChild(input);
-    div.appendChild(upBtn);
-    cell.appendChild(div);
-    row.appendChild(cell);
-
-    let intervalCell = document.createElement("td");
-    intervalCell.style.textAlign = "center";
-    function updateInterval() {
-      intervalCell.textContent = input.value
-        ? rating2days(parseFloat(input.value)) + "d"
-        : "—";
-    }
-    updateInterval();
-    input.addEventListener("change", () => {
-      updateInterval();
-    });
-    row.appendChild(intervalCell);
-
-    tbody.appendChild(row);
-  }
-  table.appendChild(tbody);
-  handleSteppers(table);
-
-  // Append to container
-  htmlEl.appendChild(table);
 }
 
 async function addYoutubeInfo(video) {
@@ -1247,8 +1257,8 @@ async function moveVideoToFront(id) {
     v.score = scoreVideo(v);
   });
   DBDATA.queue.sort((a, b) => b.score - a.score);
+  DBDATA.playlists = await db.loadPlaylists();
   if (PLAYLIST_MODE) {
-    DBDATA.playlists = await db.loadPlaylists();
     const playlistMap = new Map(DBDATA.playlists.map((pl) => [pl.id, pl]));
     const validPlaylistIds = new Set(DBDATA.playlists.map((pl) => pl.id));
     let origQueue = DBDATA.queue;
