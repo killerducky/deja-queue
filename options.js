@@ -322,9 +322,8 @@ async function renderQueue(queue) {
     let log = await db.getLastNLogs(LISTLEN);
     let logVideoList = [];
     for (let entry of log) {
-        // TODO: The queue doesn't even have all the vidoes because of the filter?
-        // For now this will mostly work
-        let video = queue.find((v) => v.id === entry.id);
+        // TODO: Big hack here. We passed in the queue but now using this global instead?
+        let video = DBDATA.fullQueue.find((v) => v.id === entry.id);
         logVideoList.push(video);
         if (!video?.yt?.contentDetails) {
             await addYoutubeInfo(video);
@@ -512,6 +511,8 @@ async function addYoutubeInfo(video) {
     if (data.items.length > 0) {
         video.yt = data.items[0];
         await db.saveVideos([video]);
+    } else {
+        console.log("Error fetching yt for: ", video.id);
     }
 }
 
@@ -537,17 +538,13 @@ async function addPlaylistVideos(playlistId) {
         dateAdded: Date.now(),
         lastUpdated: Date.now(),
         rating: DEFAULT_RATING,
-        autoSync: false,
         yt: playlistInfo,
+        videoIds: [],
     };
-
-    // Save playlist metadata
-    await db.savePlaylists(playlist);
-    console.log("Saved playlist:", playlist);
 
     // Now fetch all videos from the playlist
     let nextPageToken = "";
-    let videos = [];
+    let newVideos = [];
     do {
         let url =
             `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails` +
@@ -556,26 +553,38 @@ async function addPlaylistVideos(playlistId) {
         let data = await res.json();
         console.log("addPlaylistVideos raw: ", data);
 
-        videos.push(
-            ...data.items.map((item) => ({
-                id: item.snippet.resourceId.videoId,
+        for (const yt of data.items) {
+            let video = {
+                id: yt.snippet.resourceId.videoId,
                 playlistId: playlistId,
-                yt: item,
-            }))
-        );
+                yt: yt,
+            };
+            playlist.videoIds.push(video.id);
+            if (DBDATA.queue.find((v) => v.id === video.id)) {
+                // Exists already, just move up
+                moveVideoToFront(video.id);
+            } else {
+                // Doesn't exist, add and move up
+                newVideos.push(video);
+                DBDATA.queue.splice(1, 0, video);
+            }
+        }
         nextPageToken = data.nextPageToken;
     } while (nextPageToken);
-    console.log("addPlaylistVideos: ", videos);
-    await db.saveVideos(videos);
 
-    // Refresh playlists display
+    await db.saveVideos(newVideos);
+    console.log("addPlaylistVideos: newVideos ", newVideos);
+
+    await db.savePlaylists(playlist);
+
     await renderPlaylists();
+    await renderQueue(DBDATA.queue);
 }
 
 addBtn.addEventListener("click", async () => {
     let response = getVideoIdFromInput(input.value.trim());
     if (!response.id) {
-        alert("Could not find on youtube");
+        alert("Could not find on youtube ", input.value);
         return;
     }
     if (response.type == "video") {
@@ -589,7 +598,6 @@ addBtn.addEventListener("click", async () => {
                 alert("Failed to fetch video info, please check the ID");
                 return;
             }
-            console.log(video);
             DBDATA.queue.splice(1, 0, video);
             await renderQueue(DBDATA.queue);
         }
@@ -655,10 +663,11 @@ function getVideoIdFromInput(input) {
         const params = new URL(input).searchParams;
         const listId = params.get("list");
         const videoId = params.get("v");
-        if (listId) {
-            return { type: "playlist", id: listId };
-        } else {
+        // prioritize single video.
+        if (videoId) {
             return { type: "video", id: videoId };
+        } else {
+            return { type: "playlist", id: listId };
         }
     } else {
         // assume raw video id
@@ -741,6 +750,7 @@ function importVideos(file) {
         try {
             const data = JSON.parse(e.target.result);
             await db.saveVideos(data.videos); // only replaces each id with new content
+            // await db.savePlaylists(data.playlists); // only replaces each id with new content
             await db.saveLog(data.log);
             console.log("Videos imported successfully");
         } catch (err) {
@@ -1174,6 +1184,7 @@ async function moveVideoToFront(id) {
     DBDATA.queue.sort((a, b) => b.score - a.score);
     if (PLAYLIST_MODE) {
         DBDATA.playlists = await db.loadPlaylists();
+        const playlistMap = new Map(DBDATA.playlists.map((pl) => [pl.id, pl]));
         const validPlaylistIds = new Set(DBDATA.playlists.map((pl) => pl.id));
         DBDATA.fullQueue = DBDATA.queue;
         DBDATA.queue = [];
@@ -1181,22 +1192,24 @@ async function moveVideoToFront(id) {
         console.log(validPlaylistIds);
         // Iterate through fullQueue
         for (const video of DBDATA.fullQueue) {
-            // Find a video that belong to an unseen playlist
+            // Find a video that belongs to an unseen playlist
             if (video.playlistId && validPlaylistIds.has(video.playlistId) && !seenPlaylists.has(video.playlistId)) {
-                console.log("add playlist ", video.playlistId);
-                // Find all videos from that playlist
-                const plVids = DBDATA.fullQueue.filter((v) => v.yt.snippet.playlistId == video.playlistId);
+                // console.log("add playlist ", video.playlistId);
+                const pl = playlistMap.get(video.playlistId);
+                let plVids;
+                let allowDups = 1;
+                if (allowDups) {
+                    plVids = pl.videoIds.map((id) => DBDATA.fullQueue.find((v) => v.id === id));
+                } else {
+                    plVids = pl.videoIds.map((id) => DBDATA.fullQueue.find((v) => v.id === id)).filter((v) => v && !DBDATA.queue.find((q) => q.id === v.id));
+                }
                 console.log(plVids);
-                // Sort by playlist order
-                plVids.sort((a, b) => a.yt.snippet.position - b.yt.snippet.position);
-                console.log("videos of this playlist in order:", plVids);
                 DBDATA.queue.push(...plVids);
                 seenPlaylists.add(video.playlistId);
             }
         }
     }
-    console.log("Resulting DB:", DBDATA.queue);
-    renderGrid(DBDATA.queue);
+    renderGrid(DBDATA.fullQueue);
     renderPlaylists();
     // Remove errors and dups from graphs.
     // But leave in actual Queue (with low score), so we don't e.g. add it again
