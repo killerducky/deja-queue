@@ -18,6 +18,7 @@ let DEFAULT_RATING = 7.5;
 let COOLDOWN_JITTER_START = 3; // Subtract N days from the interval
 let COOLDOWN_JITTER_RATE = 0.2; // Add up to X% jitter to that part of the interval
 let RATING_FACTOR = 1;
+let PLAYLIST_MODE = 1;
 
 function rating2color(rating) {
     // https://colorbrewer2.org/#type=sequential&scheme=GnBu&n=9
@@ -1146,6 +1147,20 @@ async function moveVideoToFront(id) {
     await renderQueue(DBDATA.queue);
 }
 
+//   "playlists": [
+//     {
+//       "id": "PLoAEg7BcaNc39a9hZwT8x_WSqna-0up3C",
+//       "title": "Trans-Siberian Orchestra: Beethoven's Last Night",
+//       "description": "",
+//       "channelTitle": "Joshua Lancelle (Josh)",
+//       "videoCount": 22,
+//       "thumbnailUrl": "https://i.ytimg.com/vi/dIYbS9EioRY/default.jpg",
+// "videos": [
+// {
+//   "id": "4Z74h1_l2ZU",
+//   "playlistId": "PLoAEg7BcaNc39a9hZwT8x_WSqna-0up3C",
+//   "yt": {
+
 // Initial load
 (async () => {
     DBDATA.queue = await db.loadVideos();
@@ -1153,6 +1168,30 @@ async function moveVideoToFront(id) {
         v.score = scoreVideo(v);
     });
     DBDATA.queue.sort((a, b) => b.score - a.score);
+    if (PLAYLIST_MODE) {
+        DBDATA.playlists = await db.loadPlaylists();
+        const validPlaylistIds = new Set(DBDATA.playlists.map((pl) => pl.id));
+        DBDATA.fullQueue = DBDATA.queue;
+        DBDATA.queue = [];
+        const seenPlaylists = new Set();
+        console.log(validPlaylistIds);
+        // Iterate through fullQueue
+        for (const video of DBDATA.fullQueue) {
+            // Find a video that belong to an unseen playlist
+            if (video.playlistId && validPlaylistIds.has(video.playlistId) && !seenPlaylists.has(video.playlistId)) {
+                console.log("add playlist ", video.playlistId);
+                // Find all videos from that playlist
+                const plVids = DBDATA.fullQueue.filter((v) => v.yt.snippet.playlistId == video.playlistId);
+                console.log(plVids);
+                // Sort by playlist order
+                plVids.sort((a, b) => a.yt.snippet.position - b.yt.snippet.position);
+                console.log("videos of this playlist in order:", plVids);
+                DBDATA.queue.push(...plVids);
+                seenPlaylists.add(video.playlistId);
+            }
+        }
+    }
+    console.log("Resulting DB:", DBDATA.queue);
     renderGrid(DBDATA.queue);
     renderPlaylists();
     // Remove errors and dups from graphs.
