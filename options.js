@@ -317,14 +317,14 @@ export function handleSteppers(chartContainerEl) {
   });
 }
 
-async function renderQueue(queue) {
-  if (queue.length == 0) {
-    console.log("Empty queue, nothing to render");
+async function renderQueue() {
+  if (DBDATA.queue.length == 0) {
+    console.log("Empty DBDATA.queue, nothing to render");
     return;
   }
   let videoList = [];
-  for (let i = 0; i < queue.length && i < LISTLEN; i++) {
-    let video = queue[i % queue.length];
+  for (let i = 0; i < DBDATA.queue.length && i < LISTLEN; i++) {
+    let video = DBDATA.queue[i % DBDATA.queue.length];
     videoList.push(video);
     if (!video?.yt?.contentDetails) {
       await addYoutubeInfo(video);
@@ -334,8 +334,7 @@ async function renderQueue(queue) {
   let log = await db.getLastNLogs(LISTLEN);
   let logVideoList = [];
   for (let entry of log) {
-    // TODO: Big hack here. We passed in the queue but now using this global instead?
-    let video = DBDATA.fullQueue.find((v) => v.id === entry.id);
+    let video = DBDATA.queue.find((v) => v.id === entry.id);
     logVideoList.push(video);
     if (!video?.yt?.contentDetails) {
       await addYoutubeInfo(video);
@@ -602,7 +601,7 @@ async function addPlaylistVideos(playlistId) {
   await db.savePlaylists(playlist);
 
   await renderPlaylists();
-  await renderQueue(DBDATA.queue);
+  await renderQueue();
 }
 
 addBtn.addEventListener("click", async () => {
@@ -623,7 +622,7 @@ addBtn.addEventListener("click", async () => {
         return;
       }
       DBDATA.queue.splice(1, 0, video);
-      await renderQueue(DBDATA.queue);
+      await renderQueue();
     }
   } else if (response.type == "playlist") {
     await addPlaylistVideos(response.id);
@@ -678,7 +677,7 @@ async function playNextVideo(offset = 1) {
     tab: tab.id,
     id: DBDATA.queue[0].id,
   });
-  await renderQueue(DBDATA.queue);
+  await renderQueue();
   if (videoTimeout) clearTimeout(videoTimeout);
   videoTimeout = setTimeout(() => {
     console.log("Error:", DBDATA.queue[0].id, DBDATA.queue[0].title);
@@ -715,7 +714,7 @@ async function logEvent(video, event) {
     video.playCnt = (video.playCnt || 0) + 1;
   }
   if (video.playCnt == 1) {
-    video.firstPlayDate = Date.now();
+    video.firstPlayDate = now;
   }
   await db.saveVideos([video]);
   const logEntry = {
@@ -783,14 +782,15 @@ async function exportDB() {
   URL.revokeObjectURL(url);
 }
 
-function importVideos(file) {
-  console.log("Importing videos from file:", file);
+function importDB(file) {
+  console.log("Importing DB from file:", file);
   const reader = new FileReader();
   reader.onload = async (e) => {
     try {
       const data = JSON.parse(e.target.result);
+      await db.deleteDB();
       await db.saveVideos(data.videos); // only replaces each id with new content
-      // await db.savePlaylists(data.playlists); // only replaces each id with new content
+      await db.savePlaylists(data.playlists); // only replaces each id with new content
       await db.saveLog(data.log);
       console.log("Videos imported successfully");
     } catch (err) {
@@ -817,7 +817,7 @@ importBtn.addEventListener("click", () => {
 
 importFile.addEventListener("change", () => {
   if (importFile.files.length > 0) {
-    importVideos(importFile.files[0]);
+    importDB(importFile.files[0]);
   }
 });
 
@@ -1136,8 +1136,6 @@ function calcStringSimilarity(queue) {
 
 let playlistsTabulator = null;
 async function renderPlaylists() {
-  const playlists = await db.loadPlaylists();
-
   let columns = [
     {
       title: "Thumb",
@@ -1146,10 +1144,12 @@ async function renderPlaylists() {
         const url = cell.getValue();
         const img = document.createElement("img");
         img.src = url || "favicon.ico";
-        img.style.width = "70px";
+        // img.style.width = "70px";
         img.style.height = "54px";
         return img;
       },
+      hozAlign: "center",
+      vertAlign: "center",
       width: 90,
     },
     {
@@ -1231,7 +1231,7 @@ async function renderPlaylists() {
     { title: "ID", field: "id", hozAlign: "left", width: 150 },
   ];
 
-  const data = playlists.map((playlist) => ({
+  const data = DBDATA.playlists.map((playlist) => ({
     id: playlist.id,
     title: playlist.title,
     channelTitle: playlist.channelTitle,
@@ -1264,7 +1264,7 @@ async function moveVideoToFront(id) {
   }
   const [video] = DBDATA.queue.splice(idx, 1);
   DBDATA.queue.splice(1, 0, video); // insert at index 1 (2nd spot)
-  await renderQueue(DBDATA.queue);
+  await renderQueue();
 }
 
 //   "playlists": [
@@ -1292,12 +1292,13 @@ async function moveVideoToFront(id) {
     DBDATA.playlists = await db.loadPlaylists();
     const playlistMap = new Map(DBDATA.playlists.map((pl) => [pl.id, pl]));
     const validPlaylistIds = new Set(DBDATA.playlists.map((pl) => pl.id));
-    DBDATA.fullQueue = DBDATA.queue;
+    let origQueue = DBDATA.queue;
     DBDATA.queue = [];
+    let addedIds = new Set();
     const seenPlaylists = new Set();
     console.log(validPlaylistIds);
     // Iterate through fullQueue
-    for (const video of DBDATA.fullQueue) {
+    for (const video of origQueue) {
       // Find a video that belongs to an unseen playlist
       if (
         video.playlistId &&
@@ -1309,21 +1310,37 @@ async function moveVideoToFront(id) {
         let plVids;
         let allowDups = 1;
         if (allowDups) {
-          plVids = pl.videoIds.map((id) =>
-            DBDATA.fullQueue.find((v) => v.id === id)
-          );
+          plVids = pl.videoIds.map((id) => origQueue.find((v) => v.id === id));
         } else {
           plVids = pl.videoIds
-            .map((id) => DBDATA.fullQueue.find((v) => v.id === id))
+            .map((id) => origQueue.find((v) => v.id === id))
             .filter((v) => v && !DBDATA.queue.find((q) => q.id === v.id));
         }
         console.log(plVids);
         DBDATA.queue.push(...plVids);
+        plVids.forEach((v) => addedIds.add(v.id));
         seenPlaylists.add(video.playlistId);
       }
     }
+    let defaultCount = 0;
+    for (const v of origQueue) {
+      if (!addedIds.has(v.id)) {
+        DBDATA.queue.push(v);
+        addedIds.add(v.id);
+        defaultCount += 1;
+      }
+    }
+    DBDATA.playlists.push({
+      id: "default",
+      title: "Default",
+      channelTitle: "",
+      videoCount: defaultCount,
+      thumbnailUrl: "",
+      dateAdded: Date.now(),
+      rating: DEFAULT_RATING,
+    });
   }
-  renderGrid(DBDATA.fullQueue);
+  renderGrid(DBDATA.queue);
   renderPlaylists();
   // Remove errors and dups from graphs.
   // But leave in actual Queue (with low score), so we don't e.g. add it again
@@ -1332,5 +1349,5 @@ async function moveVideoToFront(id) {
   plotScores(DBDATA.filtered);
   plotCooldownFactor(DBDATA.filtered);
   // calcStringSimilarity(DBDATA.queue);
-  renderQueue(DBDATA.queue || []);
+  renderQueue();
 })();
