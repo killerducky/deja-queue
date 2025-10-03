@@ -262,7 +262,7 @@ function showToast(msg, duration = 5000) {
   toast.textContent = msg;
   container.appendChild(toast);
 
-  setTimeout(() => toast.remove(), duration + fadeTime);
+  setTimeout(() => toast.remove(), duration);
 }
 
 export function handleSteppers(chartContainerEl) {
@@ -621,18 +621,18 @@ async function addPlaylistVideos(playlistId) {
 addBtn.addEventListener("click", async () => {
   let response = getVideoIdFromInput(input.value.trim());
   if (!response.id) {
-    alert("Could not find on youtube ", input.value);
+    showToast("Could not find on youtube ", input.value);
     return;
   }
   if (response.type == "video") {
     if (DBDATA.queue.find((v) => v.id === response.id)) {
-      alert("Video already in DB");
+      showToast("Video already in DB");
       await moveVideoToFront(response.id);
     } else {
       let video = { id: response.id };
       await addYoutubeInfo(video);
       if (!video.yt) {
-        alert("Failed to fetch video info, please check the ID");
+        showToast("Failed to fetch video info, please check the ID");
         return;
       }
       DBDATA.queue.splice(1, 0, video);
@@ -640,7 +640,7 @@ addBtn.addEventListener("click", async () => {
   } else if (response.type == "playlist") {
     await addPlaylistVideos(response.id);
   } else {
-    alert("Error: could not parse input");
+    showToast("Error: could not parse input");
     return;
   }
   await renderQueue();
@@ -815,9 +815,12 @@ function importDB(file) {
 }
 
 async function deleteVideos() {
-  // await db.deleteDB();
-  // alert("Database deleted. Please reload the page.");
-  alert("Disabled. LUL.");
+  const confirmed = window.confirm(
+    "Are you sure you want to delete the database? This cannot be undone."
+  );
+  if (!confirmed) return; // user cancelled
+  await db.deleteDB();
+  alert("Database deleted. Please reload the page.");
 }
 document.getElementById("exportBtn").addEventListener("click", exportDB);
 document.getElementById("deleteBtn").addEventListener("click", deleteVideos);
@@ -1013,7 +1016,10 @@ function renderGrid(queue) {
         const video = DBDATA.queue.find(
           (v) => v.id === cell.getRow().getData().id
         );
-        if (!video) return alert("Error: Cannot find in DBDATA");
+        if (!video) {
+          alert("Error: Cannot find in DBDATA");
+          return;
+        }
         await moveVideoToFront(video.id);
         await renderQueue();
         showToast("Added to front of queue");
@@ -1157,7 +1163,7 @@ async function renderPlaylists() {
           await moveVideoToFront(vid);
         }
         await renderQueue();
-        alert("Added to front of queue");
+        showToast("Added to front of queue");
       },
       hozAlign: "center",
       vertAlign: "center",

@@ -1,30 +1,48 @@
 // utils/db.js
 
-function openDB() {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open("YouTubeDJ", 3);
+let dbPromise; // promise while opening
+let dbInstance; // actual IDBDatabase
+async function openDB() {
+  if (!dbPromise) {
+    dbPromise = new Promise((resolve, reject) => {
+      const request = indexedDB.open("YouTubeDJ", 3);
 
-    request.onupgradeneeded = (event) => {
-      const db = event.target.result;
-      if (!db.objectStoreNames.contains("videos")) {
-        db.createObjectStore("videos", { keyPath: "id" });
-      }
-      if (!db.objectStoreNames.contains("log")) {
-        const logStore = db.createObjectStore("log", { autoIncrement: true });
-        // Optional: create an index on videoId for easy queries
-        logStore.createIndex("videoId", "videoId", { unique: false });
-      }
-      if (!db.objectStoreNames.contains("playlists")) {
-        db.createObjectStore("playlists", { keyPath: "id" });
-      }
-    };
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error);
-  });
+      request.onupgradeneeded = (event) => {
+        const db = event.target.result;
+        if (!db.objectStoreNames.contains("videos")) {
+          db.createObjectStore("videos", { keyPath: "id" });
+        }
+        if (!db.objectStoreNames.contains("log")) {
+          const logStore = db.createObjectStore("log", { autoIncrement: true });
+          logStore.createIndex("videoId", "videoId", { unique: false });
+        }
+        if (!db.objectStoreNames.contains("playlists")) {
+          db.createObjectStore("playlists", { keyPath: "id" });
+        }
+      };
+
+      request.onsuccess = () => {
+        dbInstance = request.result;
+        resolve(dbInstance);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  }
+  return dbInstance || (await dbPromise);
+}
+
+async function closeDB() {
+  if (dbInstance) {
+    dbInstance.close();
+    dbInstance = null;
+    dbPromise = null;
+  }
 }
 
 export async function saveLog(entries) {
-  const db = await openDB();
+  if (!db) {
+    db = await openDB();
+  }
   const entriesArray = Array.isArray(entries) ? entries : [entries];
   return new Promise((resolve, reject) => {
     const tx = db.transaction("log", "readwrite");
@@ -142,7 +160,8 @@ export async function deletePlaylist(id) {
   });
 }
 
-export function deleteDB() {
+export async function deleteDB() {
+  await closeDB();
   return new Promise((resolve, reject) => {
     const request = indexedDB.deleteDatabase("YouTubeDJ"); // replace with your DB name
     request.onsuccess = () => {
