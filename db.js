@@ -2,7 +2,7 @@
 
 function openDB() {
     return new Promise((resolve, reject) => {
-        const request = indexedDB.open("YouTubeDJ", 2);
+        const request = indexedDB.open("YouTubeDJ", 3);
 
         request.onupgradeneeded = (event) => {
             const db = event.target.result;
@@ -13,6 +13,9 @@ function openDB() {
                 const logStore = db.createObjectStore("log", { autoIncrement: true });
                 // Optional: create an index on videoId for easy queries
                 logStore.createIndex("videoId", "videoId", { unique: false });
+            }
+            if (!db.objectStoreNames.contains("playlists")) {
+                db.createObjectStore("playlists", { keyPath: "id" });
             }
         };
         request.onsuccess = () => resolve(request.result);
@@ -90,6 +93,51 @@ export async function hasAnyVideos() {
         const store = tx.objectStore("videos");
         const req = store.count();
         req.onsuccess = () => resolve(req.result > 0);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+export async function savePlaylists(playlists) {
+    const playlistArray = Array.isArray(playlists) ? playlists : [playlists];
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction("playlists", "readwrite");
+        const store = tx.objectStore("playlists");
+        playlistArray.forEach((p) => store.put(p));
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+    });
+}
+
+export async function loadPlaylists() {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction("playlists", "readonly");
+        const store = tx.objectStore("playlists");
+        const req = store.getAll();
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+export async function getPlaylist(id) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction("playlists", "readonly");
+        const store = tx.objectStore("playlists");
+        const req = store.get(id);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+    });
+}
+
+export async function deletePlaylist(id) {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction("playlists", "readwrite");
+        const store = tx.objectStore("playlists");
+        const req = store.delete(id);
+        req.onsuccess = () => resolve();
         req.onerror = () => reject(req.error);
     });
 }

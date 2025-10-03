@@ -510,9 +510,37 @@ async function addYoutubeInfo(video) {
     }
 }
 
-// https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&id=YOUR_PLAYLIST_ID&key=YOUR_API_KEY
-
 async function addPlaylistVideos(playlistId) {
+    // First, fetch playlist metadata
+    let playlistUrl = `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&id=${playlistId}&key=${env.API_KEY}`;
+    let playlistRes = await fetch(playlistUrl);
+    let playlistData = await playlistRes.json();
+
+    if (!playlistData.items || playlistData.items.length === 0) {
+        console.error("Playlist not found:", playlistId);
+        return;
+    }
+
+    let playlistInfo = playlistData.items[0];
+    let playlist = {
+        id: playlistId,
+        title: playlistInfo.snippet.title,
+        description: playlistInfo.snippet.description,
+        channelTitle: playlistInfo.snippet.channelTitle,
+        videoCount: playlistInfo.contentDetails.itemCount,
+        thumbnailUrl: playlistInfo.snippet.thumbnails?.default?.url,
+        dateAdded: Date.now(),
+        lastUpdated: Date.now(),
+        rating: DEFAULT_RATING,
+        autoSync: false,
+        yt: playlistInfo,
+    };
+
+    // Save playlist metadata
+    await db.savePlaylists(playlist);
+    console.log("Saved playlist:", playlist);
+
+    // Now fetch all videos from the playlist
     let nextPageToken = "";
     let videos = [];
     do {
@@ -526,12 +554,17 @@ async function addPlaylistVideos(playlistId) {
         videos.push(
             ...data.items.map((item) => ({
                 id: item.snippet.resourceId.videoId,
+                playlistId: playlistId,
                 yt: item,
             }))
         );
+        nextPageToken = data.nextPageToken;
     } while (nextPageToken);
     console.log("addPlaylistVideos: ", videos);
-    db.saveVideos(videos);
+    await db.saveVideos(videos);
+
+    // Refresh playlists display
+    await renderPlaylists();
 }
 
 addBtn.addEventListener("click", async () => {
@@ -674,9 +707,11 @@ browser.runtime.onMessage.addListener(async (msg, sender) => {
 });
 
 async function exportDB() {
-    const videos = await db.loadVideos(false);
+    const playlists = await db.loadPlaylists();
+    const videos = await db.loadVideos();
     const log = await db.getLastNLogs(MAXLOGDUMP);
     const exportData = {
+        playlists,
         videos,
         log,
     };
@@ -989,6 +1024,117 @@ function calcStringSimilarity(queue) {
     }
 }
 
+let playlistsTabulator = null;
+async function renderPlaylists() {
+    const playlists = await db.loadPlaylists();
+
+    let columns = [
+        {
+            title: "Thumb",
+            field: "thumbnailUrl",
+            formatter: (cell) => {
+                const url = cell.getValue();
+                const img = document.createElement("img");
+                img.src = url || "favicon.ico";
+                img.style.width = "70px";
+                img.style.height = "54px";
+                return img;
+            },
+            width: 90,
+        },
+        { title: "Title", field: "title", formatter: "textarea", width: 300, headerFilter: "input" },
+        { title: "Channel", field: "channelTitle", headerFilter: "input", width: 200 },
+        { title: "Videos", field: "videoCount", hozAlign: "center", width: 80 },
+        {
+            title: "Date Added",
+            field: "dateAdded",
+            formatter: (cell) => {
+                const timestamp = cell.getValue();
+                if (!timestamp) return "—";
+                return date2String(new Date(timestamp));
+            },
+            hozAlign: "center",
+            width: 150,
+        },
+        {
+            title: "Rating",
+            field: "rating",
+            hozAlign: "center",
+            formatter: (cell) => cell.getValue().toFixed(1),
+            width: 80,
+        },
+        // Cline was adding this but credits cut before could finish...
+        // {
+        //     title: "Actions",
+        //     formatter: () => {
+        //         const container = document.createElement("div");
+        //         container.style.display = "flex";
+        //         container.style.gap = "5px";
+
+        //         const syncBtn = document.createElement("button");
+        //         syncBtn.textContent = "Sync";
+        //         syncBtn.style.fontSize = "0.9em";
+        //         syncBtn.style.padding = "3px 8px";
+
+        //         const deleteBtn = document.createElement("button");
+        //         deleteBtn.textContent = "Delete";
+        //         deleteBtn.style.fontSize = "0.9em";
+        //         deleteBtn.style.padding = "3px 8px";
+        //         deleteBtn.style.backgroundColor = "#dc3545";
+        //         deleteBtn.style.color = "white";
+        //         deleteBtn.style.border = "none";
+
+        //         container.appendChild(syncBtn);
+        //         container.appendChild(deleteBtn);
+        //         return container;
+        //     },
+        //     cellClick: async function (e, cell) {
+        //         const target = e.target;
+        //         const playlist = cell.getRow().getData();
+
+        //         if (target.textContent === "Delete") {
+        //             if (confirm(`Delete playlist "${playlist.title}"?`)) {
+        //                 await db.deletePlaylist(playlist.id);
+        //                 console.log("Deleted playlist:", playlist.id);
+        //                 await renderPlaylists();
+        //             }
+        //         } else if (target.textContent === "Sync") {
+        //             console.log("Syncing playlist:", playlist.id);
+        //             await addPlaylistVideos(playlist.id);
+        //             alert(`Synced playlist "${playlist.title}"`);
+        //         }
+        //     },
+        //     width: 150,
+        //     hozAlign: "center",
+        // },
+        { title: "ID", field: "id", hozAlign: "left", width: 150 },
+    ];
+
+    const data = playlists.map((playlist) => ({
+        id: playlist.id,
+        title: playlist.title,
+        channelTitle: playlist.channelTitle,
+        videoCount: playlist.videoCount,
+        thumbnailUrl: playlist.thumbnailUrl,
+        dateAdded: playlist.dateAdded,
+        rating: playlist.rating,
+    }));
+
+    if (playlistsTabulator) {
+        playlistsTabulator.replaceData(data);
+        return;
+    }
+
+    playlistsTabulator = new Tabulator("#playlists-grid", {
+        data: data,
+        columns: columns,
+        pagination: "local",
+        paginationSize: 10,
+        layout: "fitData",
+        movableColumns: true,
+    });
+}
+
 async function moveVideoToFront(id) {
     const idx = DBDATA.queue.findIndex((v) => v.id === id);
     if (idx === -1) {
@@ -1008,6 +1154,7 @@ async function moveVideoToFront(id) {
     });
     DBDATA.queue.sort((a, b) => b.score - a.score);
     renderGrid(DBDATA.queue);
+    renderPlaylists();
     // Remove errors and dups from graphs.
     // But leave in actual Queue (with low score), so we don't e.g. add it again
     DBDATA.filtered = DBDATA.queue.filter((v) => (v.errCnt ?? 0) < 3 && !v.dup);
