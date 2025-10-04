@@ -32,7 +32,6 @@ const createWindow = () => {
 
   win.maximize();
   win.loadFile("index.html");
-  // win.loadURL("https://www.youtube.com");
   win.webContents.openDevTools();
 
   setTimeout(() => {

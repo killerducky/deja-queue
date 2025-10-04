@@ -180,17 +180,6 @@ function scoreVideo(video, noise = true) {
 }
 
 let env;
-// try {
-//   const envPath = path.join(__dirname, ".env.json"); // local file relative to main.js
-//   const data = fs.readFileSync(envPath, "utf-8");
-//   env = JSON.parse(data);
-//   console.log("Loaded env:", env);
-// } catch (err) {
-//   console.error("Failed to load .env.json", err);
-//   alert("Could not load .env.json");
-// }
-
-// env = window.electronAPI.env;
 async function loadEnv() {
   try {
     const data = await window.electronAPI.readFile("./.env.json");
@@ -659,6 +648,7 @@ fastForwardBtn.addEventListener("click", async () => {
 
 let videoTimeout;
 
+const webview = document.getElementById("youtube");
 async function playNextVideo(offset = 1) {
   if (DBDATA.queue.length == 0) {
     console.log("Queue empty", offset);
@@ -668,18 +658,9 @@ async function playNextVideo(offset = 1) {
   const cut = DBDATA.queue.splice(0, offset);
   DBDATA.queue.push(...cut);
 
-  const [tab] = await browser.tabs.query({ url: "*://www.youtube.com/*" });
-  if (!tab) return;
-  browser.tabs.sendMessage(tab.id, {
-    type: "playVideo",
-    tab: tab.id,
-    id: DBDATA.queue[0].id,
-  });
-  console.log("sendMessage: ", tab.id, {
-    type: "playVideo",
-    tab: tab.id,
-    id: DBDATA.queue[0].id,
-  });
+  let msg = { type: "playVideo", id: DBDATA.queue[0].id };
+  webview.send("youtube-message", msg);
+  console.log("sendMessage: ", webview, msg);
   await renderQueue();
   if (videoTimeout) clearTimeout(videoTimeout);
   videoTimeout = setTimeout(() => {
@@ -692,6 +673,16 @@ async function playNextVideo(offset = 1) {
     playNextVideo();
   }, 20000); // 20s -- Still some problems...
 }
+
+webview.addEventListener("ipc-message", (event) => {
+  console.log("Message from webview:", event.channel, event.args);
+});
+
+webview.addEventListener("dom-ready", () => {
+  // Opens DevTools for the webview
+  console.log("ready");
+  webview.openDevTools();
+});
 
 function getVideoIdFromInput(input) {
   if (input.startsWith("http")) {
