@@ -634,21 +634,23 @@ delayBtn.addEventListener("click", async () => {
   playNextVideo();
 });
 pauseBtn.addEventListener("click", async () => {
-  const [tab] = await browser.tabs.query({ url: "*://www.youtube.com/*" });
-  browser.tabs.sendMessage(tab.id, { type: "pauseVideo", tab: tab.id });
+  sendMessage("youtube-message", { type: "pauseVideo" });
 });
 playBtn.addEventListener("click", async () => {
-  const [tab] = await browser.tabs.query({ url: "*://www.youtube.com/*" });
-  browser.tabs.sendMessage(tab.id, { type: "resumeVideo", tab: tab.id });
+  sendMessage("youtube-message", { type: "resumeVideo" });
 });
 fastForwardBtn.addEventListener("click", async () => {
-  const [tab] = await browser.tabs.query({ url: "*://www.youtube.com/*" });
-  browser.tabs.sendMessage(tab.id, { type: "fastForward", tab: tab.id });
+  sendMessage("youtube-message", { type: "fastForward" });
 });
 
 let videoTimeout;
 
 const webview = document.getElementById("youtube");
+function sendMessage(type, msg) {
+  webview.send(type, msg);
+  console.log("sendMessage: ", webview, msg);
+}
+
 async function playNextVideo(offset = 1) {
   if (DBDATA.queue.length == 0) {
     console.log("Queue empty", offset);
@@ -659,8 +661,7 @@ async function playNextVideo(offset = 1) {
   DBDATA.queue.push(...cut);
 
   let msg = { type: "playVideo", id: DBDATA.queue[0].id };
-  webview.send("youtube-message", msg);
-  console.log("sendMessage: ", webview, msg);
+  sendMessage("youtube-message", msg);
   await renderQueue();
   if (videoTimeout) clearTimeout(videoTimeout);
   videoTimeout = setTimeout(() => {
@@ -679,7 +680,6 @@ webview.addEventListener("ipc-message", (event) => {
 });
 
 webview.addEventListener("dom-ready", () => {
-  // Opens DevTools for the webview
   console.log("ready");
   webview.openDevTools();
 });

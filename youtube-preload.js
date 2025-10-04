@@ -8,7 +8,7 @@ ipcRenderer.on("youtube-message", (event, msg) => {
     status: "message received",
     original: msg,
   });
-  //   const video = document.querySelector("video");
+  const video = document.querySelector("video");
   //   if (!video) return;
 
   if (msg.type === "playVideo") {
