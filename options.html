@@ -3,10 +3,10 @@
   <head>
     <title>YouTube Queue</title>
     <style>
-      html {
+      body {
         font-family: sans-serif;
         width: auto;
-        margin: 20px auto;
+        margin: 20px auto 100px;
         line-height: 1.5;
       }
       .narrow {
@@ -86,6 +86,20 @@
       .database-container {
         height: 800px;
       }
+      .toc-horizontal {
+        display: flex; /* horizontal layout */
+        gap: 20px; /* space between items */
+        list-style: none; /* remove bullets */
+        padding: 0;
+        margin: 0;
+      }
+      .toc-horizontal li a {
+        text-decoration: none;
+        font-weight: bold;
+      }
+      .toc-horizontal li a:hover {
+        text-decoration: underline;
+      }
       #toast-container {
         position: fixed;
         bottom: 20px;
@@ -125,6 +139,8 @@
   </head>
   <body>
     <div class="narrow">
+      <nav id="toc"></nav>
+      <h2>Controls</h2>
       <div class="controls">
         <button id="pause">Pause</button>
         <button id="play">Play</button>
@@ -148,14 +164,6 @@
       <ul id="queue"></ul>
       <h2>Log</h2>
       <ul id="log"></ul>
-      <h2>Ratings</h2>
-      <div id="ratings-chart"></div>
-      <h2>Interval load</h2>
-      <div id="interval-chart"></div>
-      <h2>Scores</h2>
-      <div id="scores-chart"></div>
-      <h2>Cooldown</h2>
-      <div id="cooldown-chart"></div>
     </div>
     <div class="wide">
       <h2>Playlists</h2>
@@ -172,6 +180,16 @@
       <div class="database-container">
         <div id="database-grid"></div>
       </div>
+    </div>
+    <div class="narrow">
+      <h2>Ratings</h2>
+      <div id="ratings-chart"></div>
+      <h2>Interval load</h2>
+      <div id="interval-chart"></div>
+      <h2>Scores</h2>
+      <div id="scores-chart"></div>
+      <h2>Cooldown</h2>
+      <div id="cooldown-chart"></div>
       <h2>Import/Export</h2>
       <button id="deleteBtn">Delete DB</button>
       <button id="exportBtn">Export DB</button>

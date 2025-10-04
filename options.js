@@ -208,6 +208,28 @@ queueModeEl.addEventListener("change", () => {
   localStorage.setItem("queueMode", queueModeEl.value);
 });
 
+function addToc() {
+  const toc = document.getElementById("toc");
+  const headings = document.querySelectorAll("h2");
+  const ul = document.createElement("ul");
+  ul.className = "toc-horizontal";
+
+  headings.forEach((h2) => {
+    // Make sure each heading has an ID
+    if (!h2.id) {
+      h2.id = h2.textContent.toLowerCase().replace(/\s+/g, "-");
+    }
+    const li = document.createElement("li");
+    const a = document.createElement("a");
+    a.href = `#${h2.id}`;
+    a.textContent = h2.textContent;
+    li.appendChild(a);
+    ul.appendChild(li);
+  });
+  toc.appendChild(ul);
+}
+addToc();
+
 function shuffleArray(array) {
   for (let i = array.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
