@@ -1,6 +1,6 @@
+// const fs = require("fs");
+// const path = require("path");
 import * as db from "./db.js";
-
-// Error: YXpJcFeaUwY Like A Prayer [8 Bit Tribute to Madonna] - 8 Bit Universe
 
 // Cross-browser shim
 if (typeof browser === "undefined") {
@@ -182,14 +182,18 @@ function scoreVideo(video, noise = true) {
 }
 
 let env;
-try {
-  const url = browser.runtime.getURL(".env.json");
-  const resp = await fetch(url);
-  env = await resp.json();
-} catch (err) {
-  console.error("Failed to load .env.json", err);
-  alert("Could not load .env.json");
-}
+// try {
+//   const envPath = path.join(__dirname, ".env.json"); // local file relative to main.js
+//   const data = fs.readFileSync(envPath, "utf-8");
+//   env = JSON.parse(data);
+//   console.log("Loaded env:", env);
+// } catch (err) {
+//   console.error("Failed to load .env.json", err);
+//   alert("Could not load .env.json");
+// }
+env = {
+  API_KEY: "YourKeyGoesHere",
+};
 
 const input = document.getElementById("videoId");
 const addBtn = document.getElementById("add");
@@ -719,7 +723,8 @@ async function logEvent(video, event) {
 }
 
 let lastEndedVideoId = null;
-browser.runtime.onMessage.addListener(async (msg, sender) => {
+// browser.runtime.onMessage.addListener(async (msg, sender) => {
+window.electronAPI.onReply(async (msg) => {
   const videoId = getVideoIdFromInput(sender.url).id;
   const currVideo = DBDATA.queue[0];
   console.log("options.js received message:", msg, videoId);
