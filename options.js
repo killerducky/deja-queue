@@ -305,7 +305,7 @@ let tableColumns = {
         moveVideoToFront(cell.getRow().getData().id);
         await renderQueue();
       } else {
-        playNextVideo();
+        playNextVideo(0);
       }
     },
   },
