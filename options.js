@@ -18,7 +18,6 @@ let DEFAULT_RATING = 7.5;
 let COOLDOWN_JITTER_START = 3; // Subtract N days from the interval
 let COOLDOWN_JITTER_RATE = 0.2; // Add up to X% jitter to that part of the interval
 let RATING_FACTOR = 1;
-let PLAYLIST_MODE = true;
 
 function rating2color(rating) {
   // https://colorbrewer2.org/#type=sequential&scheme=GnBu&n=9
@@ -202,6 +201,12 @@ const playBtn = document.getElementById("play");
 const currentEl = document.getElementById("current");
 const queueEl = document.getElementById("queue");
 const logEl = document.getElementById("log");
+const queueModeEl = document.getElementById("queueMode");
+
+queueModeEl.value = localStorage.getItem("queueMode") || "Video";
+queueModeEl.addEventListener("change", () => {
+  localStorage.setItem("queueMode", queueModeEl.value);
+});
 
 function shuffleArray(array) {
   for (let i = array.length - 1; i > 0; i--) {
@@ -256,7 +261,8 @@ const parseAttr = (input, attrName, fallback) => {
   return Number.isFinite(n) ? n : fallback;
 };
 
-function showToast(msg, duration = 5000) {
+function showToast(msg) {
+  let duration = 5000;
   const container = document.getElementById("toast-container");
   const toast = document.createElement("div");
   toast.className = "toast";
@@ -571,7 +577,7 @@ async function addPlaylistVideos(playlistId) {
 addBtn.addEventListener("click", async () => {
   let response = getVideoIdFromInput(input.value.trim());
   if (!response.id) {
-    showToast("Could not find on youtube ", input.value);
+    alert(`Could not parse URL`);
     return;
   }
   if (response.type == "video") {
@@ -582,7 +588,7 @@ addBtn.addEventListener("click", async () => {
       let video = { id: response.id };
       await addYoutubeInfo(video);
       if (!video.yt) {
-        showToast("Failed to fetch video info, please check the ID");
+        alert("Failed to fetch video info, please check the ID");
         return;
       }
       DBDATA.queue.splice(1, 0, video);
@@ -590,7 +596,7 @@ addBtn.addEventListener("click", async () => {
   } else if (response.type == "playlist") {
     await addPlaylistVideos(response.id);
   } else {
-    showToast("Error: could not parse input");
+    alert("Error: could not parse input");
     return;
   }
   await renderQueue();
@@ -1241,7 +1247,7 @@ async function moveVideoToFront(id) {
   });
   DBDATA.queue.sort((a, b) => b.score - a.score);
   DBDATA.playlists = await db.loadPlaylists();
-  if (PLAYLIST_MODE) {
+  if (queueModeEl.value == "playlist") {
     const playlistMap = new Map(DBDATA.playlists.map((pl) => [pl.id, pl]));
     const validPlaylistIds = new Set(DBDATA.playlists.map((pl) => pl.id));
     let origQueue = DBDATA.queue;
