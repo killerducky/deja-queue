@@ -304,6 +304,7 @@ let tableColumns = {
       if (cell.getTable().options.custom.reorder) {
         moveVideoToFront(cell.getRow().getData().id);
         await renderQueue();
+        showToast("Added to front of queue");
       } else {
         playNextVideo(0);
       }
@@ -315,6 +316,24 @@ let tableColumns = {
     formatter: "textarea",
     hozAlign: "left",
     width: 250,
+  },
+  tags: {
+    title: "Tags",
+    field: "tags",
+    formatter: "textarea",
+    editor: "input",
+    width: 150,
+    cellEdited: async (cell) => {
+      const video = DBDATA.queue.find(
+        (v) => v.id === cell.getRow().getData().id
+      );
+      if (!video) {
+        alert("Error: Cannot find in DBDATA");
+        return;
+      }
+      console.log(`Edit ID:${video.id} New tags: ${video.tags}`);
+      await db.saveVideos(video);
+    },
   },
   track: {
     title: "Track",
@@ -334,7 +353,7 @@ let tableColumns = {
     },
   },
   playCnt: {
-    title: "Play Count",
+    title: "Play<br>Count",
     field: "playCnt",
     formatter: "plaintext",
   },
@@ -400,6 +419,7 @@ async function table2(tabulator, htmlEl, videoList, reorder) {
     columns: [
       tableColumns.thumb,
       tableColumns.title,
+      tableColumns.tags,
       tableColumns.track,
       tableColumns.dur,
       tableColumns.lastPlayed,
@@ -626,6 +646,7 @@ async function playNextVideo(offset = 1) {
   videoTimeout = setTimeout(() => {
     console.log("Error:", DBDATA.queue[0].id, DBDATA.queue[0].title);
     console.log("Video did NOT start playing within timeout");
+    showToast("Video timeout");
     DBDATA.queue[0].errCnt = (DBDATA.queue[0].errCnt || 0) + 1;
     db.saveVideos([DBDATA.queue[0]]);
     logEvent(DBDATA.queue[0], "error");
@@ -928,8 +949,26 @@ function plotCooldownFactor(videos) {
   Plotly.newPlot("cooldown-chart", traces, layout);
 }
 
-let tabulator = null;
-function renderGrid(queue) {
+let tabulatorDB = null;
+function setGlobalSearch(myTabulatorTable, value) {
+  myTabulatorTable.setFilter((data, row) => {
+    let term = value.toLowerCase();
+    console.log("DB filter on ", term);
+    for (let key in data) {
+      const value = data[key];
+      if (value && value.toString().toLowerCase().includes(term)) {
+        return true;
+      }
+    }
+    return false;
+  });
+}
+const dbFilterEl = document.getElementById("dbFilter");
+dbFilterEl.addEventListener("change", (e) => {
+  setGlobalSearch(tabulatorDB, e.target.value);
+});
+
+function renderDB(queue) {
   let columns = [
     {
       title: "Thumb",
@@ -959,7 +998,14 @@ function renderGrid(queue) {
       title: "Title",
       field: "title",
       formatter: "textarea",
-      width: 300,
+      width: 250,
+      headerFilter: "input",
+    },
+    {
+      title: "Tags",
+      field: "tags",
+      formatter: "textarea",
+      width: 150,
       headerFilter: "input",
     },
     { title: "Dur", field: "dur", formatter: "textarea" },
@@ -1002,12 +1048,12 @@ function renderGrid(queue) {
       video?.yt?.snippet?.channelTitle,
   }));
 
-  if (tabulator) {
-    tabulator.replaceData(data);
+  if (tabulatorDB) {
+    tabulatorDB.replaceData(data);
     return;
   }
 
-  tabulator = new Tabulator("#database-grid", {
+  tabulatorDB = new Tabulator("#database-grid", {
     data: data,
     columns: columns,
     pagination: "local",
@@ -1015,7 +1061,7 @@ function renderGrid(queue) {
     layout: "fitData",
     movableColumns: true,
   });
-  tabulator.on("cellEdited", async (cell) => {
+  tabulatorDB.on("cellEdited", async (cell) => {
     console.log(
       "Edited",
       cell.getField(),
@@ -1034,6 +1080,7 @@ function renderGrid(queue) {
       alert("Error: Cannot find in DBDATA");
       return;
     }
+    // TODO: Move this to formatter for errCnt
     let video = DBDATA.queue[idx];
     if (cell.getField() == "errCnt") {
       video.errCnt = cell.getValue();
@@ -1224,7 +1271,7 @@ async function moveVideoToFront(id) {
     }
     DBDATA.playlists.push(defaultPlaylist);
   }
-  renderGrid(DBDATA.queue);
+  renderDB(DBDATA.queue);
   renderPlaylists();
   // Remove errors and dups from graphs.
   // But leave in actual Queue (with low score), so we don't e.g. add it again
