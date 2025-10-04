@@ -1,0 +1,14 @@
+{
+    "name": "youtube-dj",
+    "version": "1.0.0",
+    "description": "Create a google API key\r https://console.cloud.google.com/apis/credentials",
+    "main": "background.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "author": "",
+    "license": "MIT",
+    "dependencies": {
+        "string-similarity": "^4.0.4"
+    }
+}

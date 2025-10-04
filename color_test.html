@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Color Test</title>
+    <style>
+      .color-square {
+        width: 50px;
+        height: 150px;
+        display: inline-block;
+        margin: 5px;
+      }
+      #color-container {
+        width: 800px;
+        margin: 100px auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="color-container"></div>
+
+    <script>
+      const colors = [
+        "hsl(204, 90%, 11%)",
+        "hsl(219, 39%, 29%)",
+        "hsl(250, 27%, 41%)",
+        "hsl(306, 41%, 52%)",
+        "hsl(346, 63%, 64%)",
+        "hsl(20, 70%, 65%)",
+        "hsl(55, 80%, 45%)",
+        "hsl(85, 80%, 40%)",
+        "hsl(105, 80%, 45%)",
+      ];
+      const container = document.getElementById("color-container");
+
+      colors.forEach((color) => {
+        const div = document.createElement("div");
+        div.className = "color-square";
+        div.style.backgroundColor = color;
+        container.appendChild(div);
+      });
+    </script>
+  </body>
+</html>
