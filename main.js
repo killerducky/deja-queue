@@ -47,7 +47,6 @@ const createWindow = () => {
 ipcMain.handle("read-file", async (event, filePath) => {
   try {
     const data = await fs.promises.readFile(filePath, "utf8");
-    console.log(filePath, data);
     return data;
   } catch (error) {
     console.error("Error reading file:", error);

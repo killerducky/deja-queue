@@ -1,6 +1,4 @@
-// const fs = require("fs");
-// const path = require("path");
-// import * as db from "./db.js";
+import * as db from "./db.js";
 
 // Cross-browser shim
 if (typeof browser === "undefined") {
@@ -197,7 +195,6 @@ async function loadEnv() {
   try {
     console.log("readfile");
     const data = await window.electronAPI.readFile("./.env.json");
-    console.log(data);
     env = JSON.parse(data);
   } catch (err) {
     console.error("Failed to load .env.json", err);
