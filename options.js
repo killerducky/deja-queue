@@ -266,68 +266,6 @@ function showToast(msg, duration = 5000) {
   setTimeout(() => toast.remove(), duration);
 }
 
-export function handleSteppers(chartContainerEl) {
-  chartContainerEl.querySelectorAll(".number-stepper").forEach((container) => {
-    const input = container.querySelector('input[type="number"]');
-    const btnUp = container.querySelector(".step-up");
-    const btnDown = container.querySelector(".step-down");
-
-    if (!input) return;
-
-    // get step/min/max dynamically in case they change
-    const getStep = () => parseAttr(input, "step", 1);
-    const getMin = () => parseAttr(input, "min", -Infinity);
-    const getMax = () => parseAttr(input, "max", Infinity);
-
-    const clamp = (v) => Math.min(getMax(), Math.max(getMin(), v));
-
-    const changeValue = (delta) => {
-      // Allow empty input: treat as 0 or min if defined
-      let val =
-        input.value === ""
-          ? Number.isFinite(getMin()) && getMin() > -Infinity
-            ? getMin()
-            : 0
-          : Number(input.value);
-
-      if (!Number.isFinite(val)) val = 0;
-
-      const step = getStep();
-      // If step is 0 or NaN, default to 1
-      const effectiveStep =
-        typeof step === "number" && step !== 0 && Number.isFinite(step)
-          ? step
-          : 1;
-
-      // add delta * step
-      let newVal = val + delta * effectiveStep;
-
-      // Align to step grid relative to min if min is finite (helps with non-integer steps)
-      const min = getMin();
-      if (Number.isFinite(min) && effectiveStep !== 0) {
-        // make sure (newVal - min) is a multiple of step (within floating tolerance)
-        const raw =
-          Math.round((newVal - min) / effectiveStep) * effectiveStep + min;
-        newVal = raw;
-      }
-
-      newVal = clamp(newVal);
-
-      // If step or min cause decimal imprecision, format to reasonable decimal places
-      const decimals = (effectiveStep.toString().split(".")[1] || "").length;
-      input.value =
-        Number.isFinite(decimals) && decimals > 0
-          ? newVal.toFixed(decimals)
-          : String(Math.round(newVal));
-      input.dispatchEvent(new Event("change", { bubbles: true })); // let other listeners know value changed
-    };
-
-    // button handlers
-    btnUp && btnUp.addEventListener("click", () => changeValue(+1));
-    btnDown && btnDown.addEventListener("click", () => changeValue(-1));
-  });
-}
-
 let tabulatorCurrent = null;
 let tabulatorQueue = null;
 let tabulatorLog = null;
@@ -400,29 +338,6 @@ let tableColumns = {
     field: "playCnt",
     formatter: "plaintext",
   },
-  rating2: {
-    title: "Rating",
-    field: "rating",
-    editor: "number",
-    editorParams: {
-      step: 0.5,
-      min: 1,
-      max: 10,
-    },
-    formatter: (cell) => {
-      const val = cell.getValue() ?? DEFAULT_RATING;
-      return parseFloat(val).toFixed(1);
-    },
-    cellEdited: async (cell) => {
-      const video = cell.getRow().getData();
-      video.rating = cell.getValue();
-      await db.saveVideos([video]);
-      console.log("Saved new rating", video.rating, "for", video.id);
-      cell.getRow().update({ interval: rating2days(video.rating) + "d" });
-    },
-    width: 100,
-  },
-
   rating: {
     title: "Rating",
     field: "rating",
@@ -445,19 +360,24 @@ let tableColumns = {
       input.max = "10";
       input.step = "0.5";
       input.value = (video.rating ?? DEFAULT_RATING).toFixed(1);
-      async function saveRating() {
-        const newValue = parseFloat(input.value);
-        if (!isNaN(newValue)) {
-          video.rating = newValue;
-          await db.saveVideos([video]);
-          console.log("Saved new rating", newValue, "for", video.id);
-        }
-      }
-      input.addEventListener("change", () => saveRating());
       div.appendChild(downBtn);
       div.appendChild(input);
       div.appendChild(upBtn);
       return div;
+    },
+    cellClick: async (e, cell) => {
+      let video = cell.getRow().getData();
+      let origRating = video.rating;
+      if (e.target.classList.contains("step-down")) {
+        video.rating = Math.max(1, video.rating - 0.5);
+      } else if (e.target.classList.contains("step-up")) {
+        video.rating = Math.min(10, video.rating + 0.5);
+      }
+      if (origRating != video.rating) {
+        await db.saveVideos([video]);
+        cell.getRow().reformat();
+        console.log("Saved new rating", video.rating, "for", video.id);
+      }
     },
   },
   interval: {
