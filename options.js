@@ -952,15 +952,22 @@ function plotCooldownFactor(videos) {
 let tabulatorDB = null;
 function setGlobalSearch(myTabulatorTable, value) {
   myTabulatorTable.setFilter((data, row) => {
-    let term = value.toLowerCase();
-    console.log("DB filter on ", term);
-    for (let key in data) {
-      const value = data[key];
-      if (value && value.toString().toLowerCase().includes(term)) {
-        return true;
+    let terms = value.toLowerCase().split(" ");
+    // console.log("DB filter on ", terms);
+    for (let term of terms) {
+      let found = false;
+      for (let key in data) {
+        const value = data[key];
+        if (value && value.toString().toLowerCase().includes(term)) {
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        return false;
       }
     }
-    return false;
+    return true;
   });
 }
 const dbFilterEl = document.getElementById("dbFilter");
@@ -1034,6 +1041,7 @@ function renderDB(queue) {
   const data = queue.map((video) => ({
     id: video.id,
     title: video.title || video.yt?.snippet?.title || video.id,
+    tags: video.tags,
     dur: formatVideoDuration(video),
     rating: video.rating.toFixed(1),
     score: video.score.toFixed(1),
