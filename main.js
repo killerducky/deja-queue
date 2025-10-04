@@ -25,6 +25,7 @@ const createWindow = () => {
       preload: __dirname + "/preload.js", // inject our bridge script
       nodeIntegration: false,
       contextIsolation: true,
+      webviewTag: true,
     },
     preload: path.join(__dirname, "preload.js"),
   });

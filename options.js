@@ -193,7 +193,6 @@ let env;
 // env = window.electronAPI.env;
 async function loadEnv() {
   try {
-    console.log("readfile");
     const data = await window.electronAPI.readFile("./.env.json");
     env = JSON.parse(data);
   } catch (err) {
