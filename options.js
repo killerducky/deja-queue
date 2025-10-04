@@ -18,7 +18,7 @@ let DEFAULT_RATING = 7.5;
 let COOLDOWN_JITTER_START = 3; // Subtract N days from the interval
 let COOLDOWN_JITTER_RATE = 0.2; // Add up to X% jitter to that part of the interval
 let RATING_FACTOR = 1;
-let PLAYLIST_MODE = false;
+let PLAYLIST_MODE = true;
 
 function rating2color(rating) {
   // https://colorbrewer2.org/#type=sequential&scheme=GnBu&n=9
@@ -970,6 +970,7 @@ function setGlobalSearch(myTabulatorTable, value) {
     return true;
   });
 }
+
 const dbFilterEl = document.getElementById("dbFilter");
 dbFilterEl.addEventListener("change", (e) => {
   setGlobalSearch(tabulatorDB, e.target.value);
@@ -1127,6 +1128,11 @@ function calcStringSimilarity(queue) {
 }
 
 let playlistsTabulator = null;
+const plFilterEl = document.getElementById("plFilter");
+plFilterEl.addEventListener("change", (e) => {
+  setGlobalSearch(playlistsTabulator, e.target.value);
+});
+
 async function renderPlaylists() {
   let columns = [
     {
@@ -1158,16 +1164,29 @@ async function renderPlaylists() {
       title: "Title",
       field: "title",
       formatter: "textarea",
-      width: 300,
+      width: 250,
       headerFilter: "input",
+    },
+    {
+      title: "Tags",
+      field: "tags",
+      formatter: "textarea",
+      editor: "input",
+      width: 150,
+      cellEdited: async (cell) => {
+        // console.log("edit:", cell.getData());
+        const pl = cell.getData();
+        console.log(`edit pl:${pl.id} tags:${pl.tags}`);
+        await db.savePlaylists(pl);
+      },
     },
     {
       title: "Channel",
       field: "channelTitle",
       headerFilter: "input",
-      width: 200,
+      width: 150,
     },
-    { title: "Videos", field: "videoCount", hozAlign: "center", width: 80 },
+    { title: "Videos", field: "videoCount", hozAlign: "center" },
     {
       title: "Date Added",
       field: "dateAdded",
@@ -1189,24 +1208,13 @@ async function renderPlaylists() {
     { title: "ID", field: "id", hozAlign: "left", width: 150 },
   ];
 
-  const data = DBDATA.playlists.map((playlist) => ({
-    id: playlist.id,
-    title: playlist.title,
-    channelTitle: playlist.channelTitle,
-    videoCount: playlist.videoCount,
-    thumbnailUrl: playlist.thumbnailUrl,
-    dateAdded: playlist.dateAdded,
-    rating: playlist.rating,
-    videoIds: playlist.videoIds,
-  }));
-
   if (playlistsTabulator) {
-    playlistsTabulator.replaceData(data);
+    playlistsTabulator.replaceData(DBDATA.playlists);
     return;
   }
 
   playlistsTabulator = new Tabulator("#playlists-grid", {
-    data: data,
+    data: DBDATA.playlists,
     columns: columns,
     pagination: "local",
     paginationSize: 10,
