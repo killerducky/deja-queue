@@ -1,6 +1,6 @@
 // const fs = require("fs");
 // const path = require("path");
-import * as db from "./db.js";
+// import * as db from "./db.js";
 
 // Cross-browser shim
 if (typeof browser === "undefined") {
@@ -191,9 +191,20 @@ let env;
 //   console.error("Failed to load .env.json", err);
 //   alert("Could not load .env.json");
 // }
-env = {
-  API_KEY: "YourKeyGoesHere",
-};
+
+// env = window.electronAPI.env;
+async function loadEnv() {
+  try {
+    console.log("readfile");
+    const data = await window.electronAPI.readFile("./.env.json");
+    console.log(data);
+    env = JSON.parse(data);
+  } catch (err) {
+    console.error("Failed to load .env.json", err);
+    alert("Could not load .env.json");
+  }
+}
+loadEnv();
 
 const input = document.getElementById("videoId");
 const addBtn = document.getElementById("add");
@@ -525,7 +536,7 @@ async function addYoutubeInfo(video) {
   const response = await fetch(url);
   const data = await response.json();
   // console.log(data);
-  if (data.items.length > 0) {
+  if (data.items?.length > 0) {
     video.yt = data.items[0];
     await db.saveVideos([video]);
   } else {

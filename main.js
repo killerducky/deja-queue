@@ -1,6 +1,6 @@
-const fs = require("fs");
+const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
-const { app, BrowserWindow } = require("electron");
+const fs = require("fs");
 
 // Try to workaround spectrum doh ssl warning
 // CertVerifyProcBuiltin for doh-02.spectrum.com failed:
@@ -14,17 +14,6 @@ app.commandLine.appendSwitch("disable-gpu"); // optionally disable GPU entirely
 app.commandLine.appendSwitch("disable-software-rasterizer");
 app.commandLine.appendSwitch("enable-logging", "stderr");
 app.commandLine.appendSwitch("v", "0"); // sets verbose logging to 0 (minimal)
-
-let env;
-try {
-  const envPath = path.join(__dirname, ".env.json"); // local file relative to main.js
-  const data = fs.readFileSync(envPath, "utf-8");
-  env = JSON.parse(data);
-  console.log("Loaded env:", env);
-} catch (err) {
-  console.error("Failed to load .env.json", err);
-  alert("Could not load .env.json");
-}
 
 const createWindow = () => {
   const win = new BrowserWindow({
@@ -54,6 +43,17 @@ const createWindow = () => {
     .executeJavaScript("window.ytControl.getTime()")
     .then((t) => console.log("Current time:", t));
 };
+
+ipcMain.handle("read-file", async (event, filePath) => {
+  try {
+    const data = await fs.promises.readFile(filePath, "utf8");
+    console.log(filePath, data);
+    return data;
+  } catch (error) {
+    console.error("Error reading file:", error);
+    throw error; // Re-throw to inform the renderer of the error
+  }
+});
 
 app.whenReady().then(() => {
   createWindow();

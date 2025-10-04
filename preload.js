@@ -24,4 +24,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   sendMessage: (msg) => ipcRenderer.send("message-from-renderer", msg),
   onReply: (callback) =>
     ipcRenderer.on("reply-from-main", (e, data) => callback(data)),
+  readFile: (filePath) => {
+    console.log("read filePath");
+    return ipcRenderer.invoke("read-file", filePath);
+  },
 });
