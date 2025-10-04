@@ -671,13 +671,9 @@ async function playNextVideo(offset = 1) {
     DBDATA.queue[0].errCnt = (DBDATA.queue[0].errCnt || 0) + 1;
     db.saveVideos([DBDATA.queue[0]]);
     logEvent(DBDATA.queue[0], "error");
-    playNextVideo();
+    // playNextVideo();
   }, 20000); // 20s -- Still some problems...
 }
-
-webview.addEventListener("ipc-message", (event) => {
-  console.log("Message from webview:", event.channel, event.args);
-});
 
 webview.addEventListener("dom-ready", () => {
   console.log("ready");
@@ -721,12 +717,28 @@ async function logEvent(video, event) {
 }
 
 let lastEndedVideoId = null;
-// browser.runtime.onMessage.addListener(async (msg, sender) => {
-window.electronAPI.onReply(async (msg) => {
-  const videoId = getVideoIdFromInput(sender.url).id;
+
+// args
+// [
+//     {
+//         "status": "message received",
+//         "original": {
+//             "type": "playVideo",
+//             "id": "FrG4TEcSuRg"
+//         }
+//     }
+// ]
+
+// window.electronAPI.onReply(async (msg) => {
+webview.addEventListener("ipc-message", async (event) => {
+  let msg = event.args[0];
+  console.log("Message from webview:", event, msg);
   const currVideo = DBDATA.queue[0];
+  // const videoId = getVideoIdFromInput(sender.url).id;  TODO add back this check
+  const videoId = currVideo;
   console.log("options.js received message:", msg, videoId);
-  if (msg.type === "videoPlaying") {
+  if (msg?.type === "videoPlaying") {
+    console.log("actually got videoPlaying");
     clearTimeout(videoTimeout);
     if (
       videoId &&
@@ -739,7 +751,8 @@ window.electronAPI.onReply(async (msg) => {
       await db.saveVideos([currVideo]);
     }
   }
-  if (msg.type === "videoEnded") {
+  if (msg?.type === "videoEnded") {
+    console.log("actually got videoEnded");
     if (lastEndedVideoId === videoId) {
       console.log("Duplicate videoEnded ignored for", videoId);
       return;
