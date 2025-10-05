@@ -48,6 +48,10 @@ function attachListener() {
   //   } else {
   //     console.log("Theater mode button not found.");
   //   }
+
+  /* <button class="ytp-size-button ytp-button" title="" aria-keyshortcuts="t" data-priority="9" data-tooltip-title="Theater mode (t)" data-title-no-tooltip="Theater mode" aria-label="Theater mode (t)"><svg height="100%" version="1.1" viewBox="0 0 36 36" width="100%"><use class="ytp-svg-shadow" xlink:href="#ytp-id-29"></use><path d="m 28,11 0,14 -20,0 0,-14 z m -18,2 16,0 0,10 -16,0 0,-10 z" fill="#fff" fill-rule="evenodd" id="ytp-id-29"></path></svg></button> */
+  /* <button class="ytp-size-button ytp-button" title="" aria-keyshortcuts="t" data-priority="9" data-title-no-tooltip="Default view" aria-label="Default view keyboard shortcut t" data-tooltip-title="Default view (t)"><svg height="100%" version="1.1" viewBox="0 0 36 36" width="100%"><use class="ytp-svg-shadow" xlink:href="#ytp-id-164"></use><path d="m 26,13 0,10 -16,0 0,-10 z m -14,2 12,0 0,6 -12,0 0,-6 z" fill="#fff" fill-rule="evenodd" id="ytp-id-164"></path></svg></button> */
+
   if (!video.paused && !video.ended && video.readyState > 2) {
     console.log("Video already playing on attach");
     sendMessage({

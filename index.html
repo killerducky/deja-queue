@@ -23,7 +23,7 @@
       }
       h2,
       h3 {
-        margin-top: 2.5em;
+        margin-top: 2em;
       }
       input {
         width: 300px;
@@ -87,6 +87,11 @@
         justify-content: center;
         align-items: center;
       }
+      .yt-container {
+        height: 400px;
+        width: 600px;
+        margin: auto;
+      }
       .database-container {
         height: 800px;
       }
@@ -144,6 +149,20 @@
   <body>
     <div class="narrow">
       <nav id="toc"></nav>
+      <h2>Youtube</h2>
+      <div class="yt-container">
+        <webview
+          id="youtube-webview"
+          src="https://youtube.com"
+          preload="./youtube-preload.js"
+          style="height: 100%"
+          nodeintegration
+        ></webview>
+        <webview
+          id="devtoolsContainer"
+          style="width: 100%; height: 100%"
+        ></webview>
+      </div>
       <h2>Controls</h2>
       <div class="controls">
         <button id="pause">Pause</button>
@@ -161,20 +180,6 @@
           <option value="video">Video</option>
           <option value="playlist">Playlist</option>
         </select>
-      </div>
-      <h2>Youtube</h2>
-      <div style="height: 50vh">
-        <webview
-          id="youtube-webview"
-          src="https://youtube.com"
-          preload="./youtube-preload.js"
-          style="height: 100%"
-          nodeintegration
-        ></webview>
-        <webview
-          id="devtoolsContainer"
-          style="width: 100%; height: 100%"
-        ></webview>
       </div>
       <h2>Current Song</h2>
       <ul id="current"></ul>
