@@ -791,6 +791,34 @@ importFile.addEventListener("change", () => {
   }
 });
 
+function applyDarkMode(layout) {
+  const darkMode = window.matchMedia("(prefers-color-scheme: dark)").matches;
+
+  if (!darkMode) return layout; // leave as-is if not dark mode
+
+  // Merge dark mode properties without overwriting existing layout completely
+  return {
+    ...layout,
+    paper_bgcolor: "#1e1e1e",
+    plot_bgcolor: "#1e1e1e",
+    font: { ...layout.font, color: "#eee" },
+    xaxis: {
+      ...(layout.xaxis || {}),
+      gridcolor: "#444",
+      zerolinecolor: "#666",
+      tickcolor: "#eee",
+      titlefont: { color: "#eee", ...(layout.xaxis?.titlefont || {}) },
+    },
+    yaxis: {
+      ...(layout.yaxis || {}),
+      gridcolor: "#444",
+      zerolinecolor: "#666",
+      tickcolor: "#eee",
+      titlefont: { color: "#eee", ...(layout.yaxis?.titlefont || {}) },
+    },
+  };
+}
+
 function plotRatings(videos) {
   const ratings = videos.map((v) => v.rating || DEFAULT_RATING);
 
@@ -822,7 +850,7 @@ function plotRatings(videos) {
     marker: { color: colors },
   };
 
-  const layout = {
+  let layout = {
     title: "Ratings Distribution",
     xaxis: { title: "Rating", tickvals: xs, ticktext: ticktext },
     yaxis: { title: "Count" },
@@ -847,7 +875,7 @@ function plotRatings(videos) {
       },
     ],
   };
-
+  layout = applyDarkMode(layout);
   Plotly.newPlot("ratings-chart", [trace], layout);
 
   let loads = xs.map((r) => {
@@ -874,13 +902,15 @@ function plotRatings(videos) {
     )}<extra></extra>`,
   }));
 
-  const layout2 = {
+  let layout2 = {
     barmode: "stack",
     title: "Ratings Breakdown",
     xaxis: { title: "Count" },
     yaxis: { showticklabels: false, fixedrange: true, range: [-0.5, 0.5] },
     margin: { t: 15, b: 15 },
   };
+
+  layout2 = applyDarkMode(layout2);
 
   Plotly.newPlot("interval-chart", traces2, layout2);
 }
@@ -905,13 +935,13 @@ function plotScores(videos) {
     };
   });
 
-  const layout = {
+  let layout = {
     title: "Scores Distribution",
     xaxis: { title: "Score" },
     yaxis: { title: "Count" },
     barmode: "stack",
   };
-
+  layout = applyDarkMode(layout);
   Plotly.newPlot("scores-chart", traces, layout);
 }
 
@@ -941,12 +971,12 @@ function plotCooldownFactor(videos) {
   }
 
   // Layout
-  const layout = {
+  let layout = {
     title: "Function Test Graph",
     xaxis: { title: { text: "days" }, range: [-5, 150] },
     yaxis: { title: { text: "Cooldown penalty/bonus" } },
   };
-
+  layout = applyDarkMode(layout);
   // Plot
   Plotly.newPlot("cooldown-chart", traces, layout);
 }
