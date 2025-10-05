@@ -751,6 +751,7 @@ webview.addEventListener("ipc-message", async (event) => {
       console.log("Duplicate videoEnded ignored for", videoId);
       return;
     }
+    lastEndedVideoId = videoId;
     // console.log("Controller: video ended, moving to next");
     // check in case some other video was actually playing, don't want to credit that
     if (videoId && currVideo && videoId === currVideo.id) {
@@ -777,7 +778,8 @@ async function exportDB() {
 
   const a = document.createElement("a");
   a.href = url;
-  a.download = "videos_export.json";
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  a.download = `videos_export_${timestamp}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
