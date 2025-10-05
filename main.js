@@ -2,14 +2,38 @@ const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
 const fs = require("fs");
 
+// const Store = require("electron-store");
+// const store = new Store();
+let store;
+
 app.commandLine.appendSwitch("disable-logging"); // disable general Chromium logging
 app.commandLine.appendSwitch("log-level", "3"); // 0=verbose, 3=errors only
 app.commandLine.appendSwitch("disable-features", "VizDisplayCompositor"); // optional GPU warning reduction
 
+function sizeStore(win, label) {
+  if (store.get("mainWindowMaximized")) {
+    win.maximize();
+  }
+  win.on("resize", () => {
+    if (!win.isMaximized()) {
+      store.set(`${label}WindowBounds`, win.getBounds());
+    }
+  });
+  win.on("move", () => {
+    if (!win.isMaximized()) {
+      store.set(`${label}WindowBounds`, win.getBounds());
+    }
+  });
+  win.on("maximize", () => store.set(`${label}WindowMaximized`, true));
+  win.on("unmaximize", () => store.set(`${label}WindowMaximized`, false));
+}
 function createWindow() {
-  const win = new BrowserWindow({
-    width: 1280,
-    height: 720,
+  const bounds = store.get("mainWindowBounds") || { width: 1280, height: 720 };
+  let win = new BrowserWindow({
+    width: bounds.width,
+    height: bounds.height,
+    x: bounds.x,
+    y: bounds.y,
     icon: path.join(__dirname, "favicon.ico"),
     webPreferences: {
       preload: __dirname + "/preload.js", // inject our bridge script
@@ -17,18 +41,24 @@ function createWindow() {
       contextIsolation: true,
     },
   });
-  win.maximize();
   win.loadFile("index.html");
   // win.webContents.openDevTools();
   win.on("closed", () => {
     win = null;
   });
+  sizeStore(win, "main");
 }
 
 function createYoutubeWindow() {
-  playerWindow = new BrowserWindow({
+  const bounds = store.get("playerWindowBounds") || {
     width: 1280,
     height: 720,
+  };
+  let playerWindow = new BrowserWindow({
+    width: bounds.width,
+    height: bounds.height,
+    x: bounds.x,
+    y: bounds.y,
     title: "YouTube Player",
     // parent: BrowserWindow.getFocusedWindow(), // makes it a child window (optional)
     webPreferences: {
@@ -44,6 +74,7 @@ function createYoutubeWindow() {
   playerWindow.on("closed", () => {
     playerWindow = null;
   });
+  sizeStore(playerWindow, "player");
 }
 
 ipcMain.handle("read-file", async (event, filePath) => {
@@ -65,7 +96,10 @@ ipcMain.on("broadcast", (event, msg) => {
   });
 });
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  const StoreModule = await import("electron-store");
+  const Store = StoreModule.default; // get the default export
+  store = new Store();
   createWindow();
   createYoutubeWindow();
   app.on("activate", () => {

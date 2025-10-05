@@ -261,16 +261,16 @@ async function renderQueue() {
     tabulatorCurrent,
     currentEl,
     [firstVideo],
-    false
+    true
   );
-  tabulatorQueue = await table2(tabulatorQueue, queueEl, restVideos, true);
+  tabulatorQueue = await table2(tabulatorQueue, queueEl, restVideos, false);
   let log = await db.getLastNLogs(LISTLEN);
   let logVideoList = [];
   for (let entry of log) {
     let video = DBDATA.queue.find((v) => v.id === entry.id);
     logVideoList.push(video);
   }
-  tabulatorLog = await table2(tabulatorLog, logEl, logVideoList, true);
+  tabulatorLog = await table2(tabulatorLog, logEl, logVideoList, false);
 }
 
 let tableColumns = {
@@ -283,7 +283,7 @@ let tableColumns = {
     },
     width: 90,
     cellClick: async (e, cell) => {
-      if (cell.getTable().options.custom.reorder) {
+      if (!cell.getTable().options.custom.current) {
         moveVideoToFront(cell.getRow().getData().id);
         await renderQueue();
         showToast("Added to front of queue");
@@ -382,42 +382,45 @@ let tableColumns = {
     },
   },
   interval: {
-    title: "Interval",
+    title: "Int",
     formatter: (cell) => {
       return rating2days(cell.getRow().getData().rating) + "d";
     },
   },
 };
 
-async function table2(tabulator, htmlEl, videoList, reorder) {
+async function table2(tabulator, htmlEl, videoList, current) {
   if (tabulator) {
     tabulator.replaceData(videoList);
     return tabulator;
   }
 
+  let columns = [
+    tableColumns.thumb,
+    tableColumns.title,
+    current && tableColumns.tags,
+    tableColumns.track,
+    current && tableColumns.dur,
+    current && tableColumns.lastPlayed,
+    current && tableColumns.playCnt,
+    tableColumns.rating,
+    tableColumns.interval,
+  ].filter(Boolean);
+
   tabulator = new Tabulator(htmlEl, {
     data: videoList,
-    custom: { reorder }, // custom property
-    columns: [
-      tableColumns.thumb,
-      tableColumns.title,
-      tableColumns.tags,
-      tableColumns.track,
-      tableColumns.dur,
-      tableColumns.lastPlayed,
-      tableColumns.playCnt,
-      tableColumns.rating,
-      tableColumns.interval,
-    ],
+    custom: { current }, // custom property
+    columns: columns,
     columnDefaults: {
       hozAlign: "center",
       vertAlign: "middle",
     },
     layout: "fitData",
     movableColumns: true,
-    pagination: "local",
-    paginationSize: 5,
+    // pagination: "local",
+    // paginationSize: 5,
     rowHeight: 68,
+    height: current ? null : "500px",
   });
   return tabulator;
 }

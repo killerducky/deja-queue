@@ -23,7 +23,7 @@
       }
       h2,
       h3 {
-        margin-top: 2em;
+        margin-top: 1.5em;
       }
       input {
         width: 300px;
@@ -87,10 +87,10 @@
         justify-content: center;
         align-items: center;
       }
-      .yt-container {
-        height: 400px;
-        width: 600px;
-        margin: auto;
+      .list-container {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
       }
       .database-container {
         height: 800px;
@@ -167,12 +167,20 @@
           <option value="playlist">Playlist</option>
         </select>
       </div>
-      <h2>Current Song</h2>
-      <ul id="current"></ul>
-      <h2>Queue</h2>
-      <ul id="queue"></ul>
-      <h2>Log</h2>
-      <ul id="log"></ul>
+      <div>
+        <h2>Current Song</h2>
+        <ul id="current"></ul>
+      </div>
+      <div class="list-container">
+        <div>
+          <h2>Queue</h2>
+          <ul id="queue"></ul>
+        </div>
+        <div>
+          <h2>Log</h2>
+          <ul id="log"></ul>
+        </div>
+      </div>
     </div>
     <div class="wide">
       <h2>Playlists</h2>
