@@ -599,10 +599,9 @@ fastForwardBtn.addEventListener("click", async () => {
 
 let videoTimeout;
 
-const webview = document.getElementById("youtube-webview");
 function sendMessage(type, msg) {
   console.log("sendMessage: ", msg);
-  webview.send(type, msg);
+  window.electronAPI.sendBroadcast(msg);
 }
 
 async function playNextVideo(offset = 1) {
@@ -628,11 +627,6 @@ async function playNextVideo(offset = 1) {
     // playNextVideo();
   }, 20000); // 20s -- Still some problems...
 }
-
-webview.addEventListener("dom-ready", () => {
-  // console.log("ready");
-  // webview.openDevTools(); //aolsen debug
-});
 
 function getVideoIdFromInput(input) {
   if (input.startsWith("http")) {
@@ -677,8 +671,8 @@ async function logEvent(video, event) {
 
 let lastEndedVideoId = null;
 
-webview.addEventListener("ipc-message", async (event) => {
-  let msg = event.args[0];
+window.electronAPI.onBroadcast(async (msg) => {
+  // webview.addEventListener("ipc-message", async (event) => {
   const currVideo = DBDATA.queue[0];
   const videoId = getVideoIdFromInput(msg.url).id;
   console.log("options.js received message:", msg?.type, videoId);
@@ -689,7 +683,8 @@ webview.addEventListener("ipc-message", async (event) => {
       currVideo &&
       videoId === currVideo.id &&
       !currVideo.yt?.contentDetails?.duration &&
-      !currVideo.scrapedDuration
+      !currVideo.scrapedDuration &&
+      msg.duration
     ) {
       currVideo.scrapedDuration = msg.duration;
       await db.saveVideos([currVideo]);
