@@ -1,7 +1,7 @@
-# YouTube Queue Extension
+# YouTube Queue Electron App
 
-This Firefox extension lets you build and manage a **video queue** for YouTube.  
-You can paste individual video or playlist links into the options page, add them to a queue, and the extension will automatically load them into an open YouTube tab.
+This Electron app lets you build and manage a **video queue** for YouTube.  
+You can paste individual video or playlist links, add them to a queue, and the videos automatically start playing.
 
 Features:
 
@@ -11,7 +11,7 @@ Features:
 
 ---
 
-# Extension setup
+# Setup
 
 ## Create a Google API key
 
@@ -21,19 +21,10 @@ Features:
    `cp .env-example.json .env.json`
 4. Past your API key into .env.json (⚠️ do not check this file into git)
 
-## Install Dependencies
+## Install Dependencies and build/run
 
 `npm install`
-
-## Load Extension in Firefox
-
-1. Open `about:debugging#/runtime/this-firefox`
-2. Click Load Temporary Add-on…
-3. Select `manifest.json`.
-
-A new tab should open with a URL like:
-
-`moz-extension://1fca52e4-13ce-4fec-9141-bcb140f4a5c0/options.html`
+`npm start`
 
 ## Usage
 
@@ -44,12 +35,3 @@ A new tab should open with a URL like:
   1. Go to `www.youtube.com`
   2. Click the permission icon to the left of the URL
   3. Set Autoplay to Allow Audio and Video
-
-## Change Firefox storage settings
-
-- ⚠️ By default the database is deleted every time you close Firefox or unload the extension.
-  - Use Export often to save your queue.
-- Change default to keep the database:
-  - Set the folowing in `about:config`:
-    - `extensions.webextensions.keepStorageOnUninstall = true`
-    - `extensions.webextensions.keepUuidOnUninstall = true`
