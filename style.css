@@ -96,7 +96,7 @@ input[type="number"] {
   /* text-overflow: ellipsis;*/
 }
 .database-container {
-  height: 800px;
+  height: 862px;
 }
 .toc-horizontal {
   display: flex; /* horizontal layout */

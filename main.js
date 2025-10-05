@@ -60,6 +60,7 @@ function createYoutubeWindow() {
     height: bounds.height,
     x: bounds.x,
     y: bounds.y,
+    icon: path.join(__dirname, "favicon.ico"),
     title: "YouTube Player",
     // parent: BrowserWindow.getFocusedWindow(), // makes it a child window (optional)
     webPreferences: {
