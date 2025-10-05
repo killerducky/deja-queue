@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require("electron");
+const { app, BrowserWindow, ipcMain, Menu } = require("electron");
 const path = require("path");
 const fs = require("fs");
 
@@ -54,6 +54,7 @@ function createYoutubeWindow() {
     width: 1280,
     height: 720,
   };
+
   let playerWindow = new BrowserWindow({
     width: bounds.width,
     height: bounds.height,
@@ -68,13 +69,57 @@ function createYoutubeWindow() {
     },
   });
 
-  playerWindow.loadURL("https://www.youtube.com/");
-  // playerWindow.webContents.openDevTools();
-
   playerWindow.on("closed", () => {
     playerWindow = null;
   });
   sizeStore(playerWindow, "player");
+
+  playerWindow.webContents.on("context-menu", (event, params) => {
+    const url = params.linkURL || params.srcURL;
+
+    console.log("menu", url);
+    if (!url) return;
+    const urlParams = new URL(url).searchParams;
+    const videoId = urlParams.get("v");
+    const listId = urlParams.get("list");
+    if (!listId && !videoId) return;
+
+    const template = [];
+    if (videoId) {
+      template.push({
+        label: "Add Video to Queue",
+        click: () => {
+          const msg = { type: "queue:addVideo", id: videoId };
+          console.log("Broadcasting", JSON.stringify(msg));
+          BrowserWindow.getAllWindows().forEach((win) => {
+            if (win !== playerWindow) {
+              win.webContents.send("broadcast", msg);
+            }
+          });
+        },
+      });
+    }
+    if (listId) {
+      template.push({
+        label: "Add Playlist to Queue",
+        click: () => {
+          const msg = { type: "queue:addPlaylist", id: listId };
+          console.log("Broadcasting", JSON.stringify(msg));
+          BrowserWindow.getAllWindows().forEach((win) => {
+            if (win !== playerWindow) {
+              win.webContents.send("broadcast", msg);
+            }
+          });
+        },
+      });
+    }
+    const menu = Menu.buildFromTemplate(template);
+
+    menu.popup({ window: playerWindow });
+  });
+
+  playerWindow.loadURL("https://www.youtube.com/");
+  // playerWindow.webContents.openDevTools();
 }
 
 ipcMain.handle("read-file", async (event, filePath) => {
@@ -105,6 +150,7 @@ app.whenReady().then(async () => {
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
+      createYoutubeWindow();
     }
   });
 });

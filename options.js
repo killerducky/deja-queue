@@ -554,18 +554,13 @@ async function addPlaylistVideos(playlistId) {
   await renderQueue();
 }
 
-addBtn.addEventListener("click", async () => {
-  let response = getVideoIdFromInput(input.value.trim());
-  if (!response.id) {
-    alert(`Could not parse URL`);
-    return;
-  }
+async function addVideoOrPlaylist(response) {
   if (response.type == "video") {
     if (DBDATA.queue.find((v) => v.id === response.id)) {
       showToast("Video already in DB");
       await moveVideoToFront(response.id);
     } else {
-      let video = { id: response.id };
+      let video = { id: response.id, rating: DEFAULT_RATING };
       await addYoutubeInfo(video);
       if (!video.yt) {
         alert("Failed to fetch video info, please check the ID");
@@ -580,6 +575,14 @@ addBtn.addEventListener("click", async () => {
     return;
   }
   await renderQueue();
+}
+addBtn.addEventListener("click", async () => {
+  let response = getVideoIdFromInput(input.value.trim());
+  if (!response.id) {
+    alert(`Could not parse URL`);
+    return;
+  }
+  addVideoOrPlaylist(response);
   input.value = "";
 });
 
@@ -676,9 +679,14 @@ async function logEvent(video, event) {
 let lastEndedVideoId = null;
 
 window.electronAPI.onBroadcast(async (msg) => {
-  // webview.addEventListener("ipc-message", async (event) => {
   const currVideo = DBDATA.queue[0];
-  const videoId = getVideoIdFromInput(msg.url).id;
+  let videoId = null;
+  // TODO: We don't always have msg.url?
+  // e.g. main.js could be sending the message.
+  // But it could add msg.url I suppose
+  if (msg.url) {
+    videoId = getVideoIdFromInput(msg.url).id;
+  }
   console.log("options.js received message:", msg?.type, videoId);
   if (msg?.type === "videoPlaying") {
     clearTimeout(videoTimeout);
@@ -693,8 +701,7 @@ window.electronAPI.onBroadcast(async (msg) => {
       currVideo.scrapedDuration = msg.duration;
       await db.saveVideos([currVideo]);
     }
-  }
-  if (msg?.type === "videoEnded") {
+  } else if (msg?.type === "videoEnded") {
     if (lastEndedVideoId === videoId) {
       return;
     }
@@ -704,6 +711,10 @@ window.electronAPI.onBroadcast(async (msg) => {
       await logEvent(currVideo, "play");
     }
     playNextVideo();
+  } else if (msg.type === "queue:addVideo") {
+    await addVideoOrPlaylist({ type: "video", id: msg.id });
+  } else if (msg.type === "queue:addPlaylist") {
+    await addVideoOrPlaylist({ type: "playlist", id: msg.id });
   }
 });
 
