@@ -647,8 +647,8 @@ let videoTimeout;
 
 const webview = document.getElementById("youtube-webview");
 function sendMessage(type, msg) {
+  console.log("sendMessage: ", msg);
   webview.send(type, msg);
-  console.log("sendMessage: ", webview, msg);
 }
 
 async function playNextVideo(offset = 1) {
@@ -676,12 +676,17 @@ async function playNextVideo(offset = 1) {
 }
 
 webview.addEventListener("dom-ready", () => {
-  console.log("ready");
+  // console.log("ready");
   // webview.openDevTools(); //aolsen debug
 });
 
 function getVideoIdFromInput(input) {
   if (input.startsWith("http")) {
+    const url = new URL(input);
+    if (url.hostname === "youtu.be") {
+      const videoId = url.pathname.slice(1); // remove leading "/"
+      return { type: "video", id: videoId };
+    }
     const params = new URL(input).searchParams;
     const listId = params.get("list");
     const videoId = params.get("v");
@@ -718,27 +723,16 @@ async function logEvent(video, event) {
 
 let lastEndedVideoId = null;
 
-// args
-// [
-//     {
-//         "status": "message received",
-//         "original": {
-//             "type": "playVideo",
-//             "id": "FrG4TEcSuRg"
-//         }
-//     }
-// ]
-
-// window.electronAPI.onReply(async (msg) => {
 webview.addEventListener("ipc-message", async (event) => {
   let msg = event.args[0];
-  console.log("Message from webview:", event, msg);
+  // console.log("Message from webview:", event, msg);
   const currVideo = DBDATA.queue[0];
-  // const videoId = getVideoIdFromInput(sender.url).id;  TODO add back this check
-  const videoId = currVideo;
-  console.log("options.js received message:", msg, videoId);
+  const videoId = getVideoIdFromInput(msg.url).id; // TODO add back this check
+  // const videoId = currVideo;
+  console.log("options.js received message:", msg?.type, videoId);
+  // console.log("options.js received message:", msg);
   if (msg?.type === "videoPlaying") {
-    console.log("actually got videoPlaying");
+    // console.log("actually got videoPlaying");
     clearTimeout(videoTimeout);
     if (
       videoId &&
@@ -752,7 +746,7 @@ webview.addEventListener("ipc-message", async (event) => {
     }
   }
   if (msg?.type === "videoEnded") {
-    console.log("actually got videoEnded");
+    // console.log("actually got videoEnded");
     if (lastEndedVideoId === videoId) {
       console.log("Duplicate videoEnded ignored for", videoId);
       return;

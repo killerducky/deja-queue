@@ -4,10 +4,10 @@ console.log("youtube-preload loaded");
 // Listen for messages from the host
 ipcRenderer.on("youtube-message", (event, msg) => {
   console.log("ytp msg", msg);
-  ipcRenderer.sendToHost("video-status", {
-    status: "message received",
-    original: msg,
-  });
+  //   ipcRenderer.sendToHost("video-status", {
+  //     status: "message received",
+  //     original: msg,
+  //   });
   const video = document.querySelector("video");
   //   if (!video) return;
 
@@ -23,6 +23,7 @@ ipcRenderer.on("youtube-message", (event, msg) => {
 });
 
 function sendMessage(msg) {
+  msg.url = window.location.href;
   console.log("send back", msg);
   ipcRenderer.sendToHost("video-status", msg);
 }
