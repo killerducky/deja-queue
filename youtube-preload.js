@@ -2,14 +2,7 @@ const { contextBridge, ipcRenderer } = require("electron");
 
 console.log("youtube-preload loaded");
 
-// contextBridge.exposeInMainWorld("electronAPI", {
-//   sendBroadcast: (msg) => ipcRenderer.send("broadcast", msg),
-//   onBroadcast: (callback) =>
-//     ipcRenderer.on("broadcast", (event, msg) => callback(msg)),
-// });
-
 ipcRenderer.on("broadcast", (event, msg) => {
-  // window.electronAPI.onBroadcast((msg) => {
   console.log("ytp msg", msg);
   const video = document.querySelector("video");
   //   if (!video) return;
@@ -41,35 +34,31 @@ function attachListener() {
   console.log("attachListener2");
 
   if (!video.paused && !video.ended && video.readyState > 2) {
-    console.log("Video already playing on attach");
     sendBroadcast({
       type: "videoPlaying",
       duration: video.duration,
+      info: "Video already playing on attach",
     });
   }
   video.onplay = () => {
-    console.log("sendBroadcast videoPlaying (onplay)");
     sendBroadcast({
       type: "videoPlaying",
       duration: video.duration,
     });
   };
   video.onplaying = () => {
-    console.log("sendBroadcast videoPlaying");
     sendBroadcast({
       type: "videoPlaying",
       duration: video.duration,
     });
   };
   video.onended = () => {
-    console.log("sendBroadcast videoEnded");
     sendBroadcast({ type: "videoEnded" });
   };
   video.onpause = () => {
     // Treat pause as "ended" if the video is at the end
     if (Math.abs(video.duration - video.currentTime) < 0.5) {
-      console.log("sendBroadcast videoEnded (pause at end)");
-      sendBroadcast({ type: "videoEnded" });
+      sendBroadcast({ type: "videoEnded", info: "pause at end" });
     }
   };
 }
