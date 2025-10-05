@@ -4,10 +4,6 @@ console.log("youtube-preload loaded");
 // Listen for messages from the host
 ipcRenderer.on("youtube-message", (event, msg) => {
   console.log("ytp msg", msg);
-  //   ipcRenderer.sendToHost("video-status", {
-  //     status: "message received",
-  //     original: msg,
-  //   });
   const video = document.querySelector("video");
   //   if (!video) return;
 
@@ -31,26 +27,11 @@ function sendMessage(msg) {
 let lastVideo = null;
 let video = null;
 function attachListener() {
-  //   console.log("attachListener1");
   video = document.querySelector("video");
   if (!video) return;
   if (video === lastVideo) return;
   lastVideo = video;
   console.log("attachListener2");
-
-  // This isn't working
-  // TODO aolsen
-  //   const theaterButton = document.querySelector(".ytp-size-button");
-  //   if (theaterButton) {
-  //     // If the button is found, simulate a click
-  //     theaterButton.click();
-  //     console.log("Toggled YouTube theater mode.");
-  //   } else {
-  //     console.log("Theater mode button not found.");
-  //   }
-
-  /* <button class="ytp-size-button ytp-button" title="" aria-keyshortcuts="t" data-priority="9" data-tooltip-title="Theater mode (t)" data-title-no-tooltip="Theater mode" aria-label="Theater mode (t)"><svg height="100%" version="1.1" viewBox="0 0 36 36" width="100%"><use class="ytp-svg-shadow" xlink:href="#ytp-id-29"></use><path d="m 28,11 0,14 -20,0 0,-14 z m -18,2 16,0 0,10 -16,0 0,-10 z" fill="#fff" fill-rule="evenodd" id="ytp-id-29"></path></svg></button> */
-  /* <button class="ytp-size-button ytp-button" title="" aria-keyshortcuts="t" data-priority="9" data-title-no-tooltip="Default view" aria-label="Default view keyboard shortcut t" data-tooltip-title="Default view (t)"><svg height="100%" version="1.1" viewBox="0 0 36 36" width="100%"><use class="ytp-svg-shadow" xlink:href="#ytp-id-164"></use><path d="m 26,13 0,10 -16,0 0,-10 z m -14,2 12,0 0,6 -12,0 0,-6 z" fill="#fff" fill-rule="evenodd" id="ytp-id-164"></path></svg></button> */
 
   if (!video.paused && !video.ended && video.readyState > 2) {
     console.log("Video already playing on attach");
@@ -78,7 +59,7 @@ function attachListener() {
     sendMessage({ type: "videoEnded" });
   };
   video.onpause = () => {
-    // Only treat pause as "ended" if the video is at the end
+    // Treat pause as "ended" if the video is at the end
     if (Math.abs(video.duration - video.currentTime) < 0.5) {
       console.log("sendMessage videoEnded (pause at end)");
       sendMessage({ type: "videoEnded" });

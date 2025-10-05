@@ -10,7 +10,6 @@ const createWindow = () => {
   const win = new BrowserWindow({
     width: 800,
     height: 600,
-    // fullscreen: true,
     icon: path.join(__dirname, "favicon.ico"),
     webPreferences: {
       preload: __dirname + "/preload.js", // inject our bridge script
@@ -24,10 +23,6 @@ const createWindow = () => {
   win.maximize();
   win.loadFile("index.html");
   // win.webContents.openDevTools();
-
-  setTimeout(() => {
-    win.webContents.executeJavaScript("window.ytControl.pause()");
-  }, 5000);
 };
 
 ipcMain.handle("read-file", async (event, filePath) => {
