@@ -32,7 +32,7 @@ const createWindow = () => {
 
   win.maximize();
   win.loadFile("index.html");
-  win.webContents.openDevTools();
+  // win.webContents.openDevTools();
 
   setTimeout(() => {
     win.webContents.executeJavaScript("window.ytControl.pause()");
