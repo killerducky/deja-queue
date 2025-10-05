@@ -2,18 +2,9 @@ const { app, BrowserWindow, ipcMain } = require("electron");
 const path = require("path");
 const fs = require("fs");
 
-// Try to workaround spectrum doh ssl warning
-// CertVerifyProcBuiltin for doh-02.spectrum.com failed:
-// ----- Certificate i=0 (CN=doh-01.spectrum.com,O=Charter Communications Operating\, LLC,L=St. Louis,ST=Missouri,C=US) -----
-// ERROR: Time is after notAfter
-app.commandLine.appendSwitch("disable-features", "DnsOverHttps");
-
-// Suppress GPU warnings
-app.commandLine.appendSwitch("ignore-gpu-blacklist"); // ignore GPU blacklists
-app.commandLine.appendSwitch("disable-gpu"); // optionally disable GPU entirely
-app.commandLine.appendSwitch("disable-software-rasterizer");
-app.commandLine.appendSwitch("enable-logging", "stderr");
-app.commandLine.appendSwitch("v", "0"); // sets verbose logging to 0 (minimal)
+app.commandLine.appendSwitch("disable-logging"); // disable general Chromium logging
+app.commandLine.appendSwitch("log-level", "3"); // 0=verbose, 3=errors only
+app.commandLine.appendSwitch("disable-features", "VizDisplayCompositor"); // optional GPU warning reduction
 
 const createWindow = () => {
   const win = new BrowserWindow({
@@ -37,11 +28,6 @@ const createWindow = () => {
   setTimeout(() => {
     win.webContents.executeJavaScript("window.ytControl.pause()");
   }, 5000);
-
-  // Get current time
-  win.webContents
-    .executeJavaScript("window.ytControl.getTime()")
-    .then((t) => console.log("Current time:", t));
 };
 
 ipcMain.handle("read-file", async (event, filePath) => {

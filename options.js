@@ -725,14 +725,10 @@ let lastEndedVideoId = null;
 
 webview.addEventListener("ipc-message", async (event) => {
   let msg = event.args[0];
-  // console.log("Message from webview:", event, msg);
   const currVideo = DBDATA.queue[0];
-  const videoId = getVideoIdFromInput(msg.url).id; // TODO add back this check
-  // const videoId = currVideo;
+  const videoId = getVideoIdFromInput(msg.url).id;
   console.log("options.js received message:", msg?.type, videoId);
-  // console.log("options.js received message:", msg);
   if (msg?.type === "videoPlaying") {
-    // console.log("actually got videoPlaying");
     clearTimeout(videoTimeout);
     if (
       videoId &&
@@ -746,14 +742,11 @@ webview.addEventListener("ipc-message", async (event) => {
     }
   }
   if (msg?.type === "videoEnded") {
-    // console.log("actually got videoEnded");
     if (lastEndedVideoId === videoId) {
-      console.log("Duplicate videoEnded ignored for", videoId);
       return;
     }
     lastEndedVideoId = videoId;
     // console.log("Controller: video ended, moving to next");
-    // check in case some other video was actually playing, don't want to credit that
     if (videoId && currVideo && videoId === currVideo.id) {
       await logEvent(currVideo, "play");
     }
