@@ -276,127 +276,132 @@ async function renderQueue() {
   tabulatorLog = await table2(tabulatorLog, logEl, logVideoList, false);
 }
 
-let tableColumns = {
-  thumb: {
-    title: "Thumb",
-    field: "id",
-    formatter: (cell) => {
-      let id = cell.getValue();
-      return `<img src="https://i.ytimg.com/vi/${id}/default.jpg" style="height:54px;cursor:pointer;">`;
+function getTableColumns(current) {
+  let tableColumns = {
+    thumb: {
+      title: "Thumb",
+      field: "id",
+      formatter: (cell) => {
+        let id = cell.getValue();
+        return `<img src="https://i.ytimg.com/vi/${id}/default.jpg" style="height:54px;cursor:pointer;">`;
+      },
+      width: current ? 90 : 60,
+      cellClick: async (e, cell) => {
+        if (!cell.getTable().options.custom.current) {
+          moveVideoToFront(cell.getRow().getData().id);
+          await renderQueue();
+          showToast("Added to front of queue");
+        } else {
+          playNextVideo(0);
+        }
+      },
     },
-    width: 90,
-    cellClick: async (e, cell) => {
-      if (!cell.getTable().options.custom.current) {
-        moveVideoToFront(cell.getRow().getData().id);
-        await renderQueue();
-        showToast("Added to front of queue");
-      } else {
-        playNextVideo(0);
-      }
+    title: {
+      title: "Title",
+      field: "yt.snippet.title",
+      formatter: current ? "textarea" : "text",
+      tooltip: true,
+      hozAlign: "left",
+      width: 250,
     },
-  },
-  title: {
-    title: "Title",
-    field: "yt.snippet.title",
-    formatter: "textarea",
-    hozAlign: "left",
-    width: 250,
-  },
-  tags: {
-    title: "Tags",
-    field: "tags",
-    formatter: "textarea",
-    editor: "input",
-    width: 150,
-    cellEdited: async (cell) => {
-      const video = DBDATA.queue.find(
-        (v) => v.id === cell.getRow().getData().id
-      );
-      if (!video) {
-        alert("Error: Cannot find in DBDATA");
-        return;
-      }
-      console.log(`Edit ID:${video.id} New tags: ${video.tags}`);
-      await db.saveVideos(video);
+    tags: {
+      title: "Tags",
+      field: "tags",
+      formatter: "textarea",
+      editor: "input",
+      width: 150,
+      cellEdited: async (cell) => {
+        const video = DBDATA.queue.find(
+          (v) => v.id === cell.getRow().getData().id
+        );
+        if (!video) {
+          alert("Error: Cannot find in DBDATA");
+          return;
+        }
+        console.log(`Edit ID:${video.id} New tags: ${video.tags}`);
+        await db.saveVideos(video);
+      },
     },
-  },
-  track: {
-    title: "Track",
-    field: "yt.snippet.position",
-  },
-  dur: {
-    title: "Dur",
-    formatter: (cell) => {
-      const video = cell.getRow().getData();
-      return formatVideoDuration(video);
+    track: {
+      title: "Trk",
+      field: "yt.snippet.position",
     },
-  },
-  lastPlayed: {
-    title: "Last Played",
-    formatter: (cell) => {
-      return formatLastPlayDate(cell.getRow().getData());
+    dur: {
+      title: "Dur",
+      formatter: (cell) => {
+        const video = cell.getRow().getData();
+        return formatVideoDuration(video);
+      },
     },
-  },
-  playCnt: {
-    title: "Play<br>Count",
-    field: "playCnt",
-    formatter: "plaintext",
-  },
-  rating: {
-    title: "Rating",
-    field: "rating",
-    formatter: (cell) => {
-      let video = cell.getRow().getData();
-      let div = document.createElement("div");
-      div.className = "number-stepper";
-      const downBtn = document.createElement("button");
-      downBtn.className = "step-btn step-down";
-      downBtn.type = "button";
-      downBtn.innerHTML = "&minus;";
-      const upBtn = document.createElement("button");
-      upBtn.className = "step-btn step-up";
-      upBtn.type = "button";
-      upBtn.innerHTML = "&plus;";
+    lastPlayed: {
+      title: "Last Played",
+      formatter: (cell) => {
+        return formatLastPlayDate(cell.getRow().getData());
+      },
+    },
+    playCnt: {
+      title: "Play<br>Count",
+      field: "playCnt",
+      formatter: "plaintext",
+    },
+    rating: {
+      title: "Rating",
+      field: "rating",
+      formatter: (cell) => {
+        let video = cell.getRow().getData();
+        let div = document.createElement("div");
+        div.className = "number-stepper";
+        const downBtn = document.createElement("button");
+        downBtn.className = "step-btn step-down";
+        downBtn.type = "button";
+        downBtn.innerHTML = "&minus;";
+        const upBtn = document.createElement("button");
+        upBtn.className = "step-btn step-up";
+        upBtn.type = "button";
+        upBtn.innerHTML = "&plus;";
 
-      let input = document.createElement("input");
-      input.type = "number";
-      input.min = "1";
-      input.max = "10";
-      input.step = "0.5";
-      input.value = (video.rating ?? DEFAULT_RATING).toFixed(1);
-      div.appendChild(downBtn);
-      div.appendChild(input);
-      div.appendChild(upBtn);
-      return div;
+        let input = document.createElement("input");
+        input.type = "number";
+        input.min = "1";
+        input.max = "10";
+        input.step = "0.5";
+        input.value = (video.rating ?? DEFAULT_RATING).toFixed(1);
+        div.appendChild(downBtn);
+        div.appendChild(input);
+        div.appendChild(upBtn);
+        return div;
+      },
+      cellClick: async (e, cell) => {
+        let video = cell.getRow().getData();
+        let origRating = video.rating;
+        if (e.target.classList.contains("step-down")) {
+          video.rating = Math.max(1, video.rating - 0.5);
+        } else if (e.target.classList.contains("step-up")) {
+          video.rating = Math.min(10, video.rating + 0.5);
+        }
+        if (origRating != video.rating) {
+          await db.saveVideos([video]);
+          cell.getRow().reformat();
+          console.log("Saved new rating", video.rating, "for", video.id);
+        }
+      },
     },
-    cellClick: async (e, cell) => {
-      let video = cell.getRow().getData();
-      let origRating = video.rating;
-      if (e.target.classList.contains("step-down")) {
-        video.rating = Math.max(1, video.rating - 0.5);
-      } else if (e.target.classList.contains("step-up")) {
-        video.rating = Math.min(10, video.rating + 0.5);
-      }
-      if (origRating != video.rating) {
-        await db.saveVideos([video]);
-        cell.getRow().reformat();
-        console.log("Saved new rating", video.rating, "for", video.id);
-      }
+    interval: {
+      title: "Int",
+      formatter: (cell) => {
+        return rating2days(cell.getRow().getData().rating) + "d";
+      },
     },
-  },
-  interval: {
-    title: "Int",
-    formatter: (cell) => {
-      return rating2days(cell.getRow().getData().rating) + "d";
-    },
-  },
-};
+  };
+  return tableColumns;
+}
 
 async function table2(tabulator, htmlEl, videoList, current) {
   if (tabulator) {
     tabulator.replaceData(videoList);
     return tabulator;
   }
+  let tableColumns = getTableColumns(current);
 
   let columns = [
     tableColumns.thumb,
