@@ -534,6 +534,7 @@ async function addPlaylistVideos(playlistId) {
       let video = {
         id: yt.snippet.resourceId.videoId,
         playlistId: playlistId,
+        rating: DEFAULT_RATING,
         yt: yt,
       };
       // Due to going backwards, we need to go backwards here too

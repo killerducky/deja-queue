@@ -1,4 +1,10 @@
-const { app, BrowserWindow, ipcMain, Menu } = require("electron");
+const {
+  app,
+  BrowserWindow,
+  ipcMain,
+  Menu,
+  globalShortcut,
+} = require("electron");
 const path = require("path");
 const fs = require("fs");
 
@@ -76,10 +82,14 @@ function createYoutubeWindow() {
   sizeStore(playerWindow, "player");
 
   playerWindow.webContents.on("context-menu", (event, params) => {
-    const url = params.linkURL || params.srcURL;
+    let url =
+      params.linkURL || params.srcURL || playerWindow.webContents.getURL();
 
     console.log("menu", url);
-    if (!url) return;
+    if (!url) {
+      console.log("no url");
+      return;
+    }
     const urlParams = new URL(url).searchParams;
     const videoId = urlParams.get("v");
     const listId = urlParams.get("list");
@@ -121,6 +131,19 @@ function createYoutubeWindow() {
 
   playerWindow.loadURL("https://www.youtube.com/");
   // playerWindow.webContents.openDevTools();
+  return playerWindow;
+}
+
+function goBack(window) {
+  if (window && window.webContents.canGoBack()) {
+    window.webContents.goBack();
+  }
+}
+
+function goForward(window) {
+  if (window && window.webContents.canGoForward()) {
+    window.webContents.goForward();
+  }
 }
 
 ipcMain.handle("read-file", async (event, filePath) => {
@@ -147,13 +170,15 @@ app.whenReady().then(async () => {
   const Store = StoreModule.default; // get the default export
   store = new Store();
   createWindow();
-  createYoutubeWindow();
+  let playerWindow = createYoutubeWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
       createYoutubeWindow();
     }
   });
+  globalShortcut.register("Alt+Left", () => goBack(playerWindow));
+  globalShortcut.register("Alt+Right", () => goForward(playerWindow));
 });
 
 app.on("window-all-closed", () => {
