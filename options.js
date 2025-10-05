@@ -628,7 +628,7 @@ async function playNextVideo(offset = 1) {
     DBDATA.queue[0].errCnt = (DBDATA.queue[0].errCnt || 0) + 1;
     db.saveVideos([DBDATA.queue[0]]);
     logEvent(DBDATA.queue[0], "error");
-    // playNextVideo();
+    playNextVideo();
   }, 20000); // 20s -- Still some problems...
 }
 
@@ -1126,8 +1126,8 @@ async function renderPlaylists() {
       field: "thumbnailUrl",
       formatter: "image",
       formatterParams: {
-        height: 20,
-        width: 20,
+        height: 54,
+        // width: 72,
         objectFit: "contain",
       },
       cellClick: async function (e, cell) {
@@ -1141,7 +1141,7 @@ async function renderPlaylists() {
       },
       hozAlign: "center",
       vertAlign: "center",
-      // width: 90,
+      width: 90,
       // width: 60,
     },
     {
