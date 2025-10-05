@@ -89,8 +89,12 @@
       }
       .list-container {
         display: flex;
-        gap: 10px;
+        gap: 20px;
         justify-content: center;
+      }
+      .compact .tabulator-cell img {
+        max-height: calc(40px - 6px);
+        /* object-fit: contain; */
       }
       .database-container {
         height: 800px;
@@ -174,11 +178,11 @@
       <div class="list-container">
         <div>
           <h2>Queue</h2>
-          <ul id="queue"></ul>
+          <ul id="queue" class="compact"></ul>
         </div>
         <div>
           <h2>Log</h2>
-          <ul id="log"></ul>
+          <ul id="log" class="compact"></ul>
         </div>
       </div>
     </div>

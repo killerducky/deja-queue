@@ -17,6 +17,9 @@ let COOLDOWN_JITTER_START = 3; // Subtract N days from the interval
 let COOLDOWN_JITTER_RATE = 0.2; // Add up to X% jitter to that part of the interval
 let RATING_FACTOR = 1;
 
+let COMPACT_TABLE_HEIGHT = 40;
+let NORMAL_TABLE_HEIGHT = 68;
+
 function rating2color(rating) {
   const colors = [
     "hsla(342, 100%, 20%, 1.00)",
@@ -417,9 +420,7 @@ async function table2(tabulator, htmlEl, videoList, current) {
     },
     layout: "fitData",
     movableColumns: true,
-    // pagination: "local",
-    // paginationSize: 5,
-    rowHeight: 68,
+    rowHeight: current ? NORMAL_TABLE_HEIGHT : COMPACT_TABLE_HEIGHT,
     height: current ? null : "500px",
   });
   return tabulator;
@@ -1123,17 +1124,14 @@ async function renderPlaylists() {
     {
       title: "Thumb",
       field: "thumbnailUrl",
-      formatter: (cell) => {
-        const url = cell.getValue();
-        const img = document.createElement("img");
-        img.src = url || "favicon.ico";
-        // img.style.width = "70px";
-        img.style.height = "54px";
-        return img;
+      formatter: "image",
+      formatterParams: {
+        height: 20,
+        width: 20,
+        objectFit: "contain",
       },
       cellClick: async function (e, cell) {
         const plVideoIds = cell.getRow().getData().videoIds;
-        // console.log(plVideoIds);
         // Adding to the front one at a time, so go backwards
         for (let vid of [...plVideoIds].reverse()) {
           await moveVideoToFront(vid);
@@ -1143,7 +1141,8 @@ async function renderPlaylists() {
       },
       hozAlign: "center",
       vertAlign: "center",
-      width: 90,
+      // width: 90,
+      // width: 60,
     },
     {
       title: "Title",
