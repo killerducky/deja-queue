@@ -36,6 +36,17 @@ function attachListener() {
   if (video === lastVideo) return;
   lastVideo = video;
   console.log("attachListener2");
+
+  // This isn't working
+  // TODO aolsen
+  //   const theaterButton = document.querySelector(".ytp-size-button");
+  //   if (theaterButton) {
+  //     // If the button is found, simulate a click
+  //     theaterButton.click();
+  //     console.log("Toggled YouTube theater mode.");
+  //   } else {
+  //     console.log("Theater mode button not found.");
+  //   }
   if (!video.paused && !video.ended && video.readyState > 2) {
     console.log("Video already playing on attach");
     sendMessage({

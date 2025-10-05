@@ -645,7 +645,7 @@ fastForwardBtn.addEventListener("click", async () => {
 
 let videoTimeout;
 
-const webview = document.getElementById("youtube");
+const webview = document.getElementById("youtube-webview");
 function sendMessage(type, msg) {
   webview.send(type, msg);
   console.log("sendMessage: ", webview, msg);
@@ -677,7 +677,7 @@ async function playNextVideo(offset = 1) {
 
 webview.addEventListener("dom-ready", () => {
   console.log("ready");
-  webview.openDevTools();
+  // webview.openDevTools(); //aolsen debug
 });
 
 function getVideoIdFromInput(input) {
