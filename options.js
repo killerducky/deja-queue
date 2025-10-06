@@ -299,7 +299,7 @@ function getTableColumns(current) {
     title: {
       title: "Title",
       field: "yt.snippet.title",
-      formatter: current ? "textarea" : "text",
+      formatter: current ? "textarea" : "plaintext",
       tooltip: true,
       hozAlign: "left",
       width: 250,
@@ -908,7 +908,7 @@ function plotRatings(videos) {
     title: "Ratings Breakdown",
     xaxis: { title: "Count" },
     yaxis: { showticklabels: false, fixedrange: true, range: [-0.5, 0.5] },
-    margin: { t: 15, b: 15 },
+    margin: { t: 15, b: 30 },
   };
 
   layout2 = applyDarkMode(layout2);
@@ -984,6 +984,7 @@ function plotCooldownFactor(videos) {
 
 let tabulatorDB = null;
 function setGlobalSearch(myTabulatorTable, value) {
+  const t0 = performance.now();
   myTabulatorTable.setFilter((data, row) => {
     let terms = value.toLowerCase().split(" ");
     // console.log("DB filter on ", terms);
@@ -1002,6 +1003,8 @@ function setGlobalSearch(myTabulatorTable, value) {
     }
     return true;
   });
+  const t1 = performance.now();
+  console.log(`GlobalSearch took ${(t1 - t0).toFixed(0)} ms`);
 }
 
 const dbFilterEl = document.getElementById("dbFilter");

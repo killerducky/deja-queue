@@ -136,6 +136,9 @@ if (theaterButton) {
 </button>
 ```
 
-```
-
-```
+Q mode dropdown is rounded weirdly
+adding new videos should update playlist/DB/etc
+Add to Q link text -- option for video/playlist
+First song kickoff by play button
+poppy negative spaces album -- thumbnail broken
+playlist should respect deleted videos

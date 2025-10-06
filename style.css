@@ -180,11 +180,11 @@ input[type="number"] {
     border-color: #555;
   }
   .number-stepper {
-    border: 2px solid hsla(204, 70%, 40%, 1);
+    border: 2px solid hsla(204, 50%, 40%, 1);
     background-color: #1e1e1e;
   }
   .number-stepper button {
-    background-color: hsla(204, 70%, 60%, 1);
-    color: #eee;
+    background-color: hsla(204, 50%, 40%, 1);
+    color: #dddddd;
   }
 }

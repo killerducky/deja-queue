@@ -31,5 +31,6 @@ Features:
 
 ## Usage
 
-- Paste a video or playlist link and click **Add to Queue**.
+- Right click on videos in the youtube player to **Add to Queue**
+- Or paste a video/playlist link from external youtube and **Add to Queue**
 - The app will automatically select and play the next video based on your ratings and play history.
