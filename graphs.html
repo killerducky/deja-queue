@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+  <head>
+    <!-- <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://www.googleapis.com;;"
+    /> -->
+    <title>YouTube Graphs</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  </head>
+  <body>
+    <div class="narrow">
+      <nav id="toc"></nav>
+      <h2>Ratings</h2>
+      <div id="ratings-chart"></div>
+      <h2>Interval load</h2>
+      <div id="interval-chart"></div>
+      <h2>Scores</h2>
+      <div id="scores-chart"></div>
+      <h2>Cooldown</h2>
+      <div id="cooldown-chart"></div>
+    </div>
+    <div id="toast-container"></div>
+  </body>
+  <script src="node_modules/plotly.js-dist/plotly.js"></script>
+  <link
+    id="tabulator-theme"
+    rel="stylesheet"
+    href="node_modules/tabulator-tables/dist/css/tabulator_site_dark.min.css"
+  />
+  <script src="node_modules/tabulator-tables/dist/js/tabulator.min.js"></script>
+  <script type="module" src="graphs.js"></script>
+</html>

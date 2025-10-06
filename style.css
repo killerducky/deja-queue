@@ -158,19 +158,6 @@ input[type="number"] {
     color: #8ab4f8;
   }
 
-  .tabulator {
-    background-color: #1e1e1e;
-    color: #eee;
-  }
-
-  .tabulator-header {
-    background-color: #2c2c2c;
-  }
-
-  .tabulator-cell {
-    background-color: #1e1e1e;
-    color: #eee;
-  }
   label,
   button,
   input,
@@ -180,11 +167,11 @@ input[type="number"] {
     border-color: #555;
   }
   .number-stepper {
-    border: 2px solid hsla(204, 50%, 40%, 1);
+    border: 2px solid hsla(204, 50%, 15%, 1);
     background-color: #1e1e1e;
   }
   .number-stepper button {
-    background-color: hsla(204, 50%, 40%, 1);
+    background-color: hsla(204, 50%, 20%, 1);
     color: #dddddd;
   }
 }

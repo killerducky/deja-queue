@@ -17,7 +17,7 @@ app.commandLine.appendSwitch("log-level", "3"); // 0=verbose, 3=errors only
 app.commandLine.appendSwitch("disable-features", "VizDisplayCompositor"); // optional GPU warning reduction
 
 function sizeStore(win, label) {
-  if (store.get("mainWindowMaximized")) {
+  if (store.get(`${label}WindowMaximized`)) {
     win.maximize();
   }
   win.on("resize", () => {
@@ -33,8 +33,11 @@ function sizeStore(win, label) {
   win.on("maximize", () => store.set(`${label}WindowMaximized`, true));
   win.on("unmaximize", () => store.set(`${label}WindowMaximized`, false));
 }
-function createWindow() {
-  const bounds = store.get("mainWindowBounds") || { width: 1280, height: 720 };
+function createWindow(name) {
+  const bounds = store.get(`${name}WindowBounds`) || {
+    width: 1280,
+    height: 720,
+  };
   let win = new BrowserWindow({
     width: bounds.width,
     height: bounds.height,
@@ -47,12 +50,12 @@ function createWindow() {
       contextIsolation: true,
     },
   });
-  win.loadFile("index.html");
+  win.loadFile(name == "main" ? "index.html" : `${name}.html`);
   // win.webContents.openDevTools();
   win.on("closed", () => {
     win = null;
   });
-  sizeStore(win, "main");
+  sizeStore(win, name);
 }
 
 function createYoutubeWindow() {
@@ -169,11 +172,13 @@ app.whenReady().then(async () => {
   const StoreModule = await import("electron-store");
   const Store = StoreModule.default; // get the default export
   store = new Store();
-  createWindow();
+  createWindow("main");
+  createWindow("graphs");
   let playerWindow = createYoutubeWindow();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
+      createWindow("main");
+      createWindow("graphs");
       createYoutubeWindow();
     }
   });

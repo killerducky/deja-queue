@@ -148,23 +148,6 @@ async function loadEnv() {
 }
 loadEnv();
 
-const input = document.getElementById("videoId");
-const addBtn = document.getElementById("add");
-const fastForwardBtn = document.getElementById("fastForward");
-const nextBtn = document.getElementById("next");
-const delayBtn = document.getElementById("delay");
-const pauseBtn = document.getElementById("pause");
-const playBtn = document.getElementById("play");
-const currentEl = document.getElementById("current");
-const queueEl = document.getElementById("queue");
-const logEl = document.getElementById("log");
-const queueModeEl = document.getElementById("queueMode");
-
-queueModeEl.value = localStorage.getItem("queueMode") || "Video";
-queueModeEl.addEventListener("change", () => {
-  localStorage.setItem("queueMode", queueModeEl.value);
-});
-
 function addToc() {
   const toc = document.getElementById("toc");
   const headings = document.querySelectorAll("h2");
@@ -582,34 +565,6 @@ async function addVideoOrPlaylist(response) {
   }
   await renderQueue();
 }
-addBtn.addEventListener("click", async () => {
-  let response = getVideoIdFromInput(input.value.trim());
-  if (!response.id) {
-    alert(`Could not parse URL`);
-    return;
-  }
-  addVideoOrPlaylist(response);
-  input.value = "";
-});
-
-nextBtn.addEventListener("click", async () => {
-  await logEvent(DBDATA.queue[0], "skip");
-  playNextVideo();
-});
-delayBtn.addEventListener("click", async () => {
-  await logEvent(DBDATA.queue[0], "delay");
-  playNextVideo();
-});
-pauseBtn.addEventListener("click", async () => {
-  sendMessage("youtube-message", { type: "pauseVideo" });
-});
-playBtn.addEventListener("click", async () => {
-  sendMessage("youtube-message", { type: "resumeVideo" });
-});
-fastForwardBtn.addEventListener("click", async () => {
-  sendMessage("youtube-message", { type: "fastForward" });
-});
-
 let videoTimeout;
 
 function sendMessage(type, msg) {
@@ -776,21 +731,6 @@ async function deleteVideos() {
   await db.deleteDB();
   alert("Database deleted. Please reload the page.");
 }
-document.getElementById("exportBtn").addEventListener("click", exportDB);
-document.getElementById("deleteBtn").addEventListener("click", deleteVideos);
-
-const importBtn = document.getElementById("importBtn");
-const importFile = document.getElementById("importFile");
-
-importBtn.addEventListener("click", () => {
-  importFile.click();
-});
-
-importFile.addEventListener("change", () => {
-  if (importFile.files.length > 0) {
-    importDB(importFile.files[0]);
-  }
-});
 
 function applyDarkMode(layout) {
   const darkMode = window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -1007,11 +947,6 @@ function setGlobalSearch(myTabulatorTable, value) {
   console.log(`GlobalSearch took ${(t1 - t0).toFixed(0)} ms`);
 }
 
-const dbFilterEl = document.getElementById("dbFilter");
-dbFilterEl.addEventListener("change", (e) => {
-  setGlobalSearch(tabulatorDB, e.target.value);
-});
-
 function renderDB(queue) {
   let columns = [
     {
@@ -1163,12 +1098,6 @@ function calcStringSimilarity(queue) {
   }
 }
 
-let playlistsTabulator = null;
-const plFilterEl = document.getElementById("plFilter");
-plFilterEl.addEventListener("change", (e) => {
-  setGlobalSearch(playlistsTabulator, e.target.value);
-});
-
 async function renderPlaylists() {
   let columns = [
     {
@@ -1275,60 +1204,14 @@ async function moveVideoToFront(id) {
   });
   DBDATA.queue.sort((a, b) => b.score - a.score);
   DBDATA.playlists = await db.loadPlaylists();
-  if (queueModeEl.value == "playlist") {
-    const playlistMap = new Map(DBDATA.playlists.map((pl) => [pl.id, pl]));
-    const validPlaylistIds = new Set(DBDATA.playlists.map((pl) => pl.id));
-    let origQueue = DBDATA.queue;
-    DBDATA.queue = [];
-    let addedIds = new Set();
-    const seenPlaylists = new Set();
-    // console.log(validPlaylistIds);
-    // Iterate through fullQueue
-    for (const video of origQueue) {
-      // Find a video that belongs to an unseen playlist
-      if (
-        video.playlistId &&
-        validPlaylistIds.has(video.playlistId) &&
-        !seenPlaylists.has(video.playlistId)
-      ) {
-        // console.log("add playlist ", video.playlistId);
-        const pl = playlistMap.get(video.playlistId);
-        let plVids;
-        plVids = pl.videoIds.map((id) => origQueue.find((v) => v.id === id));
-        // console.log(plVids);
-        DBDATA.queue.push(...plVids);
-        plVids.forEach((v) => addedIds.add(v.id));
-        seenPlaylists.add(video.playlistId);
-      }
-    }
-    let defaultPlaylist = {
-      id: "default",
-      title: "Default",
-      channelTitle: "",
-      videoCount: 0,
-      thumbnailUrl: "",
-      dateAdded: Date.now(),
-      rating: DEFAULT_RATING,
-      videoIds: [],
-    };
-    for (const v of origQueue) {
-      if (!addedIds.has(v.id)) {
-        DBDATA.queue.push(v);
-        defaultPlaylist.videoIds.push(v.id);
-        defaultPlaylist.videoCount += 1;
-        addedIds.add(v.id);
-      }
-    }
-    DBDATA.playlists.push(defaultPlaylist);
-  }
-  renderDB(DBDATA.queue);
-  renderPlaylists();
+  // renderDB(DBDATA.queue);
+  // renderPlaylists();
   // Remove errors and dups from graphs.
   // But leave in actual Queue (with low score), so we don't e.g. add it again
   DBDATA.filtered = DBDATA.queue.filter((v) => (v.errCnt ?? 0) < 3 && !v.dup);
-  // plotRatings(DBDATA.filtered);
-  // plotScores(DBDATA.filtered);
-  // plotCooldownFactor(DBDATA.filtered);
+  plotRatings(DBDATA.filtered);
+  plotScores(DBDATA.filtered);
+  plotCooldownFactor(DBDATA.filtered);
   // calcStringSimilarity(DBDATA.queue);
-  renderQueue();
+  // renderQueue();
 })();
