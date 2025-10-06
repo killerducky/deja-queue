@@ -17,32 +17,35 @@ app.commandLine.appendSwitch("log-level", "3"); // 0=verbose, 3=errors only
 app.commandLine.appendSwitch("disable-features", "VizDisplayCompositor"); // optional GPU warning reduction
 
 function sizeStore(win, label) {
-  if (store.get(`${label}WindowMaximized`)) {
+  const minMaxKey = `${label}WindowMinMax`;
+  const boundsKey = `${label}WindowBounds`;
+
+  // Restore state
+  const bounds = store.get(boundsKey);
+  if (bounds) win.setBounds(bounds);
+  if (store.get(minMaxKey) == "max") {
     win.maximize();
+  } else if (store.get(minMaxKey) == "min") {
+    win.minimize();
   }
-  win.on("resize", () => {
-    if (!win.isMaximized()) {
-      store.set(`${label}WindowBounds`, win.getBounds());
+
+  // Save position and size
+  const saveBounds = () => {
+    if (!win.isMaximized() && !win.isMinimized()) {
+      store.set(boundsKey, win.getBounds());
     }
-  });
-  win.on("move", () => {
-    if (!win.isMaximized()) {
-      store.set(`${label}WindowBounds`, win.getBounds());
-    }
-  });
-  win.on("maximize", () => store.set(`${label}WindowMaximized`, true));
-  win.on("unmaximize", () => store.set(`${label}WindowMaximized`, false));
+  };
+  win.on("resize", saveBounds);
+  win.on("move", saveBounds);
+
+  // Save window state
+  win.on("maximize", () => store.set(minMaxKey, "max"));
+  win.on("unmaximize", () => store.set(minMaxKey, ""));
+  win.on("minimize", () => store.set(minMaxKey, "min"));
+  win.on("restore", () => store.set(minMaxKey, ""));
 }
 function createWindow(name) {
-  const bounds = store.get(`${name}WindowBounds`) || {
-    width: 1280,
-    height: 720,
-  };
   let win = new BrowserWindow({
-    width: bounds.width,
-    height: bounds.height,
-    x: bounds.x,
-    y: bounds.y,
     icon: path.join(__dirname, "favicon.ico"),
     webPreferences: {
       preload: __dirname + "/preload.js", // inject our bridge script
@@ -59,16 +62,7 @@ function createWindow(name) {
 }
 
 function createYoutubeWindow() {
-  const bounds = store.get("playerWindowBounds") || {
-    width: 1280,
-    height: 720,
-  };
-
   let playerWindow = new BrowserWindow({
-    width: bounds.width,
-    height: bounds.height,
-    x: bounds.x,
-    y: bounds.y,
     icon: path.join(__dirname, "favicon.ico"),
     title: "YouTube Player",
     // parent: BrowserWindow.getFocusedWindow(), // makes it a child window (optional)

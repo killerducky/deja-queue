@@ -497,6 +497,7 @@ async function addPlaylistVideos(playlistId) {
   let playlistUrl = `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&id=${playlistId}&key=${env.API_KEY}`;
   let playlistRes = await fetch(playlistUrl);
   let playlistData = await playlistRes.json();
+  console.log("playlists raw:", playlistData);
 
   if (!playlistData.items || playlistData.items.length === 0) {
     console.error("Playlist not found:", playlistId);
@@ -521,13 +522,15 @@ async function addPlaylistVideos(playlistId) {
   // Now fetch all videos from the playlist
   let nextPageToken = "";
   let newVideos = [];
+  let failsafeCnt = 0;
+  let seenTokens = new Set();
   do {
     let url =
       `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails` +
       `&maxResults=50&pageToken=${nextPageToken}&playlistId=${playlistId}&key=${env.API_KEY}`;
     let res = await fetch(url);
     let data = await res.json();
-    console.log("addPlaylistVideos raw: ", data);
+    console.log("playlistItems raw: ", data);
 
     // moveVideoToFront needs to go backwards to work
     for (const yt of [...data.items].reverse()) {
@@ -539,6 +542,7 @@ async function addPlaylistVideos(playlistId) {
       };
       // Due to going backwards, we need to go backwards here too
       playlist.videoIds.unshift(video.id);
+      console.log("Add videoid", video.id);
       if (DBDATA.queue.find((v) => v.id === video.id)) {
         // Exists already, just move up
         await moveVideoToFront(video.id);
@@ -549,11 +553,29 @@ async function addPlaylistVideos(playlistId) {
       }
     }
     nextPageToken = data.nextPageToken;
+    if (seenTokens.has(data.prevPageToken)) {
+      console.log("Token repeated -- youtube mix? Stopping.");
+      break;
+    }
+    seenTokens.add(data.prevPageToken);
+    failsafeCnt += 1;
+    if (failsafeCnt >= 20) {
+      alert("Error: Looped 20 times. Aborting.");
+      return;
+    }
   } while (nextPageToken);
 
   await db.saveVideos(newVideos);
   console.log("addPlaylistVideos: newVideos ", newVideos);
 
+  console.log(
+    "count1:",
+    playlist.videoCount,
+    "count:",
+    playlist.videoIds.length
+  );
+  playlist.videoCount = playlist.videoIds.length;
+  console.log("add", playlist);
   await db.savePlaylists(playlist);
 
   await renderPlaylists();
