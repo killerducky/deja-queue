@@ -837,9 +837,12 @@ function setGlobalSearch(myTabulatorTable, value) {
 }
 
 const dbFilterEl = document.getElementById("dbFilter");
-dbFilterEl.addEventListener("change", (e) => {
-  setGlobalSearch(tabulatorDB, e.target.value);
-});
+dbFilterEl.addEventListener(
+  "input",
+  debounce((e) => {
+    setGlobalSearch(tabulatorDB, e.target.value);
+  }, 300) // 300ms debounce
+);
 
 function renderDB(queue) {
   let tableColumns = getTableColumns(true);
@@ -914,11 +917,24 @@ function calcStringSimilarity(queue) {
   }
 }
 
+function debounce(fn, delay = 300) {
+  let timeoutId;
+  return (...args) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      fn(...args);
+    }, delay);
+  };
+}
+
 let playlistsTabulator = null;
 const plFilterEl = document.getElementById("plFilter");
-plFilterEl.addEventListener("change", (e) => {
-  setGlobalSearch(playlistsTabulator, e.target.value);
-});
+plFilterEl.addEventListener(
+  "input",
+  debounce((e) => {
+    setGlobalSearch(playlistsTabulator, e.target.value);
+  }, 300) // 300ms debounce
+);
 
 async function renderPlaylists() {
   let table2StyleColumns = getTableColumns(true);
