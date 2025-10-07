@@ -75,8 +75,6 @@ async function createYoutubeWindow(winParent) {
   winParent.contentView.addChildView(playerWindow);
   playerViews.push(playerWindow);
 
-  // playerWindow.setBounds({ x: 320, y: 160, width: 1300, height: 900 });
-  // playerWindow.setBounds({ x: 320, y: 80, width: 1000, height: 400 });
   const bounds = await winParent.webContents.executeJavaScript(`
     (() => {
       const el = document.getElementById("youtube");
@@ -85,7 +83,7 @@ async function createYoutubeWindow(winParent) {
       return bounds;
     })()
   `);
-  console.log(bounds);
+  // console.log(bounds);
   playerWindow.setBounds(bounds);
 
   // playerWindow.on("closed", () => {
@@ -195,12 +193,12 @@ app.whenReady().then(async () => {
   const Store = StoreModule.default; // get the default export
   store = new Store();
   let winMain = createWindow("main");
-  // let winGraph = createWindow("graphs");
+  let winGraph = createWindow("graphs");
   let playerWindow = createYoutubeWindow(winMain);
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       winMain = createWindow("main");
-      // winGraph = createWindow("graphs");
+      winGraph = createWindow("graphs");
       playerWindow = createYoutubeWindow(winMain);
     }
   });

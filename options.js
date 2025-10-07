@@ -398,22 +398,21 @@ function getTableColumns(current) {
 }
 
 async function table2(tabulator, htmlEl, videoList, current) {
-  let hackCurrent = current;
-  current = false; // TODO! hack for now
+  let showMoreColumns = false;
   if (tabulator) {
     tabulator.replaceData(videoList);
     return tabulator;
   }
-  let tableColumns = getTableColumns(current);
+  let tableColumns = getTableColumns(showMoreColumns);
 
   let columns = [
     tableColumns.thumb,
     tableColumns.title,
-    current && tableColumns.tags,
+    showMoreColumns && tableColumns.tags,
     // tableColumns.track,
-    current && tableColumns.dur,
-    current && tableColumns.lastPlayed,
-    current && tableColumns.playCnt,
+    showMoreColumns && tableColumns.dur,
+    showMoreColumns && tableColumns.lastPlayed,
+    showMoreColumns && tableColumns.playCnt,
     // tableColumns.rating,
     // tableColumns.interval,
   ].filter(Boolean);
@@ -421,7 +420,7 @@ async function table2(tabulator, htmlEl, videoList, current) {
 
   tabulator = new Tabulator(htmlEl, {
     data: videoList,
-    custom: { current: hackCurrent }, // custom property
+    custom: { current }, // custom property
     columns: columns,
     columnDefaults: {
       hozAlign: "center",
@@ -429,8 +428,8 @@ async function table2(tabulator, htmlEl, videoList, current) {
     },
     layout: "fitData",
     movableColumns: true,
-    rowHeight: current ? NORMAL_TABLE_HEIGHT : COMPACT_TABLE_HEIGHT,
-    height: hackCurrent ? null : "500px",
+    rowHeight: showMoreColumns ? NORMAL_TABLE_HEIGHT : COMPACT_TABLE_HEIGHT,
+    height: current ? null : "500px",
   });
   return tabulator;
 }
