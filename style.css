@@ -20,7 +20,7 @@ body {
 }
 .main-container {
   display: grid;
-  grid-template-columns: 72px minmax(300px, 1fr) 200px;
+  grid-template-columns: 200px minmax(300px, 1fr) 200px;
   /* grid-template-rows: 72px minmax(300px, 1fr) 200px; */
   grid-template-rows: auto 400px minmax(300px, 1fr);
   grid-template-areas:
