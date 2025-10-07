@@ -64,7 +64,7 @@ function createWindow(name) {
   return win;
 }
 
-function createYoutubeWindow(winParent) {
+async function createYoutubeWindow(winParent) {
   const playerWindow = new WebContentsView({
     webPreferences: {
       preload: path.join(__dirname, "youtube-preload.js"),
@@ -74,8 +74,21 @@ function createYoutubeWindow(winParent) {
   });
   winParent.contentView.addChildView(playerWindow);
   playerViews.push(playerWindow);
+
   // playerWindow.setBounds({ x: 320, y: 160, width: 1300, height: 900 });
-  playerWindow.setBounds({ x: 220, y: 100, width: 1000, height: 500 });
+  // playerWindow.setBounds({ x: 320, y: 80, width: 1000, height: 400 });
+  const bounds = await winParent.webContents.executeJavaScript(`
+    (() => {
+      console.log("hi");
+      const el = document.getElementById("youtube");
+      const rect = el.getBoundingClientRect();
+      const bounds = { x: rect.left, y: rect.top, width: rect.width, height: rect.height };
+      console.log(bounds);
+      return bounds;
+    })()
+  `);
+  console.log(bounds);
+  playerWindow.setBounds(bounds);
 
   // playerWindow.on("closed", () => {
   //   playerWindow = null;
@@ -170,12 +183,12 @@ ipcMain.on("broadcast", (event, msg) => {
     }
   });
   if (msg.type === "tab-button") {
-    let playerWindow = playerViews[0];
-    if (msg.targetId === "youtube") {
-      playerWindow.setBounds({ x: 220, y: 100, width: 1000, height: 500 });
-    } else {
-      playerWindow.setBounds({ x: 0, y: 0, width: 0, height: 0 });
-    }
+    // let playerWindow = playerViews[0];
+    // if (msg.targetId === "youtube") {
+    //   playerWindow.setBounds({ x: 220, y: 100, width: 1000, height: 500 });
+    // } else {
+    //   playerWindow.setBounds({ x: 0, y: 0, width: 0, height: 0 });
+    // }
   }
 });
 

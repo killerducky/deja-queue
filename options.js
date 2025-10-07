@@ -639,7 +639,7 @@ fastForwardBtn.addEventListener("click", async () => {
 let videoTimeout;
 
 function sendMessage(type, msg) {
-  console.log("sendMessage: ", msg);
+  console.log("sendMessage: ", JSON.stringify(msg));
   window.electronAPI.sendBroadcast(msg);
 }
 
@@ -907,6 +907,7 @@ function renderDB(queue) {
       field: "videoOwnerChannelTitle",
       hozAlign: "left",
       headerFilter: "input",
+      width: 150,
     },
   ];
 
