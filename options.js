@@ -1106,6 +1106,23 @@ async function moveVideoToFront(id) {
   DBDATA.queue.splice(1, 0, video); // insert at index 1 (2nd spot)
 }
 
+function handleTabs() {
+  const buttons = document.querySelectorAll(".tab-button");
+  const contents = document.querySelectorAll(".tab-content");
+
+  buttons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      buttons.forEach((b) => b.classList.remove("active"));
+      contents.forEach((c) => (c.style.display = "none"));
+      const targetId = btn.dataset.target;
+      document.getElementById(targetId).style.display = "block";
+      btn.classList.add("active");
+      sendMessage("broadcast", { type: "tab-button", targetId });
+    });
+  });
+}
+handleTabs();
+
 // Initial load
 (async () => {
   DBDATA.queue = await db.loadVideos();

@@ -28,6 +28,13 @@
             <option value="video">Video</option>
             <option value="playlist">Playlist</option>
           </select>
+          <div class="tabs">
+            <button class="tab-button active" data-target="playlists">
+              Playlists
+            </button>
+            <button class="tab-button" data-target="database">Database</button>
+            <button class="tab-button" data-target="youtube">Youtube</button>
+          </div>
         </div>
       </div>
       <div class="left">
@@ -52,7 +59,7 @@
           style="display: none"
         />
       </div>
-      <div class="mid">
+      <div id="playlists" class="mid tab-content">
         <div class="flex-horiz">
           <h3>Playlists</h3>
           Global Filter
@@ -62,8 +69,8 @@
           <div id="playlists-grid"></div>
         </div>
       </div>
-      <div class="bot">
-        <div class="flex-horiz">
+      <div id="database" class="bot tab-content">
+        <div class="flex-horiz tab-content">
           <h3>Database</h3>
           Global Filter <input id="dbFilter" type="text" placeholder="" />
         </div>

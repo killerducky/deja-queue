@@ -1,7 +1,7 @@
 const {
   app,
   BrowserWindow,
-  BrowserView,
+  WebContentsView,
   ipcMain,
   Menu,
   globalShortcut,
@@ -12,6 +12,7 @@ const fs = require("fs");
 // const Store = require("electron-store");
 // const store = new Store();
 let store;
+const playerViews = []; // store WebContentsView instances
 
 app.commandLine.appendSwitch("disable-logging"); // disable general Chromium logging
 app.commandLine.appendSwitch("log-level", "3"); // 0=verbose, 3=errors only
@@ -64,18 +65,17 @@ function createWindow(name) {
 }
 
 function createYoutubeWindow(winParent) {
-  let playerWindow = new BrowserView({
-    icon: path.join(__dirname, "favicon.ico"),
-    title: "YouTube Player",
-    // parent: winParent, // makes it a child window (optional)
+  const playerWindow = new WebContentsView({
     webPreferences: {
       preload: path.join(__dirname, "youtube-preload.js"),
       nodeIntegration: false,
       contextIsolation: true,
     },
   });
-  winParent.setBrowserView(playerWindow);
-  playerWindow.setBounds({ x: 320, y: 160, width: 1300, height: 900 });
+  winParent.contentView.addChildView(playerWindow);
+  playerViews.push(playerWindow);
+  // playerWindow.setBounds({ x: 320, y: 160, width: 1300, height: 900 });
+  playerWindow.setBounds({ x: 220, y: 100, width: 1000, height: 500 });
 
   // playerWindow.on("closed", () => {
   //   playerWindow = null;
@@ -164,6 +164,21 @@ ipcMain.on("broadcast", (event, msg) => {
       win.webContents.send("broadcast", msg);
     }
   });
+  playerViews.forEach((view) => {
+    if (view.webContents !== event.sender) {
+      view.webContents.send("broadcast", msg);
+    }
+  });
+  if (msg.type === "tab-button`") {
+    let playerWindow = playerViews[0];
+    if (msg.targetId === "youtube") {
+      console.log("show youtube");
+      playerWindow.setBounds({ x: 220, y: 100, width: 1000, height: 500 });
+    } else {
+      console.log("hide youtube");
+      playerWindow.setBounds({ x: 0, y: 0, width: 0, height: 0 });
+    }
+  }
 });
 
 app.whenReady().then(async () => {
@@ -175,9 +190,9 @@ app.whenReady().then(async () => {
   let playerWindow = createYoutubeWindow(winMain);
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow("main");
-      createWindow("graphs");
-      createYoutubeWindow();
+      winMain = createWindow("main");
+      // winGraph = createWindow("graphs");
+      playerWindow = createYoutubeWindow(winMain);
     }
   });
   globalShortcut.register("Alt+Left", () => goBack(playerWindow));
