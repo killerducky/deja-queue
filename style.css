@@ -92,6 +92,7 @@ body {
 #youtube-full {
   grid-row: 2 / 4;
   grid-column: 2 / 3;
+  pointer-events: none;
 }
 .flex-horiz {
   display: flex;
