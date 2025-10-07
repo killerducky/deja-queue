@@ -414,6 +414,7 @@ async function table2(tabulator, htmlEl, videoList, current) {
     tableColumns.rating,
     tableColumns.interval,
   ].filter(Boolean);
+  columns.forEach((col) => (col.headerSort = false));
 
   tabulator = new Tabulator(htmlEl, {
     data: videoList,
