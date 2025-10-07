@@ -299,7 +299,8 @@ function getTableColumns(current) {
     title: {
       title: "Title",
       field: "yt.snippet.title",
-      formatter: current ? "textarea" : "plaintext",
+      // formatter: current ? "textarea" : "plaintext",
+      formatter: "plaintext",
       tooltip: true,
       hozAlign: "left",
       width: 120,
@@ -409,12 +410,12 @@ async function table2(tabulator, htmlEl, videoList, current) {
     tableColumns.thumb,
     tableColumns.title,
     showMoreColumns && tableColumns.tags,
-    // tableColumns.track,
+    tableColumns.track,
     showMoreColumns && tableColumns.dur,
     showMoreColumns && tableColumns.lastPlayed,
     showMoreColumns && tableColumns.playCnt,
-    // tableColumns.rating,
-    // tableColumns.interval,
+    tableColumns.rating,
+    tableColumns.interval,
   ].filter(Boolean);
   columns.forEach((col) => (col.headerSort = false));
 
