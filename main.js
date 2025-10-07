@@ -13,6 +13,7 @@ const fs = require("fs");
 // const store = new Store();
 let store;
 const playerViews = []; // store WebContentsView instances
+let winMain = null;
 
 app.commandLine.appendSwitch("disable-logging"); // disable general Chromium logging
 app.commandLine.appendSwitch("log-level", "3"); // 0=verbose, 3=errors only
@@ -64,6 +65,18 @@ function createWindow(name) {
   return win;
 }
 
+async function setYoutubeBounds(playerWindow, winParent, divTarget) {
+  const bounds = await winParent.webContents.executeJavaScript(`
+    (() => {
+      const el = document.getElementById("${divTarget}");
+      const rect = el.getBoundingClientRect();
+      const bounds = { x: rect.left, y: rect.top, width: rect.width, height: rect.height };
+      return bounds;
+    })()
+  `);
+  // console.log(bounds);
+  playerWindow.setBounds(bounds);
+}
 async function createYoutubeWindow(winParent) {
   const playerWindow = new WebContentsView({
     webPreferences: {
@@ -75,21 +88,7 @@ async function createYoutubeWindow(winParent) {
   winParent.contentView.addChildView(playerWindow);
   playerViews.push(playerWindow);
 
-  const bounds = await winParent.webContents.executeJavaScript(`
-    (() => {
-      const el = document.getElementById("youtube");
-      const rect = el.getBoundingClientRect();
-      const bounds = { x: rect.left, y: rect.top, width: rect.width, height: rect.height };
-      return bounds;
-    })()
-  `);
-  // console.log(bounds);
-  playerWindow.setBounds(bounds);
-
-  // playerWindow.on("closed", () => {
-  //   playerWindow = null;
-  // });
-  // sizeStore(playerWindow, "player");
+  await setYoutubeBounds(playerWindow, winParent, "youtube");
 
   playerWindow.webContents.on("context-menu", (event, params) => {
     let url =
@@ -145,14 +144,17 @@ async function createYoutubeWindow(winParent) {
 }
 
 function goBack(window) {
-  if (window && window.webContents.canGoBack()) {
-    window.webContents.goBack();
+  // if (window && window.webContents.canGoBack()) {
+  //   window.webContents.goBack();
+  // }
+  if (playerViews[0] && playerViews[0].webContents.canGoBack()) {
+    playerViews[0].webContents.goBack();
   }
 }
 
 function goForward(window) {
-  if (window && window.webContents.canGoForward()) {
-    window.webContents.goForward();
+  if (playerViews[0] && playerViews[0].webContents.canGoForward()) {
+    playerViews[0].webContents.goForward();
   }
 }
 
@@ -166,7 +168,7 @@ ipcMain.handle("read-file", async (event, filePath) => {
   }
 });
 
-ipcMain.on("broadcast", (event, msg) => {
+ipcMain.on("broadcast", async (event, msg) => {
   console.log("main got", JSON.stringify(msg));
   BrowserWindow.getAllWindows().forEach((win) => {
     if (win.webContents != event.sender) {
@@ -179,12 +181,15 @@ ipcMain.on("broadcast", (event, msg) => {
     }
   });
   if (msg.type === "tab-button") {
-    // let playerWindow = playerViews[0];
-    // if (msg.targetId === "youtube") {
-    //   playerWindow.setBounds({ x: 220, y: 100, width: 1000, height: 500 });
-    // } else {
-    //   playerWindow.setBounds({ x: 0, y: 0, width: 0, height: 0 });
-    // }
+    let playerWindow = playerViews[0];
+    if (msg.targetId === "youtube") {
+      // playerWindow.setBounds({ x: 220, y: 100, width: 1000, height: 500 });
+      await setYoutubeBounds(playerWindow, winMain, "youtube-full");
+    } else {
+      // playerWindow.setBounds({ x: 0, y: 0, width: 0, height: 0 });
+      // console.log(playerWindow, winMain);
+      await setYoutubeBounds(playerWindow, winMain, "youtube");
+    }
   }
 });
 
@@ -192,7 +197,7 @@ app.whenReady().then(async () => {
   const StoreModule = await import("electron-store");
   const Store = StoreModule.default; // get the default export
   store = new Store();
-  let winMain = createWindow("main");
+  winMain = createWindow("main");
   let winGraph = createWindow("graphs");
   let playerWindow = createYoutubeWindow(winMain);
   app.on("activate", () => {

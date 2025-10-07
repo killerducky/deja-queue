@@ -89,6 +89,10 @@ body {
   height: 100%;
   margin: 0 auto;
 }
+#youtube-full {
+  grid-row: 2 / 4;
+  grid-column: 2 / 3;
+}
 .flex-horiz {
   display: flex;
   align-items: center;
