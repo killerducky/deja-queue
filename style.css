@@ -48,6 +48,10 @@ body {
 .right:hover {
   right: 0;
 }
+.left button,
+.right button {
+  display: block;
+}
 .top {
   grid-area: top;
 }
@@ -183,7 +187,6 @@ input[type="number"] {
 }
 .tabulator-cell {
   overflow: hidden;
-  /* doesn't work */
   /* text-overflow: ellipsis;*/
 }
 .toc-horizontal {
