@@ -345,7 +345,7 @@ function getTableColumns(current) {
       title: "Rating",
       field: "rating",
       formatter: (cell) => {
-        let video = cell.getRow().getData();
+        let item = cell.getRow().getData();
         let div = document.createElement("div");
         div.className = "number-stepper";
         const downBtn = document.createElement("button");
@@ -362,24 +362,29 @@ function getTableColumns(current) {
         input.min = "1";
         input.max = "10";
         input.step = "0.5";
-        input.value = (video.rating ?? DEFAULT_RATING).toFixed(1);
+        input.value = (item.rating ?? DEFAULT_RATING).toFixed(1);
         div.appendChild(downBtn);
         div.appendChild(input);
         div.appendChild(upBtn);
         return div;
       },
       cellClick: async (e, cell) => {
-        let video = cell.getRow().getData();
-        let origRating = video.rating;
+        let item = cell.getRow().getData();
+        let origRating = item.rating;
         if (e.target.classList.contains("step-down")) {
-          video.rating = Math.max(1, video.rating - 0.5);
+          item.rating = Math.max(1, item.rating - 0.5);
         } else if (e.target.classList.contains("step-up")) {
-          video.rating = Math.min(10, video.rating + 0.5);
+          item.rating = Math.min(10, item.rating + 0.5);
         }
-        if (origRating != video.rating) {
-          await db.saveVideos([video]);
+        if (origRating != item.rating) {
+          // TODO: The items should have a type field so I know what type of object they are.
+          if (item.videoIds) {
+            await db.savePlaylists([item]);
+          } else {
+            await db.saveVideos([item]);
+          }
           cell.getRow().reformat();
-          console.log("Saved new rating", video.rating, "for", video.id);
+          console.log("Saved new rating", item.rating, "for", item.id);
         }
       },
     },
@@ -567,13 +572,7 @@ async function addPlaylistVideos(playlistId) {
   await db.saveVideos(newVideos);
   console.log("addPlaylistVideos: newVideos ", newVideos);
 
-  console.log(
-    "count1:",
-    playlist.videoCount,
-    "count:",
-    playlist.videoIds.length
-  );
-  playlist.videoCount = playlist.videoIds.length;
+  playlist.videoCount = playlist.videoIds.length; // This seems more accurate
   console.log("add", playlist);
   await db.savePlaylists(playlist);
 
@@ -1000,6 +999,7 @@ plFilterEl.addEventListener("change", (e) => {
 });
 
 async function renderPlaylists() {
+  let table2StyleColumns = getTableColumns(true);
   let columns = [
     {
       title: "Thumb",
@@ -1062,13 +1062,7 @@ async function renderPlaylists() {
       hozAlign: "center",
       width: 150,
     },
-    {
-      title: "Rating",
-      field: "rating",
-      hozAlign: "center",
-      formatter: (cell) => cell.getValue().toFixed(1),
-      width: 80,
-    },
+    table2StyleColumns.rating, // TODO: Convert playlist to use these style. For now just use this one.
     { title: "ID", field: "id", hozAlign: "left", width: 150 },
     {
       title: "",
