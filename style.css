@@ -6,6 +6,9 @@ main {
   margin: 0;
   padding: 0;
 }
+/* * {
+  outline: 1px solid red !important;
+} */
 body {
   background-color: #fff;
   color: #000;
@@ -17,8 +20,9 @@ body {
 }
 .main-container {
   display: grid;
-  grid-template-columns: 1fr 2fr 1fr;
-  grid-template-rows: auto 3fr 3fr;
+  grid-template-columns: 200px 1fr 200px;
+  /* grid-template-rows: auto 3fr 3fr; */
+  grid-template-rows: auto 1200px 200px;
   grid-template-areas:
     "left top right"
     "left mid right"
@@ -43,6 +47,9 @@ body {
 .top {
   grid-area: top;
 }
+.right {
+  grid-area: right;
+}
 .mid {
   grid-area: mid;
   display: flex;
@@ -55,14 +62,15 @@ body {
   display: flex;
   flex-direction: column;
   height: 100%;
-  /* chatgpt says I need min-height: 0 */
+  /* height: 482px; */
   min-height: 0;
 }
-.right {
-  grid-area: right;
-}
 .database-container {
-  flex: 1 1 auto;
+  /* height: 400px; */
+  /* width: 100%; */
+  width: 1200px;
+  height: 800px;
+  /* flex: 1 1 auto; */
   min-height: 0;
   overflow: hidden;
 }
@@ -141,6 +149,14 @@ input[type="number"] {
   display: flex;
   gap: 20px;
   justify-content: center;
+}
+.tab-content {
+  visibility: hidden;
+  position: absolute;
+}
+.tab-content.active {
+  visibility: visible;
+  position: static;
 }
 .compact .tabulator-cell img {
   max-height: calc(40px - 6px);

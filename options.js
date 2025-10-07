@@ -302,8 +302,8 @@ function getTableColumns(current) {
       formatter: current ? "textarea" : "plaintext",
       tooltip: true,
       hozAlign: "left",
-      // width: 250,
-      width: current ? 250 : 100,
+      width: 120,
+      // width: current ? 250 : 100,
     },
     tags: {
       title: "Tags",
@@ -936,11 +936,8 @@ function renderDB(queue) {
   tabulatorDB = new Tabulator("#database-grid", {
     data: data,
     columns: columns,
-    // pagination: "local",
-    // paginationSize: 10,
-    // height: "500px",
     height: "100%",
-    layout: "fitColumns",
+    width: "100%",
     movableColumns: true,
   });
   tabulatorDB.on("cellEdited", async (cell) => {
@@ -1091,7 +1088,7 @@ async function renderPlaylists() {
     // paginationSize: 10,
     // height: "500px",
     height: "100%",
-    layout: "fitColumns",
+    width: "100%",
     movableColumns: true,
   });
 }
@@ -1111,12 +1108,13 @@ function handleTabs() {
   const contents = document.querySelectorAll(".tab-content");
 
   buttons.forEach((btn) => {
+    console.log("connect", btn.dataset.target);
     btn.addEventListener("click", () => {
-      buttons.forEach((b) => b.classList.remove("active"));
-      contents.forEach((c) => (c.style.display = "none"));
-      const targetId = btn.dataset.target;
-      document.getElementById(targetId).style.display = "block";
+      contents.forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
+      const targetId = btn.dataset.target;
+      const target = document.querySelector(`#${targetId}`);
+      if (target) target.classList.add("active");
       sendMessage("broadcast", { type: "tab-button", targetId });
     });
   });

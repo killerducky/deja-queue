@@ -169,13 +169,11 @@ ipcMain.on("broadcast", (event, msg) => {
       view.webContents.send("broadcast", msg);
     }
   });
-  if (msg.type === "tab-button`") {
+  if (msg.type === "tab-button") {
     let playerWindow = playerViews[0];
     if (msg.targetId === "youtube") {
-      console.log("show youtube");
       playerWindow.setBounds({ x: 220, y: 100, width: 1000, height: 500 });
     } else {
-      console.log("hide youtube");
       playerWindow.setBounds({ x: 0, y: 0, width: 0, height: 0 });
     }
   }
