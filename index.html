@@ -10,68 +10,67 @@
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
   </head>
   <body>
-    <div class="narrow">
-      <nav id="toc"></nav>
-      <h2>Controls</h2>
-      <div class="controls">
-        <button id="pause">Pause</button>
-        <button id="play">Play</button>
-        <button id="fastForward">+30s</button>
-        <button id="delay">Delay</button>
-        <div class="spacer"></div>
-        <button id="next">Skip</button>
-        <div class="spacer"></div>
-        <input id="videoId" type="text" placeholder="YouTube Video ID/URL" />
-        <button id="add">Add to Queue</button>
-        <div class="spacer"></div>
-        <label for="queueMode">Q mode</label>
-        <select id="queueMode">
-          <option value="video">Video</option>
-          <option value="playlist">Playlist</option>
-        </select>
-      </div>
-      <div>
-        <h2>Current Song</h2>
-        <ul id="current"></ul>
-      </div>
-      <div class="list-container">
-        <div>
-          <h2>Queue</h2>
-          <ul id="queue" class="compact"></ul>
-        </div>
-        <div>
-          <h2>Log</h2>
-          <ul id="log" class="compact"></ul>
+    <div class="main-container">
+      <div class="top">
+        <div class="controls">
+          <button id="pause">Pause</button>
+          <button id="play">Play</button>
+          <button id="fastForward">+30s</button>
+          <button id="delay">Delay</button>
+          <div class="spacer"></div>
+          <button id="next">Skip</button>
+          <div class="spacer"></div>
+          <input id="videoId" type="text" placeholder="YouTube Video ID/URL" />
+          <button id="add">Add to Queue</button>
+          <div class="spacer"></div>
+          <label for="queueMode">Q mode</label>
+          <select id="queueMode">
+            <option value="video">Video</option>
+            <option value="playlist">Playlist</option>
+          </select>
         </div>
       </div>
-    </div>
-    <div class="wide">
-      <h2>Playlists</h2>
-      Global Filter <input id="plFilter" type="text" placeholder="" />
-      <br />
-      <br />
-      <div class="database-container">
-        <div id="playlists-grid"></div>
+      <div class="left">
+        <div>
+          <h2>Current Song</h2>
+          <ul id="current"></ul>
+        </div>
+        <h2>Queue</h2>
+        <ul id="queue" class="compact"></ul>
       </div>
-      <h2>Database</h2>
-      Global Filter <input id="dbFilter" type="text" placeholder="" />
-      <br />
-      <br />
-      <div class="database-container">
-        <div id="database-grid"></div>
+      <div class="right">
+        <h2>Log</h2>
+        <ul id="log" class="compact"></ul>
+        <h2>Import/Export</h2>
+        <button id="deleteBtn">Delete DB</button>
+        <button id="exportBtn">Export DB</button>
+        <button id="importBtn">Import DB</button>
+        <input
+          type="file"
+          id="importFile"
+          accept="application/json"
+          style="display: none"
+        />
       </div>
-    </div>
-    <div class="narrow">
-      <h2>Import/Export</h2>
-      <button id="deleteBtn">Delete DB</button>
-      <button id="exportBtn">Export DB</button>
-      <button id="importBtn">Import DB</button>
-      <input
-        type="file"
-        id="importFile"
-        accept="application/json"
-        style="display: none"
-      />
+      <div class="mid">
+        <div class="flex-horiz">
+          <h3>Playlists</h3>
+          Global Filter
+          <input id="plFilter" type="text" placeholder="" />
+        </div>
+        <div class="database-container">
+          <div id="playlists-grid"></div>
+        </div>
+      </div>
+      <div class="bot">
+        <div class="flex-horiz">
+          <h3>Database</h3>
+          Global Filter <input id="dbFilter" type="text" placeholder="" />
+        </div>
+        <div class="database-container">
+          <div id="database-grid"></div>
+        </div>
+      </div>
     </div>
     <div id="toast-container"></div>
   </body>

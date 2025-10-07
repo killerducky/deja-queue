@@ -185,7 +185,7 @@ function addToc() {
   });
   toc.appendChild(ul);
 }
-addToc();
+// addToc();
 
 function shuffleArray(array) {
   for (let i = array.length - 1; i > 0; i--) {
@@ -302,7 +302,8 @@ function getTableColumns(current) {
       formatter: current ? "textarea" : "plaintext",
       tooltip: true,
       hozAlign: "left",
-      width: 250,
+      // width: 250,
+      width: current ? 250 : 100,
     },
     tags: {
       title: "Tags",
@@ -397,6 +398,8 @@ function getTableColumns(current) {
 }
 
 async function table2(tabulator, htmlEl, videoList, current) {
+  let hackCurrent = current;
+  current = false; // TODO! hack for now
   if (tabulator) {
     tabulator.replaceData(videoList);
     return tabulator;
@@ -407,12 +410,12 @@ async function table2(tabulator, htmlEl, videoList, current) {
     tableColumns.thumb,
     tableColumns.title,
     current && tableColumns.tags,
-    tableColumns.track,
+    // tableColumns.track,
     current && tableColumns.dur,
     current && tableColumns.lastPlayed,
     current && tableColumns.playCnt,
-    tableColumns.rating,
-    tableColumns.interval,
+    // tableColumns.rating,
+    // tableColumns.interval,
   ].filter(Boolean);
   columns.forEach((col) => (col.headerSort = false));
 
@@ -427,7 +430,7 @@ async function table2(tabulator, htmlEl, videoList, current) {
     layout: "fitData",
     movableColumns: true,
     rowHeight: current ? NORMAL_TABLE_HEIGHT : COMPACT_TABLE_HEIGHT,
-    height: current ? null : "500px",
+    height: hackCurrent ? null : "500px",
   });
   return tabulator;
 }
@@ -933,9 +936,11 @@ function renderDB(queue) {
   tabulatorDB = new Tabulator("#database-grid", {
     data: data,
     columns: columns,
-    pagination: "local",
-    paginationSize: 10,
-    layout: "fitData",
+    // pagination: "local",
+    // paginationSize: 10,
+    // height: "500px",
+    height: "100%",
+    layout: "fitColumns",
     movableColumns: true,
   });
   tabulatorDB.on("cellEdited", async (cell) => {
@@ -1082,9 +1087,11 @@ async function renderPlaylists() {
   playlistsTabulator = new Tabulator("#playlists-grid", {
     data: DBDATA.playlists,
     columns: columns,
-    pagination: "local",
-    paginationSize: 10,
-    layout: "fitData",
+    // pagination: "local",
+    // paginationSize: 10,
+    // height: "500px",
+    height: "100%",
+    layout: "fitColumns",
     movableColumns: true,
   });
 }
