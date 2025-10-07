@@ -842,60 +842,29 @@ dbFilterEl.addEventListener("change", (e) => {
 });
 
 function renderDB(queue) {
+  let tableColumns = getTableColumns(true);
   let columns = [
+    tableColumns.thumb,
+    tableColumns.title,
+    tableColumns.tags,
+    tableColumns.track,
+    tableColumns.dur,
+    tableColumns.lastPlayed,
+    tableColumns.playCnt,
+    tableColumns.rating,
+    tableColumns.interval,
     {
-      title: "Thumb",
-      field: "id",
-      formatter: (cell) => {
-        const videoId = cell.getValue();
-        const img = document.createElement("img");
-        img.src = `https://i.ytimg.com/vi/${videoId}/default.jpg`;
-        img.style.width = "70px";
-        img.style.height = "54px";
-        return img;
-      },
-      cellClick: async function (e, cell) {
-        const video = DBDATA.queue.find(
-          (v) => v.id === cell.getRow().getData().id
-        );
-        if (!video) {
-          alert("Error: Cannot find in DBDATA");
-          return;
-        }
-        await moveVideoToFront(video.id);
-        await renderQueue();
-        showToast("Added to front of queue");
-      },
-    },
-    {
-      title: "Title",
-      field: "title",
-      formatter: "textarea",
-      width: 250,
-      headerFilter: "input",
-    },
-    {
-      title: "Tags",
-      field: "tags",
-      formatter: "textarea",
-      width: 150,
-      headerFilter: "input",
-    },
-    { title: "Dur", field: "dur", formatter: "textarea" },
-    { title: "R", field: "rating", hozAlign: "center" },
-    { title: "S", field: "score", hozAlign: "center" },
-    {
-      title: "Last Played",
-      field: "lastPlayDate",
+      title: "S",
+      field: "score",
       hozAlign: "center",
-      formatter: "html",
+      formatter: (cell) => {
+        return cell.getValue().toFixed(1);
+      },
     },
-    { title: "Cnt", field: "playCnt", hozAlign: "center" },
-    { title: "Int", field: "int", hozAlign: "center" },
     { title: "Delay", field: "delay", hozAlign: "center" },
     { title: "E", field: "errCnt", hozAlign: "center", editor: "number" },
     { title: "Dup", field: "dup", hozAlign: "left", editor: "input" },
-    { title: "ID", field: "id", hozAlign: "left" },
+    { title: "ID", field: "id", hozAlign: "left", width: 60 },
     {
       title: "Channel",
       field: "videoOwnerChannelTitle",
@@ -905,66 +874,19 @@ function renderDB(queue) {
     },
   ];
 
-  const data = queue.map((video) => ({
-    id: video.id,
-    title: video.title || video.yt?.snippet?.title || video.id,
-    tags: video.tags,
-    dur: formatVideoDuration(video),
-    rating: video.rating.toFixed(1),
-    score: video.score.toFixed(1),
-    playCnt: video.playCnt,
-    int: `${rating2days(video.rating)}d`,
-    delay: video.delay ? "✅" : "",
-    errCnt: video.errCnt ?? 0,
-    dup: video.dup,
-    lastPlayDate: formatLastPlayDate(video),
-    videoOwnerChannelTitle:
-      video?.yt?.snippet?.videoOwnerChannelTitle ??
-      video?.yt?.snippet?.channelTitle,
-  }));
-
   if (tabulatorDB) {
-    tabulatorDB.replaceData(data);
+    tabulatorDB.replaceData(queue);
     return;
   }
 
   tabulatorDB = new Tabulator("#database-grid", {
-    data: data,
+    data: queue,
     columns: columns,
+    custom: { current: false }, // custom property
     height: "100%",
     width: "100%",
     movableColumns: true,
   });
-  tabulatorDB.on("cellEdited", async (cell) => {
-    console.log(
-      "Edited",
-      cell.getField(),
-      "=",
-      cell.getValue(),
-      "(old:",
-      cell.getOldValue(),
-      "row id:",
-      cell.getRow().getData().id,
-      ")"
-    );
-    const idx = DBDATA.queue.findIndex(
-      (v) => v.id === cell.getRow().getData().id
-    );
-    if (idx === -1) {
-      alert("Error: Cannot find in DBDATA");
-      return;
-    }
-    // TODO: Move this to formatter for errCnt
-    let video = DBDATA.queue[idx];
-    if (cell.getField() == "errCnt") {
-      video.errCnt = cell.getValue();
-      await db.saveVideos(video);
-    } else if (cell.getField() == "dup") {
-      video.dup = cell.getValue();
-      await db.saveVideos(video);
-    }
-  });
-  return;
 }
 
 function calcStringSimilarity(queue) {
