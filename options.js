@@ -1,10 +1,5 @@
 import * as db from "./db.js";
 
-// Cross-browser shim
-if (typeof browser === "undefined") {
-  var browser = chrome; // var so it's global
-}
-
 let DBDATA = { queue: [], filtered: [] };
 let LISTLEN = 50;
 let MAXLOGDUMP = 99999;
@@ -1075,6 +1070,24 @@ async function renderPlaylists() {
       width: 80,
     },
     { title: "ID", field: "id", hozAlign: "left", width: 150 },
+    {
+      title: "",
+      formatter: (cell) => {
+        return "🗑️";
+      },
+      cellClick: (e, cell) => {
+        let data = cell.getRow().getData();
+        if (
+          confirm(
+            `Are you sure you want to delete this playlist? ${data.title}`
+          )
+        ) {
+          db.deletePlaylist(data.id);
+          cell.getRow().delete();
+        }
+      },
+      hozAlign: "center",
+    },
   ];
 
   if (playlistsTabulator) {
@@ -1085,9 +1098,6 @@ async function renderPlaylists() {
   playlistsTabulator = new Tabulator("#playlists-grid", {
     data: DBDATA.playlists,
     columns: columns,
-    // pagination: "local",
-    // paginationSize: 10,
-    // height: "500px",
     height: "100%",
     width: "100%",
     movableColumns: true,
