@@ -421,7 +421,7 @@ async function table2(tabulator, htmlEl, videoList, current) {
 
   tabulator = new Tabulator(htmlEl, {
     data: videoList,
-    custom: { current }, // custom property
+    custom: { current: hackCurrent }, // custom property
     columns: columns,
     columnDefaults: {
       hozAlign: "center",

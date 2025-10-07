@@ -79,11 +79,9 @@ async function createYoutubeWindow(winParent) {
   // playerWindow.setBounds({ x: 320, y: 80, width: 1000, height: 400 });
   const bounds = await winParent.webContents.executeJavaScript(`
     (() => {
-      console.log("hi");
       const el = document.getElementById("youtube");
       const rect = el.getBoundingClientRect();
       const bounds = { x: rect.left, y: rect.top, width: rect.width, height: rect.height };
-      console.log(bounds);
       return bounds;
     })()
   `);
