@@ -1,6 +1,7 @@
 const {
   app,
   BrowserWindow,
+  BrowserView,
   ipcMain,
   Menu,
   globalShortcut,
@@ -59,24 +60,27 @@ function createWindow(name) {
     win = null;
   });
   sizeStore(win, name);
+  return win;
 }
 
-function createYoutubeWindow() {
-  let playerWindow = new BrowserWindow({
+function createYoutubeWindow(winParent) {
+  let playerWindow = new BrowserView({
     icon: path.join(__dirname, "favicon.ico"),
     title: "YouTube Player",
-    // parent: BrowserWindow.getFocusedWindow(), // makes it a child window (optional)
+    // parent: winParent, // makes it a child window (optional)
     webPreferences: {
       preload: path.join(__dirname, "youtube-preload.js"),
       nodeIntegration: false,
       contextIsolation: true,
     },
   });
+  winParent.setBrowserView(playerWindow);
+  playerWindow.setBounds({ x: 320, y: 160, width: 1300, height: 900 });
 
-  playerWindow.on("closed", () => {
-    playerWindow = null;
-  });
-  sizeStore(playerWindow, "player");
+  // playerWindow.on("closed", () => {
+  //   playerWindow = null;
+  // });
+  // sizeStore(playerWindow, "player");
 
   playerWindow.webContents.on("context-menu", (event, params) => {
     let url =
@@ -126,7 +130,7 @@ function createYoutubeWindow() {
     menu.popup({ window: playerWindow });
   });
 
-  playerWindow.loadURL("https://www.youtube.com/");
+  playerWindow.webContents.loadURL("https://www.youtube.com/");
   // playerWindow.webContents.openDevTools();
   return playerWindow;
 }
@@ -166,9 +170,9 @@ app.whenReady().then(async () => {
   const StoreModule = await import("electron-store");
   const Store = StoreModule.default; // get the default export
   store = new Store();
-  createWindow("main");
-  createWindow("graphs");
-  let playerWindow = createYoutubeWindow();
+  let winMain = createWindow("main");
+  // let winGraph = createWindow("graphs");
+  let playerWindow = createYoutubeWindow(winMain);
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
       createWindow("main");
