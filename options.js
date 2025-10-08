@@ -430,7 +430,7 @@ async function table2(tabulator, htmlEl, videoList, current) {
     layout: "fitData",
     movableColumns: true,
     rowHeight: showMoreColumns ? NORMAL_TABLE_HEIGHT : COMPACT_TABLE_HEIGHT,
-    height: current ? null : "500px",
+    // height: current ? null : "500px",
   });
   return tabulator;
 }
