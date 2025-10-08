@@ -194,6 +194,12 @@ input[type="number"] {
   overflow: hidden;
   /* text-overflow: ellipsis;*/
 }
+.tabulator .tabulator-tableholder {
+  overflow: scroll !important;
+}
+#current.tabulator .tabulator-tableholder {
+  overflow-y: hidden !important;
+}
 .toc-horizontal {
   display: flex; /* horizontal layout */
   gap: 20px; /* space between items */
