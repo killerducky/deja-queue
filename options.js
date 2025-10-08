@@ -377,11 +377,13 @@ function getTableColumns(current) {
           item.rating = Math.min(10, item.rating + 0.5);
         }
         if (origRating != item.rating) {
-          // TODO: The items should have a type field so I know what type of object they are.
-          if (item.videoIds) {
+          if (item.type == "playlist") {
             await db.savePlaylists([item]);
-          } else {
+          } else if (item.type == "video") {
             await db.saveVideos([item]);
+          } else {
+            alert(`unknown type ${item.type}`);
+            console.log(item);
           }
           cell.getRow().reformat();
           console.log("Saved new rating", item.rating, "for", item.id);
@@ -943,22 +945,25 @@ async function renderPlaylists() {
       formatter: "image",
       formatterParams: {
         height: 54,
-        // width: 72,
         objectFit: "contain",
       },
       cellClick: async function (e, cell) {
-        const plVideoIds = cell.getRow().getData().videoIds;
-        // Adding to the front one at a time, so go backwards
-        for (let vid of [...plVideoIds].reverse()) {
-          await moveVideoToFront(vid);
+        const item = cell.getRow().getData();
+        if (item.type == "playlist") {
+          const plVideoIds = cell.getRow().getData().videoIds;
+          // Adding to the front one at a time, so go backwards
+          for (let vid of [...plVideoIds].reverse()) {
+            await moveVideoToFront(vid);
+          }
+        } else {
+          moveVideoToFront(item.id);
         }
         await renderQueue();
         showToast("Added to front of queue");
       },
       hozAlign: "center",
       vertAlign: "center",
-      width: 90,
-      // width: 60,
+      width: 130,
     },
     {
       title: "Title",
@@ -1028,6 +1033,7 @@ async function renderPlaylists() {
   playlistsTabulator = new Tabulator("#playlists-grid", {
     data: DBDATA.playlists,
     columns: columns,
+    dataTree: true,
     height: "100%",
     width: "100%",
     movableColumns: true,
@@ -1061,6 +1067,41 @@ function handleTabs() {
   });
 }
 handleTabs();
+
+function addComputedFieldsPL(playlist) {
+  if (Array.isArray(playlist)) {
+    return playlist.map((p) => addComputedFieldsPL(p));
+  }
+  return Object.defineProperties(playlist, {
+    _children: {
+      get() {
+        return (playlist.videoIds || []).map((id) => {
+          let video = DBDATA.queue.find((v) => v.id === id);
+          return video;
+        });
+      },
+      enumerable: false,
+    },
+    type: { value: "playlist", enumerable: false, writable: true },
+    rating: { value: playlist.rating ?? DEFAULT_RATING, writable: true },
+  });
+}
+
+function addComputedFieldsVideo(video) {
+  if (Array.isArray(video)) {
+    return video.map((p) => addComputedFieldsVideo(p));
+  }
+  return Object.defineProperties(video, {
+    type: { value: "video", enumerable: false, writable: true },
+    rating: { value: video.rating ?? DEFAULT_RATING, writable: true },
+    title: { value: video.title ?? video.yt.snippet.title, writable: true },
+    thumbnailUrl: {
+      value: `https://i.ytimg.com/vi/${video.id}/default.jpg`,
+      enumerable: false,
+      writable: true,
+    },
+  });
+}
 
 // Initial load
 (async () => {
@@ -1116,6 +1157,8 @@ handleTabs();
     }
     DBDATA.playlists.push(defaultPlaylist);
   }
+  DBDATA.playlists = addComputedFieldsPL(DBDATA.playlists);
+  DBDATA.queue = addComputedFieldsVideo(DBDATA.queue);
   renderDB(DBDATA.queue);
   renderPlaylists();
   // Remove errors and dups from graphs.
