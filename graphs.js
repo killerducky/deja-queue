@@ -444,6 +444,7 @@ function calcStringSimilarity(queue) {
   plotRatings(DBDATA.filtered);
   plotScores(DBDATA.filtered);
   plotCooldownFactor(DBDATA.filtered);
+  db.closeDB();
   // calcStringSimilarity(DBDATA.queue);
   // renderQueue();
 })();

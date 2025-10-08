@@ -31,7 +31,7 @@ async function openDB() {
   return dbInstance || (await dbPromise);
 }
 
-async function closeDB() {
+export async function closeDB() {
   if (dbInstance) {
     dbInstance.close();
     dbInstance = null;
