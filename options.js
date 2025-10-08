@@ -430,7 +430,6 @@ async function table2(tabulator, htmlEl, videoList, current) {
     layout: "fitData",
     movableColumns: true,
     rowHeight: showMoreColumns ? NORMAL_TABLE_HEIGHT : COMPACT_TABLE_HEIGHT,
-    // height: current ? null : "500px",
   });
   return tabulator;
 }
@@ -811,26 +810,25 @@ importFile.addEventListener("change", () => {
   }
 });
 
+function getNestedValue(obj, path) {
+  return path.split(".").reduce((o, key) => (o ? o[key] : undefined), obj);
+}
+
 let tabulatorDB = null;
 function setGlobalSearch(myTabulatorTable, value) {
   const t0 = performance.now();
-  myTabulatorTable.setFilter((data, row) => {
-    let terms = value.toLowerCase().split(" ");
-    // console.log("DB filter on ", terms);
-    for (let term of terms) {
-      let found = false;
-      for (let key in data) {
-        const value = data[key];
-        if (value && value.toString().toLowerCase().includes(term)) {
-          found = true;
-          break;
-        }
-      }
-      if (!found) {
-        return false;
-      }
-    }
-    return true;
+  let terms = value.toLowerCase().split(" ");
+  let fields = myTabulatorTable
+    .getColumns()
+    .map((col) => col.getDefinition().field)
+    .filter((field) => field != null);
+  myTabulatorTable.setFilter((data) => {
+    return terms.every((term) =>
+      fields.some((field) => {
+        const val = getNestedValue(data, field);
+        return val && val.toString().toLowerCase().includes(term);
+      })
+    );
   });
   const t1 = performance.now();
   console.log(`GlobalSearch took ${(t1 - t0).toFixed(0)} ms`);
