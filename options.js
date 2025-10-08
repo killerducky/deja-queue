@@ -1008,17 +1008,25 @@ async function renderPlaylists() {
     {
       title: "",
       formatter: (cell) => {
-        return "🗑️";
-      },
-      cellClick: (e, cell) => {
         let data = cell.getRow().getData();
-        if (
-          confirm(
-            `Are you sure you want to delete this playlist? ${data.title}`
-          )
-        ) {
-          db.deletePlaylist(data.id);
-          cell.getRow().delete();
+        return data.type == "playlist" ? "🗑️" : "❌";
+      },
+      cellClick: async (e, cell) => {
+        let data = cell.getRow().getData();
+        if (data.type == "playlist") {
+          if (confirm(`Delete this playlist? ${data.title}`)) {
+            await db.deletePlaylist(data.id);
+            cell.getRow().delete();
+          }
+        } else {
+          if (confirm(`Remove this video from playlist? ${data.title}`)) {
+            let playlist = cell.getRow().getTreeParent().getData();
+            playlist.videoIds = playlist.videoIds.filter(
+              (vid) => vid !== data.id
+            );
+            cell.getRow().delete();
+            await db.savePlaylists(playlist);
+          }
         }
       },
       hozAlign: "center",
