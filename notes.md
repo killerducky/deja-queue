@@ -154,10 +154,10 @@ if (theaterButton) {
   - [x] Playlist should respect deleted videos
 - [?] Queue according to playlist rating, not song rating
 - [x] Playlist mode respect atomicity of the playlist
-- [ ] Skip album
+- [x] Skip album
 - [ ] On startup, play button doesn't work
 - [ ]
 
 ## Youtube Explorer
 
-- [ ] back/forward
+- [x] back/forward
