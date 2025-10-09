@@ -1224,50 +1224,13 @@ function addComputedFieldsVideo(video) {
   DBDATA.queue.sort((a, b) => b.score - a.score);
   DBDATA.playlists = await db.loadPlaylists();
   if (queueModeEl.value == "playlist") {
-    const playlistMap = new Map(DBDATA.playlists.map((pl) => [pl.id, pl]));
-    const validPlaylistIds = new Set(DBDATA.playlists.map((pl) => pl.id));
-    let origQueue = DBDATA.queue;
-    DBDATA.queue = [];
-    let addedIds = new Set();
-    const seenPlaylists = new Set();
-    // console.log(validPlaylistIds);
-    // Iterate through fullQueue
-    for (const video of origQueue) {
-      // Find a video that belongs to an unseen playlist
-      if (
-        video.playlistId &&
-        validPlaylistIds.has(video.playlistId) &&
-        !seenPlaylists.has(video.playlistId)
-      ) {
-        // console.log("add playlist ", video.playlistId);
-        const pl = playlistMap.get(video.playlistId);
-        let plVids;
-        plVids = pl.videoIds.map((id) => origQueue.find((v) => v.id === id));
-        // console.log(plVids);
-        DBDATA.queue.push(...plVids);
-        plVids.forEach((v) => addedIds.add(v.id));
-        seenPlaylists.add(video.playlistId);
-      }
-    }
-    let defaultPlaylist = {
-      id: "default",
-      title: "Default",
-      channelTitle: "",
-      videoCount: 0,
-      thumbnailUrl: "",
-      dateAdded: Date.now(),
-      rating: DEFAULT_RATING,
-      videoIds: [],
-    };
-    for (const v of origQueue) {
-      if (!addedIds.has(v.id)) {
-        DBDATA.queue.push(v);
-        defaultPlaylist.videoIds.push(v.id);
-        defaultPlaylist.videoCount += 1;
-        addedIds.add(v.id);
-      }
-    }
-    DBDATA.playlists.push(defaultPlaylist);
+    const playlistCopies = DBDATA.playlists.map((item) => {
+      // shallow copy top-level + clone videoIds array
+      const copy = { ...item };
+      return addComputedFieldsPL(copy);
+    });
+    // Prepend all copies to the queue
+    DBDATA.queue.unshift(...playlistCopies);
   }
   DBDATA.playlists = addComputedFieldsPL(DBDATA.playlists);
   DBDATA.queue = addComputedFieldsVideo(DBDATA.queue);

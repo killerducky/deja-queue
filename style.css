@@ -20,7 +20,7 @@ body {
 }
 .main-container {
   display: grid;
-  grid-template-columns: 400px minmax(300px, 1fr) 5px;
+  grid-template-columns: 450px minmax(300px, 1fr) 5px;
   grid-template-rows: auto 400px minmax(300px, 1fr);
   grid-template-areas:
     "left top right"

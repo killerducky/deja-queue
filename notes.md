@@ -139,7 +139,7 @@ if (theaterButton) {
 ## Queue
 
 - [x] Clicking thumb on top of queue plays the song
-- [ ] Q - dataTree mode
+- [?] Q - dataTree mode
 - [ ] Tag
 - [ ] Adding new videos should update playlist/DB/etc
 - [ ] Add to Q link text -- option for video/playlist
@@ -153,7 +153,7 @@ if (theaterButton) {
 - [?] 404 thumbs
   - [x] Playlist should respect deleted videos
 - [ ] Queue according to playlist rating, not song rating
-- [ ] Playlist mode respect atomicity of the playlist
+- [x] Playlist mode respect atomicity of the playlist
 - [ ] Skip album
 - [ ] On startup, play button doesn't work
 - [ ]
