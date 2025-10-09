@@ -142,3 +142,19 @@ Add to Q link text -- option for video/playlist
 First song kickoff by play button
 poppy negative spaces album -- thumbnail broken
 playlist should respect deleted videos
+
+Q -
+dataTree mode
+tag
+clicking on top of queue plays the song
+
+Playlists -
+show Interval
+track
+duration
+404 thumbs
+queue according to playlist rating not song rating
+
+Playlist mode respect atomicity of the playlist
+skip album
+On startup, play button doesn't work.

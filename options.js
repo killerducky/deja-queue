@@ -493,6 +493,7 @@ async function addYoutubeInfo(video) {
   // console.log(data);
   if (data.items?.length > 0) {
     video.yt = data.items[0];
+    addComputedFieldsVideo(video);
     await db.saveVideos([video]);
   } else {
     console.log("Error fetching yt for: ", video.id);
@@ -547,6 +548,7 @@ async function addPlaylistVideos(playlistId) {
         rating: DEFAULT_RATING,
         yt: yt,
       };
+      addComputedFieldsVideo(video);
       // Due to going backwards, we need to go backwards here too
       playlist.videoIds.unshift(video.id);
       console.log("Add videoid", video.id);
@@ -576,6 +578,7 @@ async function addPlaylistVideos(playlistId) {
   console.log("addPlaylistVideos: newVideos ", newVideos);
 
   playlist.videoCount = playlist.videoIds.length; // This seems more accurate
+  addComputedFieldsPL(playlist);
   console.log("add", playlist);
   await db.savePlaylists(playlist);
 
