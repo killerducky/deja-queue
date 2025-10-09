@@ -136,25 +136,24 @@ if (theaterButton) {
 </button>
 ```
 
-Q mode dropdown is rounded weirdly
-adding new videos should update playlist/DB/etc
-Add to Q link text -- option for video/playlist
-First song kickoff by play button
-poppy negative spaces album -- thumbnail broken
-playlist should respect deleted videos
+## Queue
 
-Q -
-dataTree mode
-tag
-clicking on top of queue plays the song
+- [x] Clicking thumb on top of queue plays the song
+- [ ] Q - dataTree mode
+- [ ] Tag
+- [ ] Playlist should respect deleted videos
+- [ ] Adding new videos should update playlist/DB/etc
+- [ ] Add to Q link text -- option for video/playlist
+- [ ] Q mode dropdown is rounded weirdly
 
-Playlists -
-show Interval
-track
-duration
-404 thumbs
-queue according to playlist rating not song rating
+## Playlists
 
-Playlist mode respect atomicity of the playlist
-skip album
-On startup, play button doesn't work.
+- [x] Show Interval
+- [x] Track
+- [x] Duration
+- [ ] 404 thumbs
+- [ ] Queue according to playlist rating, not song rating
+- [ ] Playlist mode respect atomicity of the playlist
+- [ ] Skip album
+- [ ] On startup, play button doesn't work
+- [ ]

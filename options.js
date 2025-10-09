@@ -16,6 +16,9 @@ let COMPACT_TABLE_HEIGHT = 40;
 let NORMAL_TABLE_HEIGHT = 68;
 let COMPACT_THUMB_WIDTH = 60;
 let NORMAL_THUMB_WIDTH = 90;
+let TITLE_WIDTH = 120;
+
+const DEFAULT_THUMB = "./favicon.ico";
 
 function rating2color(rating) {
   const colors = [
@@ -261,19 +264,19 @@ async function renderQueue() {
     tabulatorCurrent,
     currentEl,
     [firstVideo],
-    true
+    "current"
   );
-  tabulatorQueue = await table2(tabulatorQueue, queueEl, restVideos, false);
+  tabulatorQueue = await table2(tabulatorQueue, queueEl, restVideos, "queue");
   let log = await db.getLastNLogs(LISTLEN);
   let logVideoList = [];
   for (let entry of log) {
     let video = DBDATA.queue.find((v) => v.id === entry.id);
     logVideoList.push(video);
   }
-  tabulatorLog = await table2(tabulatorLog, logEl, logVideoList, false);
+  tabulatorLog = await table2(tabulatorLog, logEl, logVideoList, "log");
 }
 
-function getTableColumns(current) {
+function getTableColumns(tableType) {
   let tableColumns = {
     thumb: {
       title: "Thumb",
@@ -282,26 +285,29 @@ function getTableColumns(current) {
         let id = cell.getValue();
         return `<img src="https://i.ytimg.com/vi/${id}/default.jpg" style="height:54px;cursor:pointer;">`;
       },
-      width: current ? NORMAL_THUMB_WIDTH : COMPACT_THUMB_WIDTH,
+      width: COMPACT_THUMB_WIDTH,
       cellClick: async (e, cell) => {
-        if (!cell.getTable().options.custom.current) {
+        const row = cell.getRow();
+        const firstRow = cell.getTable().getRows()[0];
+        console.log(tableType, row, firstRow);
+        if (tableType == "current") {
+          playNextVideo(0);
+        } else if (tableType == "queue" && row == firstRow) {
+          playNextVideo(1);
+        } else {
           moveVideoToFront(cell.getRow().getData().id);
           await renderQueue();
           showToast("Added to front of queue");
-        } else {
-          playNextVideo(0);
         }
       },
     },
     title: {
       title: "Title",
       field: "yt.snippet.title",
-      // formatter: current ? "textarea" : "plaintext",
       formatter: "plaintext",
       tooltip: true,
       hozAlign: "left",
-      width: 120,
-      // width: current ? 250 : 100,
+      width: TITLE_WIDTH,
     },
     tags: {
       title: "Tags",
@@ -310,15 +316,14 @@ function getTableColumns(current) {
       editor: "input",
       width: 150,
       cellEdited: async (cell) => {
-        const video = DBDATA.queue.find(
-          (v) => v.id === cell.getRow().getData().id
-        );
-        if (!video) {
-          alert("Error: Cannot find in DBDATA");
-          return;
+        const item = cell.getData();
+        if (item.type == "video") {
+          await db.saveVideos(item);
+        } else if (item.type == "playlist") {
+          await db.savePlaylists(item);
+        } else {
+          console.log("error");
         }
-        console.log(`Edit ID:${video.id} New tags: ${video.tags}`);
-        await db.saveVideos(video);
       },
     },
     track: {
@@ -402,13 +407,13 @@ function getTableColumns(current) {
   return tableColumns;
 }
 
-async function table2(tabulator, htmlEl, videoList, current) {
+async function table2(tabulator, htmlEl, videoList, tableType) {
   let showMoreColumns = false;
   if (tabulator) {
     tabulator.replaceData(videoList);
     return tabulator;
   }
-  let tableColumns = getTableColumns(showMoreColumns);
+  let tableColumns = getTableColumns(tableType);
 
   let columns = [
     tableColumns.thumb,
@@ -425,7 +430,7 @@ async function table2(tabulator, htmlEl, videoList, current) {
 
   tabulator = new Tabulator(htmlEl, {
     data: videoList,
-    custom: { current }, // custom property
+    custom: { tableType }, // custom property  TODO: Not needed anymore?
     columns: columns,
     columnDefaults: {
       hozAlign: "center",
@@ -945,10 +950,10 @@ async function renderPlaylists() {
   let table2StyleColumns = getTableColumns(true);
   let columns = [
     {
-      title: "Type",
+      title: "",
       field: "type",
       formatter: (cell) => {
-        return cell.getValue() == "playlist" ? "PL" : "V";
+        return "";
       },
       cellClick: (e, cell) => {
         let row = cell.getRow();
@@ -990,19 +995,8 @@ async function renderPlaylists() {
       width: 250,
       headerFilter: "input",
     },
-    {
-      title: "Tags",
-      field: "tags",
-      formatter: "textarea",
-      editor: "input",
-      width: 150,
-      cellEdited: async (cell) => {
-        // console.log("edit:", cell.getData());
-        const pl = cell.getData();
-        console.log(`edit pl:${pl.id} tags:${pl.tags}`);
-        await db.savePlaylists(pl);
-      },
-    },
+    table2StyleColumns.track,
+    table2StyleColumns.tags,
     {
       title: "Channel",
       field: "channelTitle",
@@ -1019,10 +1013,11 @@ async function renderPlaylists() {
         return date2String(new Date(timestamp));
       },
       hozAlign: "center",
-      width: 150,
     },
-    table2StyleColumns.rating, // TODO: Convert playlist to use these style. For now just use this one.
-    { title: "ID", field: "id", hozAlign: "left", width: 150 },
+    table2StyleColumns.rating,
+    table2StyleColumns.interval,
+    table2StyleColumns.dur,
+    { title: "ID", field: "id", hozAlign: "left", width: 20 },
     {
       title: "",
       formatter: (cell) => {
@@ -1126,6 +1121,11 @@ function addComputedFieldsVideo(video) {
       value: `https://i.ytimg.com/vi/${video.id}/default.jpg`,
       enumerable: false,
       writable: true,
+    },
+    channelTitle: {
+      value: video.yt?.snippet?.videoOwnerChannelTitle || "—",
+      writable: true,
+      enumerable: true,
     },
   });
 }

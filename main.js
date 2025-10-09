@@ -204,8 +204,8 @@ ipcMain.on("broadcast", async (event, msg) => {
   Object.values(winRegister).forEach((win) => {
     if (win.object.webContents !== event.sender) {
       // youtubeExplore does not take orders!
+      // This is not needed because youtubeExplore does not get injected.
       // if (win.metadata.name != "youtubeExplore") {
-      //   console.log("send to:", JSON.stringify(win.metadata));
       //   win.object.webContents.send("broadcast", msg);
       // }
       win.object.webContents.send("broadcast", msg);
@@ -251,8 +251,14 @@ app.whenReady().then(async () => {
       createAllWindows();
     }
   });
-  globalShortcut.register("Alt+Left", () => goBack());
-  globalShortcut.register("Alt+Right", () => goForward());
+  const isMac = process.platform === "darwin";
+  if (isMac) {
+    globalShortcut.register("CommandOrControl+[", () => goBack());
+    globalShortcut.register("CommandOrControl+]", () => goForward());
+  } else {
+    globalShortcut.register("Alt+Left", () => goBack());
+    globalShortcut.register("Alt+Right", () => goForward());
+  }
 });
 
 app.on("window-all-closed", () => {
