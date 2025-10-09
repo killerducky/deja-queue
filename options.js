@@ -14,6 +14,8 @@ let RATING_FACTOR = 1;
 
 let COMPACT_TABLE_HEIGHT = 40;
 let NORMAL_TABLE_HEIGHT = 68;
+let COMPACT_THUMB_WIDTH = 60;
+let NORMAL_THUMB_WIDTH = 90;
 
 function rating2color(rating) {
   const colors = [
@@ -280,7 +282,7 @@ function getTableColumns(current) {
         let id = cell.getValue();
         return `<img src="https://i.ytimg.com/vi/${id}/default.jpg" style="height:54px;cursor:pointer;">`;
       },
-      width: current ? 90 : 60,
+      width: current ? NORMAL_THUMB_WIDTH : COMPACT_THUMB_WIDTH,
       cellClick: async (e, cell) => {
         if (!cell.getTable().options.custom.current) {
           moveVideoToFront(cell.getRow().getData().id);
@@ -867,7 +869,7 @@ function renderDB(queue) {
     { title: "Delay", field: "delay", hozAlign: "center" },
     { title: "E", field: "errCnt", hozAlign: "center", editor: "number" },
     { title: "Dup", field: "dup", hozAlign: "left", editor: "input" },
-    { title: "ID", field: "id", hozAlign: "left", width: 60 },
+    { title: "ID", field: "id", hozAlign: "left", width: COMPACT_THUMB_WIDTH },
     {
       title: "Channel",
       field: "videoOwnerChannelTitle",
@@ -940,11 +942,20 @@ async function renderPlaylists() {
   let table2StyleColumns = getTableColumns(true);
   let columns = [
     {
+      title: "Type",
+      field: "type",
+      formatter: (cell) => {
+        return cell.getValue() == "playlist" ? "PL" : "V";
+      },
+      cellClick: (e, cell) => {
+        cell.getRow().treeToggle();
+      },
+    },
+    {
       title: "Thumb",
       field: "thumbnailUrl",
       formatter: "image",
       formatterParams: {
-        height: 54,
         objectFit: "contain",
       },
       cellClick: async function (e, cell) {
@@ -963,12 +974,12 @@ async function renderPlaylists() {
       },
       hozAlign: "center",
       vertAlign: "center",
-      width: 130,
+      width: COMPACT_THUMB_WIDTH,
     },
     {
       title: "Title",
       field: "title",
-      formatter: "textarea",
+      // formatter: "textarea",
       width: 250,
       headerFilter: "input",
     },
@@ -1041,6 +1052,7 @@ async function renderPlaylists() {
   playlistsTabulator = new Tabulator("#playlists-grid", {
     data: DBDATA.playlists,
     columns: columns,
+    rowHeight: COMPACT_TABLE_HEIGHT,
     dataTree: true,
     height: "100%",
     width: "100%",
