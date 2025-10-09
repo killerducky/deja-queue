@@ -151,7 +151,7 @@ if (theaterButton) {
 - [x] Track
 - [x] Duration
 - [?] 404 thumbs
-  - [ ] Playlist should respect deleted videos
+  - [x] Playlist should respect deleted videos
 - [ ] Queue according to playlist rating, not song rating
 - [ ] Playlist mode respect atomicity of the playlist
 - [ ] Skip album

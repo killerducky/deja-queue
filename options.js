@@ -315,7 +315,7 @@ function getTableColumns(tableType) {
         if (row.getData().type == "video") {
           row = row.getTreeParent();
         }
-        row.treeToggle();
+        row && row.treeToggle();
       },
     },
     thumb: {
@@ -331,7 +331,6 @@ function getTableColumns(tableType) {
       cellClick: async (e, cell) => {
         const row = cell.getRow();
         const firstRow = cell.getTable().getRows()[0];
-        console.log(tableType, row, firstRow);
         if (tableType == "current") {
           playNextVideo(0);
         } else if (tableType == "queue" && row == firstRow) {
@@ -1052,7 +1051,11 @@ async function renderPlaylists() {
         if (item.type == "playlist") {
           // make copy and clone videoIds because we will mutate it
           let playlistCopy = addComputedFieldsPL({ ...item });
-          DBDATA.queue.splice(1, 0, playlistCopy);
+          let insertIdx = 1;
+          if (DBDATA.queue[0]._currentTrack !== -1) {
+            insertIdx = 2;
+          }
+          DBDATA.queue.splice(insertIdx, 0, playlistCopy);
         } else {
           moveVideoToFront(item.id);
         }
@@ -1143,8 +1146,12 @@ async function moveVideoToFront(id) {
     console.log("Error could not find ", id);
     return;
   }
+  let insertIdx = 1;
+  if (DBDATA.queue[0]._currentTrack !== -1) {
+    insertIdx = 2;
+  }
   const [video] = DBDATA.queue.splice(idx, 1);
-  DBDATA.queue.splice(1, 0, video); // insert at index 1 (2nd spot)
+  DBDATA.queue.splice(insertIdx, 0, video);
 }
 
 function handleTabs() {
