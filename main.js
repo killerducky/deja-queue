@@ -9,19 +9,28 @@ const {
 const path = require("path");
 const fs = require("fs");
 
-// const Store = require("electron-store");
-// const store = new Store();
 let store;
-const playerViews = []; // store WebContentsView instances
+
+// YT play: WebContentsView
+// YT explore: BrowserWindow
+// main: BrowserWindow
+// graphs: BrowserWindow
+
+const playerViews = {};
+const winRegister = {};
 let winMain = null;
 
 app.commandLine.appendSwitch("disable-logging"); // disable general Chromium logging
 app.commandLine.appendSwitch("log-level", "3"); // 0=verbose, 3=errors only
 app.commandLine.appendSwitch("disable-features", "VizDisplayCompositor"); // optional GPU warning reduction
 
+function safeKey(label, suffix) {
+  return `${label.replace(/\./g, "_")}${suffix}`;
+}
+
 function sizeStore(win, label) {
-  const minMaxKey = `${label}WindowMinMax`;
-  const boundsKey = `${label}WindowBounds`;
+  const minMaxKey = safeKey(label, "WindowMinMax");
+  const boundsKey = safeKey(label, "WindowBounds");
 
   // Restore state
   const bounds = store.get(boundsKey);
@@ -47,21 +56,35 @@ function sizeStore(win, label) {
   win.on("minimize", () => store.set(minMaxKey, "min"));
   win.on("restore", () => store.set(minMaxKey, ""));
 }
-function createWindow(name) {
+function createWindow(winInfo) {
   let win = new BrowserWindow({
     icon: path.join(__dirname, "favicon.ico"),
     webPreferences: {
-      preload: __dirname + "/preload.js", // inject our bridge script
+      ...(winInfo.inject
+        ? { preload: path.join(__dirname, winInfo.inject) }
+        : {}),
       nodeIntegration: false,
       contextIsolation: true,
     },
   });
-  win.loadFile(name == "main" ? "index.html" : `${name}.html`);
+  if (winInfo.target.startsWith("http")) {
+    win.loadURL(winInfo.target);
+  } else {
+    win.loadFile(winInfo.target);
+  }
   // win.webContents.openDevTools();
   win.on("closed", () => {
     win = null;
   });
-  sizeStore(win, name);
+  sizeStore(win, winInfo.name);
+  if (winInfo.addContextMenu) {
+    addContextMenu(win);
+  }
+  winRegister[winInfo.name] = {
+    type: "BrowserWindow",
+    object: win,
+    metadata: { ...winInfo },
+  };
   return win;
 }
 
@@ -77,19 +100,8 @@ async function setYoutubeBounds(playerWindow, winParent, divTarget) {
   // console.log(bounds);
   playerWindow.setBounds(bounds);
 }
-async function createYoutubeWindow(winParent) {
-  const playerWindow = new WebContentsView({
-    webPreferences: {
-      preload: path.join(__dirname, "youtube-preload.js"),
-      nodeIntegration: false,
-      contextIsolation: true,
-    },
-  });
-  winParent.contentView.addChildView(playerWindow);
-  playerViews.push(playerWindow);
 
-  await setYoutubeBounds(playerWindow, winParent, "youtube");
-
+async function addContextMenu(playerWindow) {
   playerWindow.webContents.on("context-menu", (event, params) => {
     let url =
       params.linkURL || params.srcURL || playerWindow.webContents.getURL();
@@ -137,24 +149,41 @@ async function createYoutubeWindow(winParent) {
 
     menu.popup({ window: playerWindow });
   });
+}
+async function createYoutubeWindow(winParent, winInfo) {
+  const playerWindow = new WebContentsView({
+    webPreferences: {
+      preload: path.join(__dirname, "youtube-preload.js"),
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+  });
+  winParent.contentView.addChildView(playerWindow);
+  playerViews.youtubePlay = playerWindow;
+
+  await setYoutubeBounds(playerWindow, winParent, "youtube");
+
+  addContextMenu(playerWindow);
 
   playerWindow.webContents.loadURL("https://www.youtube.com/");
   // playerWindow.webContents.openDevTools();
+  winRegister[winInfo.name] = {
+    type: "WebContentsView",
+    object: playerWindow,
+    metadata: { ...winInfo },
+  };
   return playerWindow;
 }
 
-function goBack(window) {
-  // if (window && window.webContents.canGoBack()) {
-  //   window.webContents.goBack();
-  // }
-  if (playerViews[0] && playerViews[0].webContents.canGoBack()) {
-    playerViews[0].webContents.goBack();
+function goBack() {
+  if (playerViews.youtubePlay.webContents.navigationHistory.canGoBack()) {
+    playerViews.youtubePlay.webContents.navigationHistory.goBack();
   }
 }
 
-function goForward(window) {
-  if (playerViews[0] && playerViews[0].webContents.canGoForward()) {
-    playerViews[0].webContents.goForward();
+function goForward() {
+  if (playerViews.youtubePlay.webContents.navigationHistory.canGoForward()) {
+    playerViews.youtubePlay.webContents.navigationHistory.goForward();
   }
 }
 
@@ -169,46 +198,61 @@ ipcMain.handle("read-file", async (event, filePath) => {
 });
 
 ipcMain.on("broadcast", async (event, msg) => {
-  console.log("main got", JSON.stringify(msg));
-  BrowserWindow.getAllWindows().forEach((win) => {
-    if (win.webContents != event.sender) {
-      win.webContents.send("broadcast", msg);
+  console.log("msg:", JSON.stringify(msg));
+  // console.log(JSON.stringify(event));
+
+  Object.values(winRegister).forEach((win) => {
+    if (win.object.webContents !== event.sender) {
+      // youtubeExplore does not take orders!
+      // if (win.metadata.name != "youtubeExplore") {
+      //   console.log("send to:", JSON.stringify(win.metadata));
+      //   win.object.webContents.send("broadcast", msg);
+      // }
+      win.object.webContents.send("broadcast", msg);
     }
   });
-  playerViews.forEach((view) => {
-    if (view.webContents !== event.sender) {
-      view.webContents.send("broadcast", msg);
-    }
-  });
+  // tab-button are the buttons that change the view.
+  // Change where embedded youtube is shown.
   if (msg.type === "tab-button") {
-    let playerWindow = playerViews[0];
+    let playerWindow = playerViews.youtubePlay;
     if (msg.targetId === "youtube") {
-      // playerWindow.setBounds({ x: 220, y: 100, width: 1000, height: 500 });
       await setYoutubeBounds(playerWindow, winMain, "youtube-full");
     } else {
-      // playerWindow.setBounds({ x: 0, y: 0, width: 0, height: 0 });
-      // console.log(playerWindow, winMain);
       await setYoutubeBounds(playerWindow, winMain, "youtube");
     }
   }
 });
 
+function createAllWindows() {
+  winMain = createWindow({
+    name: "main",
+    target: "index.html",
+    inject: "preload.js",
+  });
+  createWindow({ name: "graphs", target: "graphs.html", inject: "preload.js" });
+  createWindow({
+    name: "youtubeExplore",
+    target: "https://www.youtube.com",
+    addContextMenu: true,
+    // inject: "youtube-preload.js",
+  });
+  createYoutubeWindow(winMain, {
+    name: "youtubePlayer",
+    inject: "youtube-preload.js", // TODO Not used yet
+  });
+}
 app.whenReady().then(async () => {
   const StoreModule = await import("electron-store");
   const Store = StoreModule.default; // get the default export
   store = new Store();
-  winMain = createWindow("main");
-  let winGraph = createWindow("graphs");
-  let playerWindow = createYoutubeWindow(winMain);
+  createAllWindows();
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      winMain = createWindow("main");
-      winGraph = createWindow("graphs");
-      playerWindow = createYoutubeWindow(winMain);
+      createAllWindows();
     }
   });
-  globalShortcut.register("Alt+Left", () => goBack(playerWindow));
-  globalShortcut.register("Alt+Right", () => goForward(playerWindow));
+  globalShortcut.register("Alt+Left", () => goBack());
+  globalShortcut.register("Alt+Right", () => goForward());
 });
 
 app.on("window-all-closed", () => {
