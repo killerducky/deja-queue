@@ -453,7 +453,20 @@ function getTableColumns(tableType) {
 async function table2(tabulator, htmlEl, videoList, tableType) {
   let showMoreColumns = false;
   if (tabulator) {
+    const expandedIds = [];
+    tabulator.getRows().forEach((row) => {
+      if (row.getData().type == "playlist" && row.isTreeExpanded()) {
+        expandedIds.push(row.getData().id);
+      }
+    });
     tabulator.replaceData(videoList);
+    tabulator.replaceData(videoList).then(() => {
+      tabulator.getRows().forEach((row) => {
+        if (expandedIds.includes(row.getData().id)) {
+          row.treeExpand();
+        }
+      });
+    });
     return tabulator;
   }
   let tableColumns = getTableColumns(tableType);
@@ -700,16 +713,20 @@ async function playNextVideo(offset = 1) {
   }
   offset = offset % DBDATA.queue.length; // deal with very small queues
   let video;
-  console.log(offset);
-  console.log("before 0", DBDATA.queue[0]);
-  console.log("before 1", DBDATA.queue[1]);
+  // console.log(offset);
+  // console.log("before 0", DBDATA.queue[0]);
+  // console.log("before 1", DBDATA.queue[1]);
   if (DBDATA.queue[offset].type == "playlist") {
-    console.log("pnv playlist");
+    // console.log("pnv playlist");
     // take the next video from top of _children array
-    video = DBDATA.queue[offset]._children.shift();
-    DBDATA.queue[offset].videoIds.shift();
-    if (DBDATA.queue[offset].videoIds.length == 0) {
-      console.log("playlist empty now, for now just delete");
+    video = DBDATA.queue[offset]._children[0];
+    if (DBDATA.queue[offset]._currentTrack == -1) {
+      DBDATA.queue[offset]._currentTrack = 1;
+    } else {
+      DBDATA.queue[offset]._currentTrack += 1;
+    }
+    if (DBDATA.queue[offset]._children.length == 0) {
+      console.log("playlist empty, for now just delete");
       DBDATA.queue.splice(offset, 1);
     }
     // cut the first offset videos/playlists, put back to end of queue
@@ -725,10 +742,10 @@ async function playNextVideo(offset = 1) {
     // currently playing video is on top now
     video = DBDATA.queue[0];
   }
-  console.log("pnv", video);
-  // console.log("pnv", DBDATA.queue[offset]);
-  console.log("after 0", DBDATA.queue[0]);
-  console.log("after 1", DBDATA.queue[1]);
+  // console.log("pnv", video);
+  // // console.log("pnv", DBDATA.queue[offset]);
+  // console.log("after 0", DBDATA.queue[0]);
+  // console.log("after 1", DBDATA.queue[1]);
 
   let msg = { type: "playVideo", id: video.id };
   sendMessage("youtube-message", msg);
@@ -1034,12 +1051,7 @@ async function renderPlaylists() {
         const item = cell.getRow().getData();
         if (item.type == "playlist") {
           // make copy and clone videoIds because we will mutate it
-          let playlistCopy = addComputedFieldsPL({
-            ...item,
-            videoIds: item.videoIds ? [...item.videoIds] : [],
-          });
-          console.log(item);
-          console.log(playlistCopy);
+          let playlistCopy = addComputedFieldsPL({ ...item });
           DBDATA.queue.splice(1, 0, playlistCopy);
         } else {
           moveVideoToFront(item.id);
@@ -1158,9 +1170,12 @@ function addComputedFieldsPL(playlist) {
     return playlist.map((p) => addComputedFieldsPL(p));
   }
   return Object.defineProperties(playlist, {
+    _currentTrack: { value: -1, enumerable: false, writable: true },
     _children: {
       get() {
-        return (playlist.videoIds || []).map((id) => {
+        const start = this._currentTrack == -1 ? 0 : this._currentTrack;
+        const ids = (this.videoIds || []).slice(start);
+        return ids.map((id) => {
           let video = DBDATA.queue.find((v) => v.id === id);
           return video;
         });
