@@ -680,13 +680,21 @@ addBtn.addEventListener("click", async () => {
   input.value = "";
 });
 
-skipBtn.addEventListener("click", async () => {
+skipBtn.addEventListener("click", async (e) => {
   await logEvent(DBDATA.queue[0], "skip");
-  playNextVideo();
+  if (e.shiftKey) {
+    playNextVideo(1, { skipWholeList: true });
+  } else {
+    playNextVideo();
+  }
 });
-delayBtn.addEventListener("click", async () => {
+delayBtn.addEventListener("click", async (e) => {
   await logEvent(DBDATA.queue[0], "delay");
-  playNextVideo();
+  if (e.shiftKey) {
+    playNextVideo(1, { skipWholeList: true });
+  } else {
+    playNextVideo();
+  }
 });
 pauseBtn.addEventListener("click", async () => {
   sendMessage("youtube-message", { type: "pauseVideo" });
@@ -705,7 +713,7 @@ function sendMessage(type, msg) {
   window.electronAPI.sendBroadcast(msg);
 }
 
-async function playNextVideo(offset = 1) {
+async function playNextVideo(offset = 1, params = {}) {
   if (DBDATA.queue.length == 0) {
     console.log("Queue empty", offset);
     return;
@@ -716,6 +724,10 @@ async function playNextVideo(offset = 1) {
   // console.log("before 0", DBDATA.queue[0]);
   // console.log("before 1", DBDATA.queue[1]);
   if (DBDATA.queue[offset].type == "playlist") {
+    if (params.skipWholeList) {
+      playNextVideo(offset + 1);
+      return;
+    }
     // console.log("pnv playlist");
     // take the next video from top of _children array
     video = DBDATA.queue[offset]._children[0];
