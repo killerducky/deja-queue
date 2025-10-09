@@ -141,7 +141,6 @@ if (theaterButton) {
 - [x] Clicking thumb on top of queue plays the song
 - [ ] Q - dataTree mode
 - [ ] Tag
-- [ ] Playlist should respect deleted videos
 - [ ] Adding new videos should update playlist/DB/etc
 - [ ] Add to Q link text -- option for video/playlist
 - [ ] Q mode dropdown is rounded weirdly
@@ -151,9 +150,14 @@ if (theaterButton) {
 - [x] Show Interval
 - [x] Track
 - [x] Duration
-- [ ] 404 thumbs
+- [?] 404 thumbs
+  - [ ] Playlist should respect deleted videos
 - [ ] Queue according to playlist rating, not song rating
 - [ ] Playlist mode respect atomicity of the playlist
 - [ ] Skip album
 - [ ] On startup, play button doesn't work
 - [ ]
+
+## Youtube Explorer
+
+- [ ] back/forward

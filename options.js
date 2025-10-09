@@ -17,7 +17,6 @@ let NORMAL_TABLE_HEIGHT = 68;
 let COMPACT_THUMB_WIDTH = 60;
 let NORMAL_THUMB_WIDTH = 90;
 let TITLE_WIDTH = 120;
-
 const DEFAULT_THUMB = "./favicon.ico";
 
 function rating2color(rating) {
@@ -276,15 +275,58 @@ async function renderQueue() {
   tabulatorLog = await table2(tabulatorLog, logEl, logVideoList, "log");
 }
 
+function thumbnailFormatter(cell) {
+  const data = cell.getData();
+  const item = cell.getRow().getData();
+  const img = document.createElement("img");
+  const candidateUrl =
+    item.type == "playlist"
+      ? item.thumbnailUrl
+      : `https://i.ytimg.com/vi/${data.id}/default.jpg`;
+
+  img.src = DEFAULT_THUMB;
+
+  fetch(candidateUrl, { method: "HEAD" })
+    .then((res) => {
+      if (res.ok) {
+        img.src = candidateUrl;
+      } else {
+        console.log("thumb fail");
+        img.src = DEFAULT_THUMB;
+      }
+    })
+    .catch(() => {
+      img.src = DEFAULT_THUMB;
+    });
+
+  return img;
+}
+
 function getTableColumns(tableType) {
   let tableColumns = {
+    dataTree: {
+      title: "",
+      field: "type",
+      formatter: () => {
+        return "";
+      },
+      cellClick: (e, cell) => {
+        let row = cell.getRow();
+        if (row.getData().type == "video") {
+          row = row.getTreeParent();
+        }
+        row.treeToggle();
+      },
+    },
     thumb: {
       title: "Thumb",
       field: "id",
-      formatter: (cell) => {
-        let id = cell.getValue();
-        return `<img src="https://i.ytimg.com/vi/${id}/default.jpg" style="height:54px;cursor:pointer;">`;
-      },
+      // TODO: Need to work on this more, PL vs V etc
+      formatter: thumbnailFormatter,
+      // formatter: (cell) => {
+      //   let id = cell.getValue();
+      //   return `<img src="https://i.ytimg.com/vi/${id}/default.jpg" style="height:54px;cursor:pointer;">`;
+      // },
       width: COMPACT_THUMB_WIDTH,
       cellClick: async (e, cell) => {
         const row = cell.getRow();
@@ -300,6 +342,7 @@ function getTableColumns(tableType) {
           showToast("Added to front of queue");
         }
       },
+      hozAlign: "center",
     },
     title: {
       title: "Title",
@@ -416,6 +459,7 @@ async function table2(tabulator, htmlEl, videoList, tableType) {
   let tableColumns = getTableColumns(tableType);
 
   let columns = [
+    tableColumns.dataTree,
     tableColumns.thumb,
     tableColumns.title,
     showMoreColumns && tableColumns.tags,
@@ -436,6 +480,7 @@ async function table2(tabulator, htmlEl, videoList, tableType) {
       hozAlign: "center",
       vertAlign: "middle",
     },
+    dataTree: true,
     layout: "fitData",
     movableColumns: true,
     rowHeight: showMoreColumns ? NORMAL_TABLE_HEIGHT : COMPACT_TABLE_HEIGHT,
@@ -654,20 +699,48 @@ async function playNextVideo(offset = 1) {
     return;
   }
   offset = offset % DBDATA.queue.length; // deal with very small queues
-  const cut = DBDATA.queue.splice(0, offset);
-  DBDATA.queue.push(...cut);
+  let video;
+  console.log(offset);
+  console.log("before 0", DBDATA.queue[0]);
+  console.log("before 1", DBDATA.queue[1]);
+  if (DBDATA.queue[offset].type == "playlist") {
+    console.log("pnv playlist");
+    // take the next video from top of _children array
+    video = DBDATA.queue[offset]._children.shift();
+    DBDATA.queue[offset].videoIds.shift();
+    if (DBDATA.queue[offset].videoIds.length == 0) {
+      console.log("playlist empty now, for now just delete");
+      DBDATA.queue.splice(offset, 1);
+    }
+    // cut the first offset videos/playlists, put back to end of queue
+    const cut = DBDATA.queue.splice(0, offset);
+    DBDATA.queue.push(...cut);
 
-  let msg = { type: "playVideo", id: DBDATA.queue[0].id };
+    // put next playlist video on top
+    DBDATA.queue.unshift(video);
+  } else {
+    // cut the first offset videos, and put back to end of queue
+    const cut = DBDATA.queue.splice(0, offset);
+    DBDATA.queue.push(...cut);
+    // currently playing video is on top now
+    video = DBDATA.queue[0];
+  }
+  console.log("pnv", video);
+  // console.log("pnv", DBDATA.queue[offset]);
+  console.log("after 0", DBDATA.queue[0]);
+  console.log("after 1", DBDATA.queue[1]);
+
+  let msg = { type: "playVideo", id: video.id };
   sendMessage("youtube-message", msg);
   await renderQueue();
   if (videoTimeout) clearTimeout(videoTimeout);
   videoTimeout = setTimeout(() => {
-    console.log("Error:", DBDATA.queue[0].id, DBDATA.queue[0].title);
+    console.log("Error:", video.id, video.title);
     console.log("Video did NOT start playing within timeout");
     showToast("Video timeout");
-    DBDATA.queue[0].errCnt = (DBDATA.queue[0].errCnt || 0) + 1;
-    db.saveVideos([DBDATA.queue[0]]);
-    logEvent(DBDATA.queue[0], "error");
+    video.errCnt = (video.errCnt || 0) + 1;
+    db.saveVideos([video]);
+    logEvent(video, "error");
     playNextVideo();
   }, 20000); // 20s -- Still some problems...
 }
@@ -949,20 +1022,7 @@ plFilterEl.addEventListener(
 async function renderPlaylists() {
   let table2StyleColumns = getTableColumns(true);
   let columns = [
-    {
-      title: "",
-      field: "type",
-      formatter: (cell) => {
-        return "";
-      },
-      cellClick: (e, cell) => {
-        let row = cell.getRow();
-        if (row.getData().type == "video") {
-          row = row.getTreeParent();
-        }
-        row.treeToggle();
-      },
-    },
+    table2StyleColumns.dataTree,
     {
       title: "Thumb",
       field: "thumbnailUrl",
@@ -973,11 +1033,14 @@ async function renderPlaylists() {
       cellClick: async function (e, cell) {
         const item = cell.getRow().getData();
         if (item.type == "playlist") {
-          const plVideoIds = cell.getRow().getData().videoIds;
-          // Adding to the front one at a time, so go backwards
-          for (let vid of [...plVideoIds].reverse()) {
-            await moveVideoToFront(vid);
-          }
+          // make copy and clone videoIds because we will mutate it
+          let playlistCopy = addComputedFieldsPL({
+            ...item,
+            videoIds: item.videoIds ? [...item.videoIds] : [],
+          });
+          console.log(item);
+          console.log(playlistCopy);
+          DBDATA.queue.splice(1, 0, playlistCopy);
         } else {
           moveVideoToFront(item.id);
         }

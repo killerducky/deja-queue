@@ -240,6 +240,7 @@ function createAllWindows() {
     name: "youtubePlayer",
     inject: "youtube-preload.js", // TODO Not used yet
   });
+  winRegister.main.object.webContents.openDevTools();
 }
 app.whenReady().then(async () => {
   const StoreModule = await import("electron-store");
