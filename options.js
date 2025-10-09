@@ -948,7 +948,11 @@ async function renderPlaylists() {
         return cell.getValue() == "playlist" ? "PL" : "V";
       },
       cellClick: (e, cell) => {
-        cell.getRow().treeToggle();
+        let row = cell.getRow();
+        if (row.getData().type == "video") {
+          row = row.getTreeParent();
+        }
+        row.treeToggle();
       },
     },
     {
