@@ -11,12 +11,10 @@ const fs = require("fs");
 
 let store;
 
-// YT play: WebContentsView
-// YT explore: BrowserWindow
+// youtubePlayer: WebContentsView
+// youtubeExplore: BrowserWindow
 // main: BrowserWindow
 // graphs: BrowserWindow
-
-const playerViews = {};
 const winRegister = {};
 let winMain = null;
 
@@ -159,7 +157,6 @@ async function createYoutubeWindow(winParent, winInfo) {
     },
   });
   winParent.contentView.addChildView(playerWindow);
-  playerViews.youtubePlay = playerWindow;
 
   await setYoutubeBounds(playerWindow, winParent, "youtube");
 
@@ -176,14 +173,16 @@ async function createYoutubeWindow(winParent, winInfo) {
 }
 
 function goBack() {
-  if (playerViews.youtubePlay.webContents.navigationHistory.canGoBack()) {
-    playerViews.youtubePlay.webContents.navigationHistory.goBack();
+  let nh = winRegister.youtubeExplore.object.webContents.navigationHistory;
+  if (nh.canGoBack()) {
+    nh.goBack();
   }
 }
 
 function goForward() {
-  if (playerViews.youtubePlay.webContents.navigationHistory.canGoForward()) {
-    playerViews.youtubePlay.webContents.navigationHistory.goForward();
+  let nh = winRegister.youtubeExplore.object.webContents.navigationHistory;
+  if (nh.canGoForward()) {
+    nh.goForward();
   }
 }
 
@@ -214,7 +213,8 @@ ipcMain.on("broadcast", async (event, msg) => {
   // tab-button are the buttons that change the view.
   // Change where embedded youtube is shown.
   if (msg.type === "tab-button") {
-    let playerWindow = playerViews.youtubePlay;
+    // let playerWindow = playerViews.youtubePlay;
+    let playerWindow = winRegister.youtubePlayer.object;
     if (msg.targetId === "youtube") {
       await setYoutubeBounds(playerWindow, winMain, "youtube-full");
     } else {
@@ -252,14 +252,10 @@ app.whenReady().then(async () => {
       createAllWindows();
     }
   });
-  const isMac = process.platform === "darwin";
-  if (isMac) {
-    globalShortcut.register("CommandOrControl+[", () => goBack());
-    globalShortcut.register("CommandOrControl+]", () => goForward());
-  } else {
-    globalShortcut.register("Alt+Left", () => goBack());
-    globalShortcut.register("Alt+Right", () => goForward());
-  }
+  globalShortcut.register("CommandOrControl+[", () => goBack());
+  globalShortcut.register("CommandOrControl+]", () => goForward());
+  globalShortcut.register("Alt+Left", () => goBack());
+  globalShortcut.register("Alt+Right", () => goForward());
 });
 
 app.on("window-all-closed", () => {

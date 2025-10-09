@@ -150,7 +150,7 @@ loadEnv();
 const input = document.getElementById("videoId");
 const addBtn = document.getElementById("add");
 const fastForwardBtn = document.getElementById("fastForward");
-const nextBtn = document.getElementById("next");
+const skipBtn = document.getElementById("skip");
 const delayBtn = document.getElementById("delay");
 const pauseBtn = document.getElementById("pause");
 const playBtn = document.getElementById("play");
@@ -680,7 +680,7 @@ addBtn.addEventListener("click", async () => {
   input.value = "";
 });
 
-nextBtn.addEventListener("click", async () => {
+skipBtn.addEventListener("click", async () => {
   await logEvent(DBDATA.queue[0], "skip");
   playNextVideo();
 });
