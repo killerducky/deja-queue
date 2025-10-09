@@ -291,7 +291,7 @@ function thumbnailFormatter(cell) {
       if (res.ok) {
         img.src = candidateUrl;
       } else {
-        console.log("thumb fail");
+        // console.log("thumb fail", item);
         img.src = DEFAULT_THUMB;
       }
     })
@@ -944,6 +944,7 @@ dbFilterEl.addEventListener(
 );
 
 function renderDB(queue) {
+  queue = queue.filter((item) => item.type != "playlist");
   let tableColumns = getTableColumns(true);
   let columns = [
     tableColumns.thumb,
@@ -1218,22 +1219,27 @@ function addComputedFieldsVideo(video) {
 // Initial load
 (async () => {
   DBDATA.queue = await db.loadVideos();
+  DBDATA.queue = addComputedFieldsVideo(DBDATA.queue);
   DBDATA.queue.forEach((v) => {
     v.score = scoreVideo(v);
   });
   DBDATA.queue.sort((a, b) => b.score - a.score);
   DBDATA.playlists = await db.loadPlaylists();
+  DBDATA.playlists = addComputedFieldsPL(DBDATA.playlists);
+  // TODO: scores for playlists. For now use rating.
+  DBDATA.playlists.sort((a, b) => b.rating - a.rating);
   if (queueModeEl.value == "playlist") {
     const playlistCopies = DBDATA.playlists.map((item) => {
       // shallow copy top-level + clone videoIds array
       const copy = { ...item };
       return addComputedFieldsPL(copy);
     });
+    console.log(playlistCopies);
     // Prepend all copies to the queue
     DBDATA.queue.unshift(...playlistCopies);
   }
-  DBDATA.playlists = addComputedFieldsPL(DBDATA.playlists);
-  DBDATA.queue = addComputedFieldsVideo(DBDATA.queue);
+  // DBDATA.playlists = addComputedFieldsPL(DBDATA.playlists);
+  // DBDATA.queue = addComputedFieldsVideo(DBDATA.queue);
   renderDB(DBDATA.queue);
   renderPlaylists();
   // Remove errors and dups from graphs.

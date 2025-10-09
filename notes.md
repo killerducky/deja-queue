@@ -152,7 +152,7 @@ if (theaterButton) {
 - [x] Duration
 - [?] 404 thumbs
   - [x] Playlist should respect deleted videos
-- [ ] Queue according to playlist rating, not song rating
+- [?] Queue according to playlist rating, not song rating
 - [x] Playlist mode respect atomicity of the playlist
 - [ ] Skip album
 - [ ] On startup, play button doesn't work
