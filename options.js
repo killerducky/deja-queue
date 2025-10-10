@@ -381,9 +381,18 @@ function getTableColumns(tableType) {
     },
     lastPlayed: {
       title: "Last Played",
+      field: "lastPlayDate",
       formatter: (cell) => {
         return formatLastPlayDate(cell.getRow().getData());
       },
+    },
+    due: {
+      title: "Due",
+      field: "due",
+      formatter: (cell) => {
+        return formatDue(cell.getValue());
+      },
+      editable: false,
     },
     playCnt: {
       title: "Play<br>Count",
@@ -450,7 +459,6 @@ function getTableColumns(tableType) {
 }
 
 async function table2(tabulator, htmlEl, videoList, tableType) {
-  let showMoreColumns = false;
   if (tabulator) {
     const expandedIds = [];
     tabulator.getRows().forEach((row) => {
@@ -474,11 +482,7 @@ async function table2(tabulator, htmlEl, videoList, tableType) {
     tableColumns.dataTree,
     tableColumns.thumb,
     tableColumns.title,
-    showMoreColumns && tableColumns.tags,
     tableColumns.track,
-    showMoreColumns && tableColumns.dur,
-    showMoreColumns && tableColumns.lastPlayed,
-    showMoreColumns && tableColumns.playCnt,
     tableColumns.rating,
     tableColumns.interval,
   ].filter(Boolean);
@@ -495,7 +499,7 @@ async function table2(tabulator, htmlEl, videoList, tableType) {
     dataTree: true,
     layout: "fitData",
     movableColumns: true,
-    rowHeight: showMoreColumns ? NORMAL_TABLE_HEIGHT : COMPACT_TABLE_HEIGHT,
+    rowHeight: COMPACT_TABLE_HEIGHT,
   });
   return tabulator;
 }
@@ -532,19 +536,21 @@ function formatVideoDuration(video) {
     return formatDuration(video.yt?.contentDetails?.duration) || "—";
   }
 }
-
 function formatLastPlayDate(video) {
   if (!video.lastPlayDate) {
     return "—";
   }
   const d = new Date(video.lastPlayDate);
-  let daysSince = calcDaysSince(video);
-  let due = rating2days(video.rating) - daysSince;
-  let html = "";
-  html += date2String(d);
-  html += "<br>";
-  html += `due: ${due.toFixed(1)} days`;
-  return html;
+  return date2String(d);
+}
+function formatDue(due) {
+  // if (!video.lastPlayDate) {
+  //   return "—";
+  // }
+  // due = -due;
+  let color = due < -5 ? "#d11" : due < 0 ? "#e77" : "#6b6";
+  let text = due < 0 ? "days ago" : "days from now";
+  return `<span style="color:${color}">${Math.abs(due).toFixed(1)} ${text}</span>`;
 }
 
 async function addYoutubeInfo(video) {
@@ -965,6 +971,7 @@ function renderDB(queue) {
     tableColumns.track,
     tableColumns.dur,
     tableColumns.lastPlayed,
+    tableColumns.due,
     tableColumns.playCnt,
     tableColumns.rating,
     tableColumns.interval,
@@ -1206,7 +1213,12 @@ function addComputedFieldsPL(playlist) {
     rating: { value: playlist.rating ?? DEFAULT_RATING, writable: true },
   });
 }
-
+function calcDue(video) {
+  let daysSince = calcDaysSince(video);
+  // video.rating normalization didn't complete yet?
+  let days = rating2days(video.rating ?? DEFAULT_RATING) - daysSince;
+  return days;
+}
 function addComputedFieldsVideo(video) {
   if (Array.isArray(video)) {
     return video.map((p) => addComputedFieldsVideo(p));
@@ -1224,6 +1236,11 @@ function addComputedFieldsVideo(video) {
       value: video.yt?.snippet?.videoOwnerChannelTitle || "—",
       writable: true,
       enumerable: true,
+    },
+    due: {
+      value: calcDue(video),
+      writable: true,
+      enumerable: false,
     },
   });
 }

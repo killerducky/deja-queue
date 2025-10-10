@@ -32,17 +32,22 @@ function sizeStore(win, label) {
 
   // Restore state
   const bounds = store.get(boundsKey);
-  if (bounds) win.setBounds(bounds);
-  if (store.get(minMaxKey) == "max") {
-    win.maximize();
-  } else if (store.get(minMaxKey) == "min") {
-    win.minimize();
+  if (bounds) {
+    win.once("ready-to-show", () => {
+      win.setBounds(bounds);
+      if (store.get(minMaxKey) == "max") {
+        win.maximize();
+      } else if (store.get(minMaxKey) == "min") {
+        win.minimize();
+      }
+    });
   }
 
   // Save position and size
   const saveBounds = () => {
     if (!win.isMaximized() && !win.isMinimized()) {
       store.set(boundsKey, win.getBounds());
+      // console.log(JSON.stringify(win.getBounds()));
     }
   };
   win.on("resize", saveBounds);
