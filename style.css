@@ -46,7 +46,6 @@ body {
 .left #log {
   flex: 2;
 }
-/* 
 .left:hover,
 .right:hover {
   position: absolute;
@@ -60,7 +59,7 @@ body {
 }
 .right:hover {
   right: 0;
-} */
+}
 .left button,
 .right button {
   display: block;
