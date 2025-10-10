@@ -11,6 +11,8 @@ let DEFAULT_RATING = 7.5;
 let COOLDOWN_JITTER_START = 3; // Subtract N days from the interval
 let COOLDOWN_JITTER_RATE = 0.2; // Add up to X% jitter to that part of the interval
 let RATING_FACTOR = 1;
+let DUP_SCORE = -9;
+let ERR_SCORE = -10;
 
 let COMPACT_TABLE_HEIGHT = 40;
 let NORMAL_TABLE_HEIGHT = 68;
@@ -125,7 +127,7 @@ function calcDaysSince(video) {
   return daysSince;
 }
 
-function scoreVideo(video, noise = true) {
+function scoreItem(video, noise = true) {
   if (video.errCnt && video.errCnt >= 3) return -10; // too many errors, don't play
   if (video.dup) return -9; // Ignore dups
   let salt = `${video.id}${video.lastPlayDate}`;
@@ -454,6 +456,14 @@ function getTableColumns(tableType) {
         return rating2days(cell.getRow().getData().rating) + "d";
       },
     },
+    score: {
+      title: "S",
+      field: "score",
+      hozAlign: "center",
+      formatter: (cell) => {
+        return cell.getValue().toFixed(1);
+      },
+    },
   };
   return tableColumns;
 }
@@ -697,7 +707,7 @@ skipBtn.addEventListener("click", async (e) => {
 delayBtn.addEventListener("click", async (e) => {
   await logEvent(DBDATA.queue[0], "delay");
   if (e.shiftKey) {
-    playNextVideo(1, { skipWholeList: true });
+    playNextVideo(1, { delayWholeList: true });
   } else {
     playNextVideo();
   }
@@ -725,24 +735,33 @@ async function playNextVideo(offset = 1, params = {}) {
     return;
   }
   offset = offset % DBDATA.queue.length; // deal with very small queues
-  let video;
+  let nextVideoToPlay;
+  let currItem = DBDATA.queue[offset];
   // console.log(offset);
   // console.log("before 0", DBDATA.queue[0]);
   // console.log("before 1", DBDATA.queue[1]);
-  if (DBDATA.queue[offset].type == "playlist") {
-    if (params.skipWholeList) {
+  if (currItem.type == "playlist") {
+    if (params.skipWholeList || params.delayWholeList) {
+      currItem.lastPlayDate = Date.now();
+      currItem.delay = !!params.delayWholeList;
+      await db.savePlaylists(currItem);
+      // Do not increment playCnt since we are skipping/delaying the list
+      //currItem.playCnt += 1;
       playNextVideo(offset + 1);
       return;
     }
     // console.log("pnv playlist");
     // take the next video from top of _children array
-    video = DBDATA.queue[offset]._children[0];
-    if (DBDATA.queue[offset]._currentTrack == -1) {
-      DBDATA.queue[offset]._currentTrack = 1;
+    nextVideoToPlay = currItem._children[0];
+    if (currItem._currentTrack == -1) {
+      currItem._currentTrack = 1;
     } else {
-      DBDATA.queue[offset]._currentTrack += 1;
+      currItem._currentTrack += 1;
     }
-    if (DBDATA.queue[offset]._children.length == 0) {
+    if (currItem._children.length == 0) {
+      currItem.lastPlayDate = Date.now();
+      currItem.playCnt = currItem.playCnt ?? 0 + 1;
+      await db.savePlaylists(currItem);
       console.log("playlist empty, for now just delete");
       DBDATA.queue.splice(offset, 1);
     }
@@ -751,30 +770,34 @@ async function playNextVideo(offset = 1, params = {}) {
     DBDATA.queue.push(...cut);
 
     // put next playlist video on top
-    DBDATA.queue.unshift(video);
+    DBDATA.queue.unshift(nextVideoToPlay);
   } else {
     // cut the first offset videos, and put back to end of queue
     const cut = DBDATA.queue.splice(0, offset);
     DBDATA.queue.push(...cut);
-    // currently playing video is on top now
-    video = DBDATA.queue[0];
+    if (DBDATA.queue[0] != currItem) {
+      alert("oops");
+      console.log(DBDATA.queue[0]);
+      console.log(currItem);
+    }
+    nextVideoToPlay = DBDATA.queue[0];
   }
   // console.log("pnv", video);
   // // console.log("pnv", DBDATA.queue[offset]);
   // console.log("after 0", DBDATA.queue[0]);
   // console.log("after 1", DBDATA.queue[1]);
 
-  let msg = { type: "playVideo", id: video.id };
+  let msg = { type: "playVideo", id: nextVideoToPlay.id };
   sendMessage("youtube-message", msg);
   await renderQueue();
   if (videoTimeout) clearTimeout(videoTimeout);
   videoTimeout = setTimeout(() => {
-    console.log("Error:", video.id, video.title);
+    console.log("Error:", nextVideoToPlay.id, nextVideoToPlay.title);
     console.log("Video did NOT start playing within timeout");
     showToast("Video timeout");
-    video.errCnt = (video.errCnt || 0) + 1;
-    db.saveVideos([video]);
-    logEvent(video, "error");
+    nextVideoToPlay.errCnt = (nextVideoToPlay.errCnt || 0) + 1;
+    db.saveVideos([nextVideoToPlay]);
+    logEvent(nextVideoToPlay, "error");
     playNextVideo();
   }, 20000); // 20s -- Still some problems...
 }
@@ -967,22 +990,15 @@ function renderDB(queue) {
   let columns = [
     tableColumns.thumb,
     tableColumns.title,
-    tableColumns.tags,
     tableColumns.track,
+    tableColumns.tags,
     tableColumns.dur,
     tableColumns.lastPlayed,
     tableColumns.due,
     tableColumns.playCnt,
     tableColumns.rating,
     tableColumns.interval,
-    {
-      title: "S",
-      field: "score",
-      hozAlign: "center",
-      formatter: (cell) => {
-        return cell.getValue().toFixed(1);
-      },
-    },
+    tableColumns.score,
     { title: "Delay", field: "delay", hozAlign: "center" },
     { title: "E", field: "errCnt", hozAlign: "center", editor: "number" },
     { title: "Dup", field: "dup", hozAlign: "left", editor: "input" },
@@ -1087,22 +1103,19 @@ async function renderPlaylists() {
       vertAlign: "center",
       width: COMPACT_THUMB_WIDTH,
     },
-    {
-      title: "Title",
-      field: "title",
-      // formatter: "textarea",
-      width: 250,
-      headerFilter: "input",
-    },
+    table2StyleColumns.title,
     table2StyleColumns.track,
     table2StyleColumns.tags,
+    table2StyleColumns.dur,
+    table2StyleColumns.lastPlayed,
+    table2StyleColumns.playCnt,
     {
       title: "Channel",
       field: "channelTitle",
       headerFilter: "input",
       width: 150,
     },
-    { title: "Videos", field: "videoCount", hozAlign: "center" },
+    { title: "#", field: "videoCount", hozAlign: "center" },
     {
       title: "Date Added",
       field: "dateAdded",
@@ -1115,7 +1128,7 @@ async function renderPlaylists() {
     },
     table2StyleColumns.rating,
     table2StyleColumns.interval,
-    table2StyleColumns.dur,
+    table2StyleColumns.score,
     { title: "ID", field: "id", hozAlign: "left", width: 20 },
     {
       title: "",
@@ -1180,7 +1193,6 @@ function handleTabs() {
   const contents = document.querySelectorAll(".tab-content");
 
   buttons.forEach((btn) => {
-    console.log("connect", btn.dataset.target);
     btn.addEventListener("click", () => {
       contents.forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
@@ -1212,6 +1224,11 @@ function addComputedFieldsPL(playlist) {
     },
     type: { value: "playlist", enumerable: false, writable: true },
     rating: { value: playlist.rating ?? DEFAULT_RATING, writable: true },
+    score: {
+      value: scoreItem(playlist),
+      writable: true,
+      enumerable: false,
+    },
   });
 }
 function calcDue(video) {
@@ -1243,6 +1260,11 @@ function addComputedFieldsVideo(video) {
       writable: true,
       enumerable: false,
     },
+    score: {
+      value: scoreItem(video),
+      writable: true,
+      enumerable: false,
+    },
   });
 }
 
@@ -1250,21 +1272,16 @@ function addComputedFieldsVideo(video) {
 (async () => {
   DBDATA.queue = await db.loadVideos();
   DBDATA.queue = addComputedFieldsVideo(DBDATA.queue);
-  DBDATA.queue.forEach((v) => {
-    v.score = scoreVideo(v);
-  });
   DBDATA.queue.sort((a, b) => b.score - a.score);
   DBDATA.playlists = await db.loadPlaylists();
   DBDATA.playlists = addComputedFieldsPL(DBDATA.playlists);
-  // TODO: scores for playlists. For now use rating.
-  DBDATA.playlists.sort((a, b) => b.rating - a.rating);
+  DBDATA.playlists.sort((a, b) => b.score - a.score);
   if (queueModeEl.value == "playlist") {
     const playlistCopies = DBDATA.playlists.map((item) => {
       // shallow copy top-level + clone videoIds array
       const copy = { ...item };
       return addComputedFieldsPL(copy);
     });
-    console.log(playlistCopies);
     // Prepend all copies to the queue
     DBDATA.queue.unshift(...playlistCopies);
   }

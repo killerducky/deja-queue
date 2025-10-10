@@ -157,6 +157,7 @@ if (theaterButton) {
 - [?] Queue according to playlist rating, not song rating
 - [x] Playlist mode respect atomicity of the playlist
 - [x] Skip album
+- [x] Score playlists, sort by score, lastPlayed, playCnt
 - [ ] Make title, etc editable and searchable
 - [ ] On startup, play button doesn't work
 - [ ]
