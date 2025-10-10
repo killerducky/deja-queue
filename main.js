@@ -32,32 +32,32 @@ function sizeStore(win, label) {
 
   // Restore state
   const bounds = store.get(boundsKey);
-  if (bounds) {
-    win.once("ready-to-show", () => {
+  win.once("ready-to-show", () => {
+    if (bounds) {
       win.setBounds(bounds);
       if (store.get(minMaxKey) == "max") {
         win.maximize();
       } else if (store.get(minMaxKey) == "min") {
         win.minimize();
       }
-    });
-  }
-
-  // Save position and size
-  const saveBounds = () => {
-    if (!win.isMaximized() && !win.isMinimized()) {
-      store.set(boundsKey, win.getBounds());
-      // console.log(JSON.stringify(win.getBounds()));
     }
-  };
-  win.on("resize", saveBounds);
-  win.on("move", saveBounds);
 
-  // Save window state
-  win.on("maximize", () => store.set(minMaxKey, "max"));
-  win.on("unmaximize", () => store.set(minMaxKey, ""));
-  win.on("minimize", () => store.set(minMaxKey, "min"));
-  win.on("restore", () => store.set(minMaxKey, ""));
+    // Save position and size
+    const saveBounds = () => {
+      if (!win.isMaximized() && !win.isMinimized()) {
+        store.set(boundsKey, win.getBounds());
+        // console.log(JSON.stringify(win.getBounds()));
+      }
+    };
+    win.on("resize", saveBounds);
+    win.on("move", saveBounds);
+
+    // Save window state
+    win.on("maximize", () => store.set(minMaxKey, "max"));
+    win.on("unmaximize", () => store.set(minMaxKey, ""));
+    win.on("minimize", () => store.set(minMaxKey, "min"));
+    win.on("restore", () => store.set(minMaxKey, ""));
+  });
 }
 function createWindow(winInfo) {
   let win = new BrowserWindow({
@@ -163,8 +163,6 @@ async function createYoutubeWindow(winParent, winInfo) {
   });
   winParent.contentView.addChildView(playerWindow);
 
-  await setYoutubeBounds(playerWindow, winParent, "youtube");
-
   addContextMenu(playerWindow);
 
   playerWindow.webContents.loadURL("https://www.youtube.com/");
@@ -174,6 +172,9 @@ async function createYoutubeWindow(winParent, winInfo) {
     object: playerWindow,
     metadata: { ...winInfo },
   };
+  winParent.once("ready-to-show", () => {
+    setYoutubeBounds(playerWindow, winParent, "youtube");
+  });
   return playerWindow;
 }
 

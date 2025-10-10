@@ -1007,6 +1007,7 @@ function renderDB(queue) {
     custom: { current: false }, // custom property
     height: "100%",
     width: "100%",
+    rowHeight: COMPACT_TABLE_HEIGHT,
     movableColumns: true,
   });
 }
