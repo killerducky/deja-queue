@@ -1194,6 +1194,7 @@ function handleTabs() {
 
   buttons.forEach((btn) => {
     btn.addEventListener("click", () => {
+      buttons.forEach((b) => b.classList.remove("active"));
       contents.forEach((b) => b.classList.remove("active"));
       btn.classList.add("active");
       const targetId = btn.dataset.target;
@@ -1202,6 +1203,10 @@ function handleTabs() {
       sendMessage("broadcast", { type: "tab-button", targetId });
     });
   });
+  const defaultTarget =
+    queueModeEl.value === "playlist" ? "playlists" : "database";
+  const btn = document.querySelector(`[data-target="${defaultTarget}"]`);
+  btn.click();
 }
 handleTabs();
 
