@@ -488,9 +488,6 @@ function getTableColumns(tableType) {
       },
     },
   };
-  Object.values(tableColumns).forEach((c) => {
-    c.headerMenu = headerMenu;
-  });
   return tableColumns;
 }
 
@@ -536,6 +533,10 @@ async function table2(tabulator, htmlEl, videoList, tableType) {
     layout: "fitData",
     rowHeight: COMPACT_TABLE_HEIGHT,
   });
+  tabulator.on("headerContext", (event) => {
+    headerMenu(event, tabulator);
+  });
+
   return tabulator;
 }
 
@@ -1043,7 +1044,7 @@ function renderDB(queue) {
   ];
 
   columns.map((c) => {
-    c.headerMenu = headerMenu;
+    c.headerWordWrap = false;
   });
 
   if (tabulatorDB) {
@@ -1051,7 +1052,6 @@ function renderDB(queue) {
     return;
   }
 
-  console.log(columns);
   tabulatorDB = new Tabulator("#database-grid", {
     ...baseTabulatorOptions,
     data: queue,
@@ -1061,6 +1061,9 @@ function renderDB(queue) {
     width: "100%",
     rowHeight: COMPACT_TABLE_HEIGHT,
     movableColumns: true,
+  });
+  tabulatorDB.on("headerContext", (event) => {
+    headerMenu(event, tabulatorDB);
   });
 }
 
@@ -1108,9 +1111,11 @@ plFilterEl.addEventListener(
   }, 300) // 300ms debounce
 );
 
-let headerMenu = function () {
-  const menu = [];
-  const columns = this.getColumns();
+function headerMenu(event, tables) {
+  event.preventDefault();
+
+  const menuItems = [];
+  const columns = tables.getColumns();
 
   columns.forEach((column) => {
     const labelSpan = document.createElement("span");
@@ -1121,18 +1126,45 @@ let headerMenu = function () {
     };
     updateLabel();
 
-    menu.push({
+    menuItems.push({
       label: labelSpan,
-      action: function (e) {
-        e.stopPropagation();
+      action: function (event) {
+        event.stopPropagation();
         column.toggle();
         updateLabel();
       },
     });
   });
+  const renderMenu = () => {
+    // Remove existing menu
+    const existingMenu = document.querySelector("#tab-menu");
+    if (existingMenu) existingMenu.remove();
 
-  return menu;
-};
+    const menuDiv = document.createElement("div");
+    menuDiv.id = "tab-menu";
+    menuDiv.style.position = "absolute";
+    menuDiv.style.top = event.pageY + "px";
+    menuDiv.style.left = event.pageX + "px";
+
+    menuItems.forEach((item) => {
+      const itemDiv = document.createElement("div");
+      itemDiv.appendChild(item.label);
+      itemDiv.addEventListener("click", (ev) => {
+        item.action(ev);
+      });
+      menuDiv.appendChild(itemDiv);
+    });
+
+    document.body.appendChild(menuDiv);
+
+    const removeMenu = () => {
+      menuDiv.remove();
+      document.removeEventListener("click", removeMenu);
+    };
+    setTimeout(() => document.addEventListener("click", removeMenu), 0);
+  };
+  renderMenu();
+}
 
 async function renderPlaylists() {
   let table2StyleColumns = getTableColumns(true);
@@ -1220,10 +1252,6 @@ async function renderPlaylists() {
     },
   ];
 
-  columns.map((c) => {
-    c.headerMenu = headerMenu;
-  });
-
   if (playlistsTabulator) {
     playlistsTabulator.replaceData(DBDATA.playlists);
     return;
@@ -1237,6 +1265,9 @@ async function renderPlaylists() {
     dataTree: true,
     height: "100%",
     width: "100%",
+  });
+  playlistsTabulator.on("headerContext", (event) => {
+    headerMenu(event, playlistsTabulator);
   });
 }
 

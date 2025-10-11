@@ -205,6 +205,13 @@ input[type="number"] {
   max-height: calc(40px - 6px);
   /* object-fit: contain; */
 }
+.tabulator
+  .tabulator-header
+  .tabulator-col
+  .tabulator-col-content
+  .tabulator-col-title {
+  text-overflow: unset; /* specificity battle won! No important needed! */
+}
 .tabulator-cell {
   overflow: hidden;
   /* text-overflow: ellipsis;*/
@@ -214,6 +221,9 @@ input[type="number"] {
 }
 #current.tabulator .tabulator-tableholder {
   overflow-y: hidden !important;
+}
+.tabulator-col-sorter {
+  display: none !important;
 }
 .toc-horizontal {
   display: flex; /* horizontal layout */
@@ -267,11 +277,22 @@ input[type="number"] {
 /* Dark mode */
 @media (prefers-color-scheme: dark) {
   body,
-  .tabulator-popup-container {
+  .tabulator-popup-container,
+  #tab-menu {
     background-color: #121212 !important;
     color: #eee;
+    z-index: 100;
   }
-  .tabulator-menu-item:hover {
+  #tab-menu {
+    padding: 4px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  #tab-menu div {
+    padding: 2px;
+  }
+  .tabulator-menu-item:hover,
+  #tab-menu div:hover {
     background-color: #1e1e1e !important;
   }
 
