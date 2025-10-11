@@ -811,7 +811,6 @@ async function playNextVideo(offset = 1, params = {}) {
   videoTimeout = setTimeout(() => {
     console.log("Error:", nextVideoToPlay.id, nextVideoToPlay.title);
     console.log("Video did NOT start playing within timeout");
-    sendBroadcast("timeout");
     showToast("Video timeout");
     nextVideoToPlay.errCnt = (nextVideoToPlay.errCnt || 0) + 1;
     db.saveVideos([nextVideoToPlay]);
@@ -1320,6 +1319,8 @@ function addComputedFieldsVideo(video) {
   DBDATA.filtered = DBDATA.queue.filter((v) => (v.errCnt ?? 0) < 3 && !v.dup);
   // calcStringSimilarity(DBDATA.queue);
   renderQueue();
-  // This is working *but* it breaks ctrl-R -- it reloads the video in that case.
-  // playNextVideo(0, { autoplay: 0 });
+  const navType = performance.getEntriesByType("navigation")[0]?.type;
+  if (navType !== "reload") {
+    playNextVideo(0, { autoplay: 0 });
+  }
 })();

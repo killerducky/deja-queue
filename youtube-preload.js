@@ -3,11 +3,8 @@ const { contextBridge, ipcRenderer } = require("electron");
 console.log("youtube-preload loaded");
 let url = new URL(window.location.href);
 const params = new URL(window.location.href).searchParams;
+// Workaround: use t=1s to signal this is the very first video.
 let cueVideo = params.get("t") === "1s";
-// const cueVideo = false;
-sendBroadcast(url);
-sendBroadcast(`par:${params.get("t")}`);
-sendBroadcast(`cueVideo:${cueVideo}`);
 
 ipcRenderer.on("broadcast", (event, msg) => {
   console.log("ytp msg", msg);
@@ -42,7 +39,6 @@ function attachListener() {
   lastVideo = video;
   console.log("attachListener2");
   if (!video.paused && !video.ended && video.readyState > 2) {
-    sendBroadcast("t1");
     if (cueVideo) {
       video.pause();
       cueVideo = false;
@@ -54,7 +50,6 @@ function attachListener() {
     });
   }
   video.onplay = () => {
-    sendBroadcast("t2");
     if (cueVideo) {
       video.pause();
       cueVideo = false;
@@ -65,14 +60,10 @@ function attachListener() {
     });
   };
   video.onplaying = () => {
-    sendBroadcast("t3");
     if (cueVideo) {
-      sendBroadcast("t4");
       video.pause();
-      sendBroadcast("t5");
       cueVideo = false;
     }
-    sendBroadcast("t6");
     sendBroadcast({
       type: "videoPlaying",
       duration: video.duration,
