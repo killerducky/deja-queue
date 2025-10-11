@@ -9,10 +9,13 @@ main {
 /* * {
   outline: 1px solid red !important;
 } */
-body {
+body,
+.tabulator-popup-container {
   background-color: #fff;
   color: #000;
   font-family: sans-serif;
+}
+body {
   width: auto;
   margin: 0;
   height: 100%;
@@ -263,9 +266,13 @@ input[type="number"] {
 
 /* Dark mode */
 @media (prefers-color-scheme: dark) {
-  body {
-    background-color: #121212;
+  body,
+  .tabulator-popup-container {
+    background-color: #121212 !important;
     color: #eee;
+  }
+  .tabulator-menu-item:hover {
+    background-color: #1e1e1e !important;
   }
 
   a {

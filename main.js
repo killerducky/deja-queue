@@ -223,6 +223,15 @@ ipcMain.handle("read-file", async (event, filePath) => {
   }
 });
 
+ipcMain.on("store-get-sync", (e, key) => {
+  e.returnValue = store.get(key);
+});
+
+ipcMain.on("store-set-sync", (e, key, value) => {
+  store.set(key, value);
+  e.returnValue = true;
+});
+
 ipcMain.on("broadcast", async (event, msg) => {
   console.log("msg:", JSON.stringify(msg));
   // console.log(JSON.stringify(event));

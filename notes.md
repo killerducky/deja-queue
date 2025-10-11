@@ -10,7 +10,7 @@
 - [x] Don't open graphs by default.
 - [ ] restore window size bug
 - [ ] right click menu -- copy URL
-- [ ] table column picker/sizer/save/restore
+- [x] table column picker/sizer/save/restore
   - [ ] config if sidebar expands on hover or not
 - [ ] Pasting into Add to Queue -- popup for video/playlist
 - [ ] 404 thumbs

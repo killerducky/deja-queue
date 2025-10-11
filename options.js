@@ -10,7 +10,7 @@ let INIT_FACTOR = 30;
 let DEFAULT_RATING = 7.5;
 let COOLDOWN_JITTER_START = 3; // Subtract N days from the interval
 let COOLDOWN_JITTER_RATE = 0.2; // Add up to X% jitter to that part of the interval
-let RATING_FACTOR = 1;
+let RATING_FACTOR = 0.8; // 0 = all ratings same. 1 = 10 points per rating point
 let DUP_SCORE = -9;
 let ERR_SCORE = -10;
 
@@ -128,8 +128,8 @@ function calcDaysSince(video) {
 }
 
 function scoreItem(video, noise = true) {
-  if (video.errCnt && video.errCnt >= 3) return -10; // too many errors, don't play
-  if (video.dup) return -9; // Ignore dups
+  if (video.errCnt && video.errCnt >= 3) return ERR_SCORE; // too many errors, don't play
+  if (video.dup) return DUP_SCORE; // Ignore dups
   let salt = `${video.id}${video.lastPlayDate}`;
   if (!video.rating) video.rating = DEFAULT_RATING;
   let daysSince = calcDaysSince(video);
@@ -255,6 +255,19 @@ function showToast(msg) {
   setTimeout(() => toast.remove(), duration);
 }
 
+let baseTabulatorOptions = {
+  persistence: { columns: ["width", "visible", "frozen"] },
+  persistenceWriterFunc: (id, type, data) => {
+    window.electronAPI.set(`${id}`, data);
+  },
+  persistenceReaderFunc: (id, type) => {
+    let data = window.electronAPI.get(`${id}`);
+    console.log("read", id, data);
+    return data;
+  },
+  movableColumns: true,
+};
+
 let tabulatorCurrent = null;
 let tabulatorQueue = null;
 let tabulatorLog = null;
@@ -325,13 +338,9 @@ function getTableColumns(tableType) {
     },
     thumb: {
       title: "Thumb",
-      field: "id",
+      field: "id_fake", // persistence requires unique fields
       // TODO: Need to work on this more, PL vs V etc
       formatter: thumbnailFormatter,
-      // formatter: (cell) => {
-      //   let id = cell.getValue();
-      //   return `<img src="https://i.ytimg.com/vi/${id}/default.jpg" style="height:54px;cursor:pointer;">`;
-      // },
       width: COMPACT_THUMB_WIDTH,
       cellClick: async (e, cell) => {
         const row = cell.getRow();
@@ -379,6 +388,7 @@ function getTableColumns(tableType) {
     },
     dur: {
       title: "Dur",
+      field: "scrapedDuration",
       formatter: (cell) => {
         const video = cell.getRow().getData();
         return formatVideoDuration(video);
@@ -471,12 +481,14 @@ function getTableColumns(tableType) {
       title: "Delay",
       field: "delay",
       hozAlign: "center",
-      // formatter: "tickCross",
       formatter: (cell) => {
         return cell.getValue() ? "✔" : "";
       },
     },
   };
+  Object.values(tableColumns).forEach((c) => {
+    c.headerMenu = headerMenu;
+  });
   return tableColumns;
 }
 
@@ -488,7 +500,6 @@ async function table2(tabulator, htmlEl, videoList, tableType) {
         expandedIds.push(row.getData().id);
       }
     });
-    tabulator.replaceData(videoList);
     tabulator.replaceData(videoList).then(() => {
       tabulator.getRows().forEach((row) => {
         if (expandedIds.includes(row.getData().id)) {
@@ -512,6 +523,7 @@ async function table2(tabulator, htmlEl, videoList, tableType) {
   columns.forEach((col) => (col.headerSort = false));
 
   tabulator = new Tabulator(htmlEl, {
+    ...baseTabulatorOptions,
     data: videoList,
     custom: { tableType }, // custom property  TODO: Not needed anymore?
     columns: columns,
@@ -521,7 +533,6 @@ async function table2(tabulator, htmlEl, videoList, tableType) {
     },
     dataTree: true,
     layout: "fitData",
-    movableColumns: true,
     rowHeight: COMPACT_TABLE_HEIGHT,
   });
   return tabulator;
@@ -806,7 +817,9 @@ async function playNextVideo(offset = 1, params = {}) {
     msg.type = "cueVideo";
   }
   sendMessage("youtube-message", msg);
-  await renderQueue();
+  if (offset !== 0) {
+    await renderQueue();
+  }
   if (videoTimeout) clearTimeout(videoTimeout);
   videoTimeout = setTimeout(() => {
     console.log("Error:", nextVideoToPlay.id, nextVideoToPlay.title);
@@ -1034,7 +1047,9 @@ function renderDB(queue) {
     return;
   }
 
+  console.log(columns);
   tabulatorDB = new Tabulator("#database-grid", {
+    ...baseTabulatorOptions,
     data: queue,
     columns: columns,
     custom: { current: false }, // custom property
@@ -1088,6 +1103,32 @@ plFilterEl.addEventListener(
     setGlobalSearch(playlistsTabulator, e.target.value);
   }, 300) // 300ms debounce
 );
+
+let headerMenu = function () {
+  const menu = [];
+  const columns = this.getColumns();
+
+  columns.forEach((column) => {
+    const labelSpan = document.createElement("span");
+    labelSpan.classList.add("tabulator");
+    const updateLabel = () => {
+      labelSpan.textContent =
+        (column.isVisible() ? "☑ " : "☐ ") + column.getDefinition().title;
+    };
+    updateLabel();
+
+    menu.push({
+      label: labelSpan,
+      action: function (e) {
+        e.stopPropagation();
+        column.toggle();
+        updateLabel();
+      },
+    });
+  });
+
+  return menu;
+};
 
 async function renderPlaylists() {
   let table2StyleColumns = getTableColumns(true);
@@ -1175,19 +1216,23 @@ async function renderPlaylists() {
     },
   ];
 
+  columns.map((c) => {
+    c.headerMenu = headerMenu;
+  });
+
   if (playlistsTabulator) {
     playlistsTabulator.replaceData(DBDATA.playlists);
     return;
   }
 
   playlistsTabulator = new Tabulator("#playlists-grid", {
+    ...baseTabulatorOptions,
     data: DBDATA.playlists,
     columns: columns,
     rowHeight: COMPACT_TABLE_HEIGHT,
     dataTree: true,
     height: "100%",
     width: "100%",
-    movableColumns: true,
   });
 }
 
