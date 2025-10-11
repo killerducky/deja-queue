@@ -385,10 +385,12 @@ function getTableColumns(tableType) {
     track: {
       title: "Trk",
       field: "yt.snippet.position",
+      // headerVertical: "flip",
     },
     dur: {
       title: "Dur",
       field: "scrapedDuration",
+      // headerVertical: "flip",
       formatter: (cell) => {
         const video = cell.getRow().getData();
         return formatVideoDuration(video);
@@ -520,7 +522,6 @@ async function table2(tabulator, htmlEl, videoList, tableType) {
     tableColumns.interval,
     tableColumns.tags,
   ];
-  columns.forEach((col) => (col.headerSort = false));
 
   tabulator = new Tabulator(htmlEl, {
     ...baseTabulatorOptions,
@@ -1032,7 +1033,6 @@ function renderDB(queue) {
     tableColumns.delay,
     { title: "E", field: "errCnt", hozAlign: "center", editor: "number" },
     { title: "Dup", field: "dup", hozAlign: "left", editor: "input" },
-    { title: "ID", field: "id", hozAlign: "left", width: COMPACT_THUMB_WIDTH },
     {
       title: "Channel",
       field: "videoOwnerChannelTitle",
@@ -1041,6 +1041,10 @@ function renderDB(queue) {
       width: 150,
     },
   ];
+
+  columns.map((c) => {
+    c.headerMenu = headerMenu;
+  });
 
   if (tabulatorDB) {
     tabulatorDB.replaceData(queue);
@@ -1187,9 +1191,9 @@ async function renderPlaylists() {
     table2StyleColumns.rating,
     table2StyleColumns.interval,
     table2StyleColumns.score,
-    { title: "ID", field: "id", hozAlign: "left", width: 20 },
+    { title: "ID", field: "id_fake", hozAlign: "left", width: 20 },
     {
-      title: "",
+      title: "Act",
       formatter: (cell) => {
         let data = cell.getRow().getData();
         return data.type == "playlist" ? "🗑️" : "❌";
