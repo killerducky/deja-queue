@@ -2,7 +2,7 @@
 
 - [x] Clicking thumb on top of queue plays the song
 - [?] Q - dataTree mode
-- [ ] Tag
+- [x] Tag
 - [ ] Adding new videos should update playlist/DB/etc
 - [ ] Add to Q link text -- option for video/playlist
 - [ ] Q mode dropdown is rounded weirdly
