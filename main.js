@@ -109,17 +109,24 @@ async function addContextMenu(playerWindow) {
     let url =
       params.linkURL || params.srcURL || playerWindow.webContents.getURL();
 
-    console.log("menu", url);
-    if (!url) {
-      console.log("no url");
-      return;
-    }
     const urlParams = new URL(url).searchParams;
     const videoId = urlParams.get("v");
     const listId = urlParams.get("list");
-    if (!listId && !videoId) return;
 
     const template = [];
+    template.push(
+      {
+        label: "← Go Back",
+        enabled: playerWindow.webContents.canGoBack(),
+        click: () => playerWindow.webContents.goBack(),
+      },
+      {
+        label: "→ Go Forward",
+        enabled: playerWindow.webContents.canGoForward(),
+        click: () => playerWindow.webContents.goForward(),
+      },
+      { type: "separator" }
+    );
     if (videoId) {
       template.push({
         label: "Add Video to Queue",
@@ -148,9 +155,10 @@ async function addContextMenu(playerWindow) {
         },
       });
     }
-    const menu = Menu.buildFromTemplate(template);
-
-    menu.popup({ window: playerWindow });
+    if (template.length > 0) {
+      const menu = Menu.buildFromTemplate(template);
+      menu.popup({ window: playerWindow });
+    }
   });
 }
 async function createYoutubeWindow(winParent, winInfo) {
