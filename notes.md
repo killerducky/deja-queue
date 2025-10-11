@@ -1,29 +1,30 @@
-## Queue
-
-- [x] Clicking thumb on top of queue plays the song
-- [?] Q - dataTree mode
-- [x] Tag
-- [ ] Adding new videos should update playlist/DB/etc
-- [ ] Add to Q link text -- option for video/playlist
-- [ ] Q mode dropdown is rounded weirdly
-- [ ] trick youtube to play songs back to back
-- [ ] resize windows???
-
 ## Playlists
 
-- [x] Show Interval
-- [x] Track
-- [x] Duration
-- [?] 404 thumbs
-  - [ ] Playlist should respect deleted videos -- I guess maybe user should manually remove them?
-- [?] Queue according to playlist rating, not song rating
-- [x] Playlist mode respect atomicity of the playlist
-- [x] Skip album
-- [x] Score playlists, sort by score, lastPlayed, playCnt
 - [ ] Make title, etc editable and searchable
 - [ ] On startup, play button doesn't work
-- [ ]
+- [ ] Total playlist duration
+
+## UI
+
+- [x] Allow multiple YTs.
+- [x] Don't open graphs by default.
+- [ ] restore window size bug
+- [ ] table column picker/sizer/save/restore
+  - [ ] config if sidebar expands on hover or not
+- [ ] Pasting into Add to Queue -- popup for video/playlist
+- [ ] 404 thumbs
+  - [ ] That one playlist has a 404 thumb?
+- [ ] trick youtube to play songs back to back
+- [ ] Youtube window placement more responsive
+- [ ] Adding new videos should update playlist/DB/etc
+- [ ] Q mode dropdown is rounded weirdly
+
+## Stats/Algorithm
+
+- [ ] Graph scores of several illustrative cases
+  - [ ] User can live adjust params?!
+- [ ] Lower impact of rating (due becomes relatively more important)
 
 ## Youtube Explorer
 
-- [x] back/forward (plus context menu now!)
+- [ ] multiple youtube explorers

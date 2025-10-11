@@ -59,6 +59,22 @@ function sizeStore(win, label) {
     win.on("restore", () => store.set(minMaxKey, ""));
   });
 }
+function youtubeWindowOpenHandler(details, parentWin) {
+  const { url } = details;
+  console.log("Intercepted window open:", url);
+
+  const childWin = new BrowserWindow({
+    title: "YouTube Popup",
+    webPreferences: {
+      preload: path.join(__dirname, "youtube-preload.js"),
+    },
+  });
+
+  childWin.webContents.loadURL(url);
+  addContextMenu(childWin);
+
+  return { action: "deny" };
+}
 function createWindow(winInfo) {
   let win = new BrowserWindow({
     icon: path.join(__dirname, "favicon.ico"),
@@ -75,7 +91,6 @@ function createWindow(winInfo) {
   } else {
     win.loadFile(winInfo.target);
   }
-  // win.webContents.openDevTools();
   win.on("closed", () => {
     win = null;
   });
@@ -83,6 +98,9 @@ function createWindow(winInfo) {
   if (winInfo.addContextMenu) {
     addContextMenu(win);
   }
+  win.webContents.setWindowOpenHandler((details) => {
+    return youtubeWindowOpenHandler(details, win);
+  });
   winRegister[winInfo.name] = {
     type: "BrowserWindow",
     object: win,
@@ -117,13 +135,13 @@ async function addContextMenu(playerWindow) {
     template.push(
       {
         label: "← Go Back",
-        enabled: playerWindow.webContents.canGoBack(),
-        click: () => playerWindow.webContents.goBack(),
+        enabled: playerWindow.webContents.navigationHistory.canGoBack(),
+        click: () => playerWindow.webContents.navigationHistory.goBack(),
       },
       {
         label: "→ Go Forward",
-        enabled: playerWindow.webContents.canGoForward(),
-        click: () => playerWindow.webContents.goForward(),
+        enabled: playerWindow.webContents.navigationHistory.canGoForward(),
+        click: () => playerWindow.webContents.navigationHistory.goForward(),
       },
       { type: "separator" }
     );
@@ -172,9 +190,11 @@ async function createYoutubeWindow(winParent, winInfo) {
   winParent.contentView.addChildView(playerWindow);
 
   addContextMenu(playerWindow);
+  playerWindow.webContents.setWindowOpenHandler((details) => {
+    return youtubeWindowOpenHandler(details, playerWindow);
+  });
 
   playerWindow.webContents.loadURL("https://www.youtube.com/");
-  // playerWindow.webContents.openDevTools();
   winRegister[winInfo.name] = {
     type: "WebContentsView",
     object: playerWindow,
@@ -215,14 +235,12 @@ ipcMain.on("broadcast", async (event, msg) => {
   // console.log(JSON.stringify(event));
 
   Object.values(winRegister).forEach((win) => {
-    if (win.object.webContents !== event.sender) {
-      // youtubeExplore does not take orders!
-      // This is not needed because youtubeExplore does not get injected.
-      // if (win.metadata.name != "youtubeExplore") {
-      //   win.object.webContents.send("broadcast", msg);
-      // }
-      win.object.webContents.send("broadcast", msg);
-    }
+    // youtubeExplore does not take orders!
+    // This is not needed because youtubeExplore does not get injected.
+    // if (win.metadata.name != "youtubeExplore") {
+    //   win.object.webContents.send("broadcast", msg);
+    // }
+    win.object.webContents.send("broadcast", msg);
   });
   // tab-button are the buttons that change the view.
   // Change where embedded youtube is shown.
@@ -243,13 +261,13 @@ function createAllWindows() {
     target: "index.html",
     inject: "preload.js",
   });
-  createWindow({ name: "graphs", target: "graphs.html", inject: "preload.js" });
-  createWindow({
-    name: "youtubeExplore",
-    target: "https://www.youtube.com",
-    addContextMenu: true,
-    // inject: "youtube-preload.js",
-  });
+  // createWindow({ name: "graphs", target: "graphs.html", inject: "preload.js" });
+  // createWindow({
+  //   name: "youtubeExplore",
+  //   target: "https://www.youtube.com",
+  //   addContextMenu: true,
+  //   // inject: "youtube-preload.js",
+  // });
   createYoutubeWindow(winMain, {
     name: "youtubePlayer",
     inject: "youtube-preload.js", // TODO Not used yet
@@ -266,10 +284,11 @@ app.whenReady().then(async () => {
       createAllWindows();
     }
   });
-  globalShortcut.register("CommandOrControl+[", () => goBack());
-  globalShortcut.register("CommandOrControl+]", () => goForward());
-  globalShortcut.register("Alt+Left", () => goBack());
-  globalShortcut.register("Alt+Right", () => goForward());
+  // We can't really do global now there are multiple YTs allowed
+  // globalShortcut.register("CommandOrControl+[", () => goBack());
+  // globalShortcut.register("CommandOrControl+]", () => goForward());
+  // globalShortcut.register("Alt+Left", () => goBack());
+  // globalShortcut.register("Alt+Right", () => goForward());
 });
 
 app.on("window-all-closed", () => {

@@ -160,6 +160,9 @@ const currentEl = document.getElementById("current");
 const queueEl = document.getElementById("queue");
 const logEl = document.getElementById("log");
 const queueModeEl = document.getElementById("queueMode");
+document.getElementById("graphs").addEventListener("click", () => {
+  window.open("graphs.html");
+});
 
 queueModeEl.value = localStorage.getItem("queueMode") || "Video";
 queueModeEl.addEventListener("change", () => {
