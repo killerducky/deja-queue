@@ -1201,7 +1201,10 @@ async function moveVideoToFront(id) {
     return; // Already playing
   }
   let insertIdx = 1;
-  if (DBDATA.queue[0]._currentTrack !== -1) {
+  if (
+    DBDATA.queue[0].type == "playlist" &&
+    DBDATA.queue[0]._currentTrack !== -1
+  ) {
     insertIdx = 2;
   }
   const [video] = DBDATA.queue.splice(idx, 1);

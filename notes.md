@@ -1,7 +1,7 @@
 ## Playlists
 
 - [ ] Make title, etc editable and searchable
-- [ ] On startup, play button doesn't work
+- [x] On startup, play button doesn't work
 - [ ] Total playlist duration
 
 ## UI
