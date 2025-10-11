@@ -467,6 +467,15 @@ function getTableColumns(tableType) {
         return cell.getValue().toFixed(1);
       },
     },
+    delay: {
+      title: "Delay",
+      field: "delay",
+      hozAlign: "center",
+      // formatter: "tickCross",
+      formatter: (cell) => {
+        return cell.getValue() ? "✔" : "";
+      },
+    },
   };
   return tableColumns;
 }
@@ -554,8 +563,9 @@ function formatLastPlayDate(video) {
   if (!video.lastPlayDate) {
     return "—";
   }
-  const d = new Date(video.lastPlayDate);
-  return date2String(d);
+  let daysSince =
+    (Date.now() - new Date(video.lastPlayDate)) / (24 * 3600 * 1000);
+  return `${daysSince.toFixed(1)} days ago`;
 }
 function formatDue(due) {
   // if (!video.lastPlayDate) {
@@ -792,12 +802,16 @@ async function playNextVideo(offset = 1, params = {}) {
   // console.log("after 1", DBDATA.queue[1]);
 
   let msg = { type: "playVideo", id: nextVideoToPlay.id };
+  if (params?.autoplay == 0) {
+    msg.type = "cueVideo";
+  }
   sendMessage("youtube-message", msg);
   await renderQueue();
   if (videoTimeout) clearTimeout(videoTimeout);
   videoTimeout = setTimeout(() => {
     console.log("Error:", nextVideoToPlay.id, nextVideoToPlay.title);
     console.log("Video did NOT start playing within timeout");
+    sendBroadcast("timeout");
     showToast("Video timeout");
     nextVideoToPlay.errCnt = (nextVideoToPlay.errCnt || 0) + 1;
     db.saveVideos([nextVideoToPlay]);
@@ -1003,7 +1017,7 @@ function renderDB(queue) {
     tableColumns.rating,
     tableColumns.interval,
     tableColumns.score,
-    { title: "Delay", field: "delay", hozAlign: "center" },
+    tableColumns.delay,
     { title: "E", field: "errCnt", hozAlign: "center", editor: "number" },
     { title: "Dup", field: "dup", hozAlign: "left", editor: "input" },
     { title: "ID", field: "id", hozAlign: "left", width: COMPACT_THUMB_WIDTH },
@@ -1184,6 +1198,9 @@ async function moveVideoToFront(id) {
     console.log("Error could not find ", id);
     return;
   }
+  if (idx == 0) {
+    return; // Already playing
+  }
   let insertIdx = 1;
   if (DBDATA.queue[0]._currentTrack !== -1) {
     insertIdx = 2;
@@ -1303,4 +1320,6 @@ function addComputedFieldsVideo(video) {
   DBDATA.filtered = DBDATA.queue.filter((v) => (v.errCnt ?? 0) < 3 && !v.dup);
   // calcStringSimilarity(DBDATA.queue);
   renderQueue();
+  // This is working *but* it breaks ctrl-R -- it reloads the video in that case.
+  // playNextVideo(0, { autoplay: 0 });
 })();

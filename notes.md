@@ -9,6 +9,7 @@
 - [x] Allow multiple YTs.
 - [x] Don't open graphs by default.
 - [ ] restore window size bug
+- [ ] right click menu -- copy URL
 - [ ] table column picker/sizer/save/restore
   - [ ] config if sidebar expands on hover or not
 - [ ] Pasting into Add to Queue -- popup for video/playlist
@@ -18,6 +19,7 @@
 - [ ] Youtube window placement more responsive
 - [ ] Adding new videos should update playlist/DB/etc
 - [ ] Q mode dropdown is rounded weirdly
+- [ ] visual bar graph or star system for ratings
 
 ## Stats/Algorithm
 
@@ -27,4 +29,4 @@
 
 ## Youtube Explorer
 
-- [ ] multiple youtube explorers
+- [x] multiple youtube explorers

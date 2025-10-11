@@ -1,6 +1,13 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 console.log("youtube-preload loaded");
+let url = new URL(window.location.href);
+const params = new URL(window.location.href).searchParams;
+let cueVideo = params.get("t") === "1s";
+// const cueVideo = false;
+sendBroadcast(url);
+sendBroadcast(`par:${params.get("t")}`);
+sendBroadcast(`cueVideo:${cueVideo}`);
 
 ipcRenderer.on("broadcast", (event, msg) => {
   console.log("ytp msg", msg);
@@ -9,6 +16,8 @@ ipcRenderer.on("broadcast", (event, msg) => {
 
   if (msg.type === "playVideo") {
     window.location.href = `https://www.youtube.com/watch?v=${msg.id}`;
+  } else if (msg.type === "cueVideo") {
+    window.location.href = `https://www.youtube.com/watch?v=${msg.id}&t=1s`;
   } else if (msg.type === "pauseVideo") {
     video.pause();
   } else if (msg.type === "resumeVideo") {
@@ -32,8 +41,12 @@ function attachListener() {
   if (video === lastVideo) return;
   lastVideo = video;
   console.log("attachListener2");
-
   if (!video.paused && !video.ended && video.readyState > 2) {
+    sendBroadcast("t1");
+    if (cueVideo) {
+      video.pause();
+      cueVideo = false;
+    }
     sendBroadcast({
       type: "videoPlaying",
       duration: video.duration,
@@ -41,12 +54,25 @@ function attachListener() {
     });
   }
   video.onplay = () => {
+    sendBroadcast("t2");
+    if (cueVideo) {
+      video.pause();
+      cueVideo = false;
+    }
     sendBroadcast({
       type: "videoPlaying",
       duration: video.duration,
     });
   };
   video.onplaying = () => {
+    sendBroadcast("t3");
+    if (cueVideo) {
+      sendBroadcast("t4");
+      video.pause();
+      sendBroadcast("t5");
+      cueVideo = false;
+    }
+    sendBroadcast("t6");
     sendBroadcast({
       type: "videoPlaying",
       duration: video.duration,

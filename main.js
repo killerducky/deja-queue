@@ -235,11 +235,6 @@ ipcMain.on("broadcast", async (event, msg) => {
   // console.log(JSON.stringify(event));
 
   Object.values(winRegister).forEach((win) => {
-    // youtubeExplore does not take orders!
-    // This is not needed because youtubeExplore does not get injected.
-    // if (win.metadata.name != "youtubeExplore") {
-    //   win.object.webContents.send("broadcast", msg);
-    // }
     win.object.webContents.send("broadcast", msg);
   });
   // tab-button are the buttons that change the view.
@@ -261,18 +256,12 @@ function createAllWindows() {
     target: "index.html",
     inject: "preload.js",
   });
-  // createWindow({ name: "graphs", target: "graphs.html", inject: "preload.js" });
-  // createWindow({
-  //   name: "youtubeExplore",
-  //   target: "https://www.youtube.com",
-  //   addContextMenu: true,
-  //   // inject: "youtube-preload.js",
-  // });
   createYoutubeWindow(winMain, {
     name: "youtubePlayer",
     inject: "youtube-preload.js", // TODO Not used yet
   });
   // winRegister.main.object.webContents.openDevTools();
+  // winRegister.youtubePlayer.object.webContents.openDevTools();
 }
 app.whenReady().then(async () => {
   const StoreModule = await import("electron-store");
