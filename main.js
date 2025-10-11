@@ -62,14 +62,7 @@ function sizeStore(win, label) {
 function youtubeWindowOpenHandler(details, parentWin) {
   const { url } = details;
   console.log("Intercepted window open:", url);
-
-  const childWin = new BrowserWindow({
-    title: "YouTube Popup",
-    webPreferences: {
-      preload: path.join(__dirname, "youtube-preload.js"),
-    },
-  });
-
+  const childWin = new BrowserWindow();
   childWin.webContents.loadURL(url);
   addContextMenu(childWin);
 
