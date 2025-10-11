@@ -11,7 +11,7 @@ const fs = require("fs");
 
 let store;
 
-// youtubePlayer: WebContentsView
+// youtubePlayer: WebContentsView  winRegister.youtubePlayer.object
 // youtubeExplore: BrowserWindow
 // main: BrowserWindow
 // graphs: BrowserWindow
@@ -49,7 +49,28 @@ function sizeStore(win, label) {
         // console.log(JSON.stringify(win.getBounds()));
       }
     };
-    win.on("resize", saveBounds);
+    const handleResize = async () => {
+      saveBounds();
+      const target = await win.webContents.executeJavaScript(`
+      (() => {
+        const activeButton = document.querySelector(".tab-button.active");
+        const target = activeButton?.dataset.target;
+        return target;
+      })()
+      `);
+      if (target == "youtube") {
+        setYoutubeBounds(
+          winRegister.youtubePlayer.object,
+          winMain,
+          "youtube-full"
+        );
+      } else {
+        setYoutubeBounds(winRegister.youtubePlayer.object, winMain, "youtube");
+      }
+    };
+    win.on("resize", handleResize);
+    win.webContents.on("devtools-opened", handleResize);
+    win.webContents.on("devtools-closed", handleResize);
     win.on("move", saveBounds);
 
     // Save window state
