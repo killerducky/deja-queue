@@ -1,7 +1,7 @@
 {
-  "name": "youtube-dj",
+  "name": "deja-queue",
   "version": "1.0.0",
-  "description": "youtube-dj",
+  "description": "A smart YouTube video queue manager for continuous playback.",
   "main": "main.js",
   "scripts": {
     "start": "electron-forge start",
