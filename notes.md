@@ -2,13 +2,14 @@
 
 - [ ] Make title, etc editable and searchable
 - [x] On startup, play button doesn't work
-- [ ] Total playlist duration
+- [x] Total playlist duration
 - [ ] Same video in multiple playlists
 
 ## UI
 
 - [x] Allow multiple YTs.
 - [x] Don't open graphs by default.
+- [x] Fix Current Song for playlist mode bootup
 - [ ] restore window size bug
 - [x] right click menu -- copy URL
 - [x] table column picker/sizer/save/restore

@@ -127,7 +127,10 @@ h3 {
   margin: 5px;
 }
 input {
-  width: 150px;
+  width: 100px;
+}
+input[type="search"] {
+  width: 250px;
 }
 ul {
   padding: 0;

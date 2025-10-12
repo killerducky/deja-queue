@@ -812,6 +812,7 @@ async function playNextVideo(offset = 1, params = {}) {
     // take the next video from top of _children array
     nextVideoToPlay = currItem._children[0];
     if (currItem._currentTrack == -1) {
+      // Track *zero* is going to play, so the Queue will point to track *one*
       currItem._currentTrack = 1;
     } else {
       currItem._currentTrack += 1;
@@ -1482,6 +1483,10 @@ function addComputedFieldsVideo(video) {
     });
     // Prepend all copies to the queue
     DBDATA.queue.unshift(...playlistCopies);
+    let nextVideoToPlay = DBDATA.queue[0]._children[0];
+    // Track *zero* is going to play, so the Queue will point to track *one*
+    DBDATA.queue[0]._currentTrack = 1;
+    DBDATA.queue.unshift(nextVideoToPlay);
   }
   // DBDATA.playlists = addComputedFieldsPL(DBDATA.playlists);
   // DBDATA.queue = addComputedFieldsVideo(DBDATA.queue);
