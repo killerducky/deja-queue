@@ -1253,13 +1253,42 @@ async function renderPlaylists() {
             cell.getRow().delete();
           }
         } else {
-          if (confirm(`Remove this video from playlist? ${data.title}`)) {
-            let playlist = cell.getRow().getTreeParent().getData();
-            playlist.videoIds = playlist.videoIds.filter(
-              (vid) => vid !== data.id
-            );
-            cell.getRow().delete();
-            await db.savePlaylists(playlist);
+          const playlist = cell.getRow().getTreeParent().getData();
+          const count = playlist.videoIds.filter((id) => id === data.id).length;
+          if (count > 1) {
+            if (confirm(`Remove dups of this video? ${data.title}`)) {
+              let seen = false;
+              playlist.videoIds = playlist.videoIds.filter((id) => {
+                if (id !== data.id) return true; // keep other IDs
+                if (!seen) {
+                  seen = true; // keep the first occurrence
+                  return true;
+                }
+                return false; // remove subsequent duplicates
+              });
+              seen = false;
+              for (const siblingRow of cell
+                .getRow()
+                .getTreeParent()
+                .getTreeChildren()) {
+                let rowData = siblingRow.getData();
+                if (rowData.id !== data.id) continue;
+                if (!seen) {
+                  seen = true;
+                  continue;
+                }
+                siblingRow.delete();
+              }
+              await db.savePlaylists(playlist);
+            }
+          } else {
+            if (confirm(`Remove this video from playlist? ${data.title}`)) {
+              playlist.videoIds = playlist.videoIds.filter(
+                (vid) => vid !== data.id
+              );
+              cell.getRow().delete();
+              await db.savePlaylists(playlist);
+            }
           }
         }
       },
