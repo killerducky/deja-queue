@@ -5,6 +5,7 @@ const {
   ipcMain,
   Menu,
   globalShortcut,
+  clipboard,
 } = require("electron");
 const path = require("path");
 const fs = require("fs");
@@ -149,19 +150,6 @@ async function addContextMenu(playerWindow) {
     const listId = urlParams.get("list");
 
     const template = [];
-    template.push(
-      {
-        label: "← Go Back",
-        enabled: playerWindow.webContents.navigationHistory.canGoBack(),
-        click: () => playerWindow.webContents.navigationHistory.goBack(),
-      },
-      {
-        label: "→ Go Forward",
-        enabled: playerWindow.webContents.navigationHistory.canGoForward(),
-        click: () => playerWindow.webContents.navigationHistory.goForward(),
-      },
-      { type: "separator" }
-    );
     if (videoId) {
       template.push({
         label: "Add Video to Queue",
@@ -190,10 +178,43 @@ async function addContextMenu(playerWindow) {
         },
       });
     }
-    if (template.length > 0) {
-      const menu = Menu.buildFromTemplate(template);
-      menu.popup({ window: playerWindow });
-    }
+
+    template.push(
+      { type: "separator" },
+      {
+        label: "← Go Back",
+        enabled: playerWindow.webContents.navigationHistory.canGoBack(),
+        click: () => playerWindow.webContents.navigationHistory.goBack(),
+      },
+      {
+        label: "→ Go Forward",
+        enabled: playerWindow.webContents.navigationHistory.canGoForward(),
+        click: () => playerWindow.webContents.navigationHistory.goForward(),
+      },
+      { type: "separator" },
+      {
+        label: "Copy URL",
+        click: async () => {
+          const url = playerWindow.webContents.getURL();
+          const { clipboard } = require("electron");
+          clipboard.writeText(url);
+        },
+      },
+      { type: "separator" }
+    );
+    template.push({
+      label: "Inspect / DevTools",
+      accelerator: "CmdOrCtrl+Shift+I", // standard Electron dev shortcut
+      click: () => {
+        if (playerWindow.webContents.isDevToolsOpened()) {
+          playerWindow.webContents.closeDevTools();
+        } else {
+          playerWindow.webContents.openDevTools({ mode: "detach" });
+        }
+      },
+    });
+    const menu = Menu.buildFromTemplate(template);
+    menu.popup({ window: playerWindow });
   });
 }
 async function createYoutubeWindow(winParent, winInfo) {

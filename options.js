@@ -259,6 +259,11 @@ let baseTabulatorOptions = {
     return data;
   },
   movableColumns: true,
+  columnDefaults: {
+    headerHozAlign: "center",
+    hozAlign: "center",
+    vertAlign: "middle",
+  },
 };
 
 let tabulatorCurrent = null;
@@ -405,7 +410,7 @@ function getTableColumns(tableType) {
       editable: false,
     },
     playCnt: {
-      title: "Play<br>Count",
+      title: "Cnt",
       field: "playCnt",
       formatter: "plaintext",
     },
@@ -491,13 +496,13 @@ function getTableColumns(tableType) {
       title: "Channel",
       field: "videoOwnerChannelTitle",
       hozAlign: "left",
-      headerFilter: "input",
+      // headerFilter: "input",
       width: 150,
     },
     PL_channel: {
       title: "Channel",
       field: "channelTitle",
-      headerFilter: "input",
+      // headerFilter: "input",
       width: 150,
     },
     videoCount: { title: "#", field: "videoCount", hozAlign: "center" },
@@ -549,10 +554,6 @@ async function table2(tabulator, htmlEl, videoList, tableType) {
     data: videoList,
     custom: { tableType }, // custom property  TODO: Not needed anymore?
     columns: columns,
-    columnDefaults: {
-      hozAlign: "center",
-      vertAlign: "middle",
-    },
     dataTree: true,
     layout: "fitData",
     rowHeight: COMPACT_TABLE_HEIGHT,
@@ -564,22 +565,28 @@ async function table2(tabulator, htmlEl, videoList, tableType) {
   return tabulator;
 }
 
-function formatDuration(isoDuration, isoFormat = true) {
+function isoDuration2seconds(isoDuration) {
+  if (!isoDuration) return NaN;
+  const match = isoDuration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!match) return NaN;
+  let hours = parseInt(match[1] || "0", 10);
+  let minutes = parseInt(match[2] || "0", 10);
+  let seconds = parseInt(match[3] || "0", 10);
+  return hours * 60 * 60 + minutes * 60 + seconds;
+}
+function formatDuration(duration, isoFormat = true) {
   let hours;
   let minutes;
   let seconds;
   if (isoFormat) {
-    if (!isoDuration) return "—";
-    const match = isoDuration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-    if (!match) return "0:00";
-    hours = parseInt(match[1] || "0", 10);
-    minutes = parseInt(match[2] || "0", 10);
-    seconds = parseInt(match[3] || "0", 10);
-  } else {
-    hours = isoDuration >= 3600 ? Math.floor(isoDuration / 3600) : 0;
-    minutes = Math.floor((isoDuration % 3600) / 60);
-    seconds = Math.floor(isoDuration % 60);
+    duration = isoDuration2seconds(duration);
   }
+  if (!duration) {
+    return "—";
+  }
+  hours = duration >= 3600 ? Math.floor(duration / 3600) : 0;
+  minutes = Math.floor((duration % 3600) / 60);
+  seconds = Math.floor(duration % 60);
 
   if (hours > 0) {
     return `${hours}:${minutes.toString().padStart(2, "0")}:${seconds
@@ -1380,6 +1387,16 @@ function addComputedFieldsVideo(video) {
     score: {
       value: scoreItem(video),
       writable: true,
+      enumerable: false,
+    },
+    duration: {
+      get() {
+        if (video.scrapedDuration) {
+          return video.scrapedDuration;
+        } else {
+          return isoDuration2seconds(video.yt?.contentDetails?.duration);
+        }
+      },
       enumerable: false,
     },
   });
