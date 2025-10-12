@@ -1271,6 +1271,7 @@ async function renderPlaylists() {
     columns: columns,
     rowHeight: COMPACT_TABLE_HEIGHT,
     dataTree: true,
+    dataTreeFilter: false,
     height: "100%",
     width: "100%",
   });
