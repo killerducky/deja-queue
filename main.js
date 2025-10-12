@@ -318,11 +318,6 @@ app.whenReady().then(async () => {
       createAllWindows();
     }
   });
-  // We can't really do global now there are multiple YTs allowed
-  // globalShortcut.register("CommandOrControl+[", () => goBack());
-  // globalShortcut.register("CommandOrControl+]", () => goForward());
-  // globalShortcut.register("Alt+Left", () => goBack());
-  // globalShortcut.register("Alt+Right", () => goForward());
 });
 
 app.on("window-all-closed", () => {

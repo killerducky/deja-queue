@@ -196,10 +196,12 @@ input[type="number"] {
 .tab-content {
   visibility: hidden;
   position: absolute;
+  pointer-events: none;
 }
 .tab-content.active {
   visibility: visible;
   position: static;
+  pointer-events: auto;
 }
 .compact .tabulator-cell img {
   max-height: calc(40px - 6px);

@@ -255,7 +255,6 @@ let baseTabulatorOptions = {
   },
   persistenceReaderFunc: (id, type) => {
     let data = window.electronAPI.get(`${id}`);
-    console.log("read", id, data);
     return data;
   },
   movableColumns: true,
@@ -382,8 +381,8 @@ function getTableColumns(tableType) {
     },
     track: {
       title: "Trk",
-      field: "yt.snippet.position",
-      // headerVertical: "flip",
+      field: "_track",
+      sorter: "number",
     },
     dur: {
       title: "Dur",
@@ -505,7 +504,6 @@ function getTableColumns(tableType) {
       // headerFilter: "input",
       width: 150,
     },
-    videoCount: { title: "#", field: "videoCount", hozAlign: "center" },
     dateAdded: {
       title: "Date Added",
       field: "dateAdded",
@@ -1362,6 +1360,10 @@ function addComputedFieldsPL(playlist) {
   if (Array.isArray(playlist)) {
     return playlist.map((p) => addComputedFieldsPL(p));
   }
+  for (const [idx, id] of playlist.videoIds.entries()) {
+    let video = DBDATA.queue.find((v) => v.id === id);
+    video._track = idx;
+  }
   return Object.defineProperties(playlist, {
     _currentTrack: { value: -1, enumerable: false, writable: true },
     _children: {
@@ -1374,6 +1376,11 @@ function addComputedFieldsPL(playlist) {
         });
       },
       enumerable: false,
+    },
+    _track: {
+      value: playlist.videoIds.length,
+      enumerable: false,
+      writable: true,
     },
     type: { value: "playlist", enumerable: false, writable: true },
     rating: { value: playlist.rating ?? DEFAULT_RATING, writable: true },
@@ -1427,6 +1434,13 @@ function addComputedFieldsVideo(video) {
         }
       },
       enumerable: false,
+    },
+    // _track is overwritten by playlists
+    // TODO: shallow copies to handle duplicates across playlists
+    _track: {
+      value: video.yt.snippet.position,
+      enumerable: false,
+      writable: true,
     },
   });
 }
