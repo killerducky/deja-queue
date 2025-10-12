@@ -5,7 +5,7 @@
       http-equiv="Content-Security-Policy"
       content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://www.googleapis.com;;"
     /> -->
-    <title>YouTube Queue</title>
+    <title>DejaQueue</title>
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
   </head>
   <body>
@@ -64,7 +64,7 @@
         <div class="flex-horiz">
           <h3>Playlists</h3>
           Global Filter
-          <input id="plFilter" type="text" placeholder="" />
+          <input id="plFilter" type="search" placeholder="" />
         </div>
         <div class="database-container compact">
           <div id="playlists-grid"></div>
@@ -73,7 +73,7 @@
       <div id="database" class="bot tab-content active">
         <div class="flex-horiz">
           <h3>Database</h3>
-          Global Filter <input id="dbFilter" type="text" placeholder="" />
+          Global Filter <input id="dbFilter" type="search" placeholder="" />
         </div>
         <div class="database-container compact">
           <div id="database-grid"></div>

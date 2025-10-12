@@ -1,4 +1,4 @@
-# YouTube Queue App
+# DejaQueue
 
 Build and manage a **video queue** for YouTube.  
 Paste individual video or playlist links, add them to your queue, and the app will automatically start playback.

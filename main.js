@@ -83,7 +83,9 @@ function sizeStore(win, label) {
 function youtubeWindowOpenHandler(details, parentWin) {
   const { url } = details;
   console.log("Intercepted window open:", url);
-  const childWin = new BrowserWindow();
+  const childWin = new BrowserWindow({
+    icon: path.join(__dirname, "favicon.ico"),
+  });
   childWin.webContents.loadURL(url);
   addContextMenu(childWin);
   childWin.webContents.setWindowOpenHandler((details) => {
@@ -99,8 +101,6 @@ function createWindow(winInfo) {
       ...(winInfo.inject
         ? { preload: path.join(__dirname, winInfo.inject) }
         : {}),
-      nodeIntegration: false,
-      contextIsolation: true,
     },
   });
   if (winInfo.target.startsWith("http")) {
@@ -200,8 +200,6 @@ async function createYoutubeWindow(winParent, winInfo) {
   const playerWindow = new WebContentsView({
     webPreferences: {
       preload: path.join(__dirname, "youtube-preload.js"),
-      nodeIntegration: false,
-      contextIsolation: true,
     },
   });
   winParent.contentView.addChildView(playerWindow);
