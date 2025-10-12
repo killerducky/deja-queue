@@ -3,6 +3,7 @@
 - [ ] Make title, etc editable and searchable
 - [x] On startup, play button doesn't work
 - [ ] Total playlist duration
+- [ ] Same video in multiple playlists
 
 ## UI
 

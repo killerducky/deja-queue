@@ -386,11 +386,9 @@ function getTableColumns(tableType) {
     },
     dur: {
       title: "Dur",
-      field: "scrapedDuration",
-      // headerVertical: "flip",
+      field: "duration",
       formatter: (cell) => {
-        const video = cell.getRow().getData();
-        return formatVideoDuration(video);
+        return formatDuration(cell.getValue(), false);
       },
     },
     lastPlayed: {
@@ -1374,6 +1372,16 @@ function addComputedFieldsPL(playlist) {
           let video = DBDATA.queue.find((v) => v.id === id);
           return video;
         });
+        // TODO: Think about this more.
+        // return ids.map((id, idx) => {
+        //   let video = DBDATA.queue.find((v) => v.id === id);
+        //   const cloneWithDescriptors = Object.create(
+        //     Object.getPrototypeOf(video),
+        //     Object.getOwnPropertyDescriptors(video)
+        //   );
+        //   cloneWithDescriptors._track = idx;
+        //   return cloneWithDescriptors;
+        // });
       },
       enumerable: false,
     },
@@ -1388,6 +1396,16 @@ function addComputedFieldsPL(playlist) {
       value: scoreItem(playlist),
       writable: true,
       enumerable: false,
+    },
+    duration: {
+      value: playlist.videoIds
+        .map((id) => {
+          const video = DBDATA.queue.find((v) => v.id === id);
+          return video?.duration || 0;
+        })
+        .reduce((sum, dur) => sum + dur, 0),
+      enumerable: false,
+      writable: true,
     },
   });
 }
@@ -1433,15 +1451,18 @@ function addComputedFieldsVideo(video) {
           return isoDuration2seconds(video.yt?.contentDetails?.duration);
         }
       },
+      set(value) {
+        video.scrapedDuration = value;
+      }, // Why is tabultor doing this?
       enumerable: false,
     },
     // _track is overwritten by playlists
     // TODO: shallow copies to handle duplicates across playlists
-    _track: {
-      value: video.yt.snippet.position,
-      enumerable: false,
-      writable: true,
-    },
+    // _track: {
+    //   value: video.yt.snippet.position,
+    //   enumerable: false,
+    //   writable: true,
+    // },
   });
 }
 
