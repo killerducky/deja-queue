@@ -30,17 +30,3 @@
 ## Youtube Explorer
 
 - [x] multiple youtube explorers
-
-## Header format
-
-<!--
-<div class="tabulator-col-title-holder">
-  <div class="tabulator-col-title">
-    <span class="tabulator-header-popup-button">⋮</span>
-    Title
-  </div>
-  <div class="tabulator-col-sorter">
-    <div class="tabulator-arrow"></div>
-  </div>
-</div>
--->

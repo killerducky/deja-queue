@@ -86,6 +86,9 @@ function youtubeWindowOpenHandler(details, parentWin) {
   const childWin = new BrowserWindow();
   childWin.webContents.loadURL(url);
   addContextMenu(childWin);
+  childWin.webContents.setWindowOpenHandler((details) => {
+    return youtubeWindowOpenHandler(details, childWin);
+  });
 
   return { action: "deny" };
 }

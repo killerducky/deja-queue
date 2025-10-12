@@ -237,13 +237,6 @@ function date2String(d) {
   return `${yy}-${MM}-${dd} ${hh}:${mm}`;
 }
 
-const parseAttr = (input, attrName, fallback) => {
-  const v = input.getAttribute(attrName);
-  if (v === null || v === "") return fallback;
-  const n = Number(v);
-  return Number.isFinite(n) ? n : fallback;
-};
-
 function showToast(msg) {
   let duration = 5000;
   const container = document.getElementById("toast-container");
@@ -681,6 +674,9 @@ async function addPlaylistVideos(playlistId) {
 
   await db.saveVideos(newVideos);
   console.log("addPlaylistVideos: newVideos ", newVideos);
+  showToast(
+    `Add playlist of ${playlist.videoIds.length} videos (${newVideos.length} new)`
+  );
 
   playlist.videoCount = playlist.videoIds.length; // This seems more accurate
   addComputedFieldsPL(playlist);
@@ -703,6 +699,7 @@ async function addVideoOrPlaylist(response) {
         alert("Failed to fetch video info, please check the ID");
         return;
       }
+      showToast("Video added");
       DBDATA.queue.splice(1, 0, video);
     }
   } else if (response.type == "playlist") {
