@@ -465,7 +465,7 @@ function getTableColumns(tableType) {
       },
     },
     score: {
-      title: "S",
+      title: "Score",
       field: "score",
       hozAlign: "center",
       formatter: (cell) => {
@@ -479,6 +479,37 @@ function getTableColumns(tableType) {
       formatter: (cell) => {
         return cell.getValue() ? "✔" : "";
       },
+    },
+    errCnt: {
+      title: "Err",
+      field: "errCnt",
+      hozAlign: "center",
+      editor: "number",
+    },
+    dup: { title: "Dup", field: "dup", hozAlign: "left", editor: "input" },
+    channel: {
+      title: "Channel",
+      field: "videoOwnerChannelTitle",
+      hozAlign: "left",
+      headerFilter: "input",
+      width: 150,
+    },
+    PL_channel: {
+      title: "Channel",
+      field: "channelTitle",
+      headerFilter: "input",
+      width: 150,
+    },
+    videoCount: { title: "#", field: "videoCount", hozAlign: "center" },
+    dateAdded: {
+      title: "Date Added",
+      field: "dateAdded",
+      formatter: (cell) => {
+        const timestamp = cell.getValue();
+        if (!timestamp) return "—";
+        return date2String(new Date(timestamp));
+      },
+      hozAlign: "center",
     },
   };
   return tableColumns;
@@ -1029,15 +1060,9 @@ function renderDB(queue) {
     tableColumns.interval,
     tableColumns.score,
     tableColumns.delay,
-    { title: "E", field: "errCnt", hozAlign: "center", editor: "number" },
-    { title: "Dup", field: "dup", hozAlign: "left", editor: "input" },
-    {
-      title: "Channel",
-      field: "videoOwnerChannelTitle",
-      hozAlign: "left",
-      headerFilter: "input",
-      width: 150,
-    },
+    tableColumns.errCnt,
+    tableColumns.dup,
+    tableColumns.channel,
   ];
 
   columns.map((c) => {
@@ -1200,27 +1225,13 @@ async function renderPlaylists() {
     table2StyleColumns.dur,
     table2StyleColumns.lastPlayed,
     table2StyleColumns.playCnt,
-    {
-      title: "Channel",
-      field: "channelTitle",
-      headerFilter: "input",
-      width: 150,
-    },
-    { title: "#", field: "videoCount", hozAlign: "center" },
-    {
-      title: "Date Added",
-      field: "dateAdded",
-      formatter: (cell) => {
-        const timestamp = cell.getValue();
-        if (!timestamp) return "—";
-        return date2String(new Date(timestamp));
-      },
-      hozAlign: "center",
-    },
+    table2StyleColumns.PL_channel,
+    table2StyleColumns.dateAdded,
     table2StyleColumns.rating,
     table2StyleColumns.interval,
     table2StyleColumns.score,
-    { title: "ID", field: "id_fake", hozAlign: "left", width: 20 },
+    // TODO: Add back ability to show the actual ID.
+    // { title: "ID", field: "id_fake", hozAlign: "left", width: 20 },
     {
       title: "Act",
       formatter: (cell) => {
