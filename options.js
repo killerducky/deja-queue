@@ -10,7 +10,7 @@ let INIT_FACTOR = 30;
 let DEFAULT_RATING = 7.5;
 let COOLDOWN_JITTER_START = 3; // Subtract N days from the interval
 let COOLDOWN_JITTER_RATE = 0.2; // Add up to X% jitter to that part of the interval
-let RATING_FACTOR = 0.8; // 0 = all ratings same. 1 = 10 points per rating point
+let RATING_FACTOR = 0.5; // 0 = all ratings same. 1 = 10 points per rating point
 let DUP_SCORE = -9;
 let ERR_SCORE = -10;
 

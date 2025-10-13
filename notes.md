@@ -16,6 +16,8 @@
 - [x] Same video in multiple playlists
 - [ ] refresh should not change current playing song
 - [x] Clicking playlist _moves_ in queue instead of adding another one
+- [ ] Playlist should not pop single songs out into the queue
+- [ ] Go backwards in playlist / reset playlist
 
 ## UI
 
@@ -28,6 +30,8 @@
 - [ ] Adding new videos should update playlist/DB/etc
 - [ ] Q mode dropdown is rounded weirdly
 - [ ] visual bar graph or star system for ratings
+- [ ] import/export db into file menu
+- [ ] delay/skip song buttons in the queue?
 
 ## Stats/Algorithm
 
