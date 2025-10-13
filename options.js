@@ -274,7 +274,8 @@ async function renderQueue() {
     console.log("Empty DBDATA.queue, nothing to render");
     return;
   }
-  const [firstVideo, ...restVideos] = DBDATA.queue;
+  const firstVideo = DBDATA.queue[0];
+  const restVideos = DBDATA.queue.slice(1, LISTLEN + 1);
   tabulatorCurrent = await table2(
     tabulatorCurrent,
     currentEl,
@@ -829,13 +830,18 @@ async function playNextVideo(offset = 1, params = {}) {
       currItem._currentTrack += 1;
     }
     if (currItem._children.length == 0) {
+      // nextVideoToPlay was the last video of the playlist
+      // Credit playlist as played
       currItem.lastPlayDate = Date.now();
       currItem.playCnt = currItem.playCnt ?? 0 + 1;
       await db.savePlaylists(currItem);
-      console.log("playlist empty, for now just delete");
-      DBDATA.queue.splice(offset, 1);
+
+      // Reset the playlist container, push to end
+      let playlist = DBDATA.queue.splice(offset, 1);
+      playlist._currentTrack = -1;
+      DBDATA.queue.push(playlist);
     }
-    // cut the first offset videos/playlists, put back to end of queue
+    // cut the current track, push to end
     const cut = DBDATA.queue.splice(0, offset);
     DBDATA.queue.push(...cut);
 
@@ -1516,18 +1522,20 @@ function dbCheck() {
   DBDATA.queue.sort((a, b) => b.score - a.score);
   DBDATA.playlists = addComputedFieldsPL(DBDATA.playlists);
   DBDATA.playlists.sort((a, b) => b.score - a.score);
+  const playlistCopies = DBDATA.playlists.map((item) => {
+    // shallow copy top-level + clone videoIds array
+    const copy = { ...item };
+    return addComputedFieldsPL(copy);
+  });
   if (queueModeEl.value == "playlist") {
-    const playlistCopies = DBDATA.playlists.map((item) => {
-      // shallow copy top-level + clone videoIds array
-      const copy = { ...item };
-      return addComputedFieldsPL(copy);
-    });
     // Prepend all copies to the queue
     DBDATA.queue.unshift(...playlistCopies);
     let nextVideoToPlay = DBDATA.queue[0]._children[0];
     // Track *zero* is going to play, so the Queue will point to track *one*
     DBDATA.queue[0]._currentTrack = 1;
     DBDATA.queue.unshift(nextVideoToPlay);
+  } else {
+    DBDATA.queue.push(...playlistCopies);
   }
   renderDB(DBDATA.queue);
   renderPlaylists();
