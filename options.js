@@ -317,6 +317,17 @@ function thumbnailFormatter(cell) {
   return img;
 }
 
+async function tabulatorCellEdited(cell) {
+  const item = cell.getData();
+  if (item.type == "video") {
+    await db.saveVideos(item);
+  } else if (item.type == "playlist") {
+    await db.savePlaylists(item);
+  } else {
+    console.log("error");
+  }
+}
+
 function getTableColumns(tableType) {
   let tableColumns = {
     dataTree: {
@@ -368,16 +379,7 @@ function getTableColumns(tableType) {
       formatter: "textarea",
       editor: "input",
       width: 150,
-      cellEdited: async (cell) => {
-        const item = cell.getData();
-        if (item.type == "video") {
-          await db.saveVideos(item);
-        } else if (item.type == "playlist") {
-          await db.savePlaylists(item);
-        } else {
-          console.log("error");
-        }
-      },
+      cellEdited: tabulatorCellEdited,
     },
     track: {
       title: "Trk",
@@ -487,8 +489,15 @@ function getTableColumns(tableType) {
       field: "errCnt",
       hozAlign: "center",
       editor: "number",
+      cellEdited: tabulatorCellEdited,
     },
-    dup: { title: "Dup", field: "dup", hozAlign: "left", editor: "input" },
+    dup: {
+      title: "Dup",
+      field: "dup",
+      hozAlign: "left",
+      editor: "input",
+      cellEdited: tabulatorCellEdited,
+    },
     channel: {
       title: "Channel",
       field: "videoOwnerChannelTitle",
@@ -1476,12 +1485,27 @@ function addComputedFieldsVideo(video) {
   });
 }
 
+function dbCheck() {
+  let error = false;
+  DBDATA.queue.forEach((v) => {
+    if (v.thumbnailUrl) {
+      console.log("ERROR", v);
+      error = true;
+    }
+  });
+  if (error) {
+    alert("DB integrity check fail. Check dev console.");
+  }
+}
+
 // Initial load
 (async () => {
   DBDATA.queue = await db.loadVideos();
+  DBDATA.playlists = await db.loadPlaylists();
+  // Check before adding computed fields
+  dbCheck();
   DBDATA.queue = addComputedFieldsVideo(DBDATA.queue);
   DBDATA.queue.sort((a, b) => b.score - a.score);
-  DBDATA.playlists = await db.loadPlaylists();
   DBDATA.playlists = addComputedFieldsPL(DBDATA.playlists);
   DBDATA.playlists.sort((a, b) => b.score - a.score);
   if (queueModeEl.value == "playlist") {
