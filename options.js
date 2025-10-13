@@ -553,6 +553,7 @@ async function table2(tabulator, htmlEl, videoList, tableType) {
     tableColumns.interval,
     tableColumns.tags,
   ];
+  columns.map((c) => (c.headerSort = false));
 
   tabulator = new Tabulator(htmlEl, {
     ...baseTabulatorOptions,
@@ -1521,8 +1522,6 @@ function dbCheck() {
     DBDATA.queue[0]._currentTrack = 1;
     DBDATA.queue.unshift(nextVideoToPlay);
   }
-  // DBDATA.playlists = addComputedFieldsPL(DBDATA.playlists);
-  // DBDATA.queue = addComputedFieldsVideo(DBDATA.queue);
   renderDB(DBDATA.queue);
   renderPlaylists();
   // Remove errors and dups from graphs.

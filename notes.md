@@ -3,7 +3,7 @@
 - [ ] 3rd playlist has no title, no thumb
 - [ ] thumb with weird aspect ratio -- tabulator doing something?
 - [ ] add playlist - should add to queue as PL, not individual songs
-- [ ] sort queue?
+- [x] don't allow sort queue
 - [ ] playlist mode -- do not autoqueue single songs
 - [ ] filter X should be there even when not in focus
 - [ ] click on current song thumb should not reload the page
