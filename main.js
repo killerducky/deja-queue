@@ -99,8 +99,8 @@ function createWindow(winInfo) {
   let win = new BrowserWindow({
     icon: path.join(__dirname, "favicon.ico"),
     webPreferences: {
-      ...(winInfo.inject
-        ? { preload: path.join(__dirname, winInfo.inject) }
+      ...(winInfo.preload
+        ? { preload: path.join(__dirname, winInfo.preload) }
         : {}),
     },
   });
@@ -218,10 +218,12 @@ async function addContextMenu(playerWindow) {
   });
 }
 async function createYoutubeWindow(winParent, winInfo) {
+  let webPreferences = {};
+  if (winInfo.preload) {
+    webPreferences.preload = path.join(__dirname, winInfo.preload);
+  }
   const playerWindow = new WebContentsView({
-    webPreferences: {
-      preload: path.join(__dirname, "youtube-preload.js"),
-    },
+    webPreferences,
   });
   winParent.contentView.addChildView(playerWindow);
 
@@ -240,20 +242,6 @@ async function createYoutubeWindow(winParent, winInfo) {
     setYoutubeBounds(playerWindow, winParent, "youtube");
   });
   return playerWindow;
-}
-
-function goBack() {
-  let nh = winRegister.youtubeExplore.object.webContents.navigationHistory;
-  if (nh.canGoBack()) {
-    nh.goBack();
-  }
-}
-
-function goForward() {
-  let nh = winRegister.youtubeExplore.object.webContents.navigationHistory;
-  if (nh.canGoForward()) {
-    nh.goForward();
-  }
 }
 
 ipcMain.handle("read-file", async (event, filePath) => {
@@ -285,7 +273,6 @@ ipcMain.on("broadcast", async (event, msg) => {
   // tab-button are the buttons that change the view.
   // Change where embedded youtube is shown.
   if (msg.type === "tab-button") {
-    // let playerWindow = playerViews.youtubePlay;
     let playerWindow = winRegister.youtubePlayer.object;
     if (msg.targetId === "youtube") {
       await setYoutubeBounds(playerWindow, winMain, "youtube-full");
@@ -299,12 +286,16 @@ function createAllWindows() {
   winMain = createWindow({
     name: "main",
     target: "index.html",
-    inject: "preload.js",
+    preload: "preload.js",
   });
   createYoutubeWindow(winMain, {
     name: "youtubePlayer",
-    inject: "youtube-preload.js", // TODO Not used yet
+    preload: "youtube-preload.js",
   });
+  // createYoutubeWindow(winMain, {
+  //   name: "youtubePlayer2",
+  //   preload: "",
+  // });
   // winRegister.main.object.webContents.openDevTools();
   // winRegister.youtubePlayer.object.webContents.openDevTools();
 }

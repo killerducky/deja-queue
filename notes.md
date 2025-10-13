@@ -13,7 +13,7 @@
 ## Playlists
 
 - [ ] Make title, etc editable and searchable
-- [ ] Same video in multiple playlists
+- [x] Same video in multiple playlists
 - [ ] refresh should not change current playing song
 
 ## UI

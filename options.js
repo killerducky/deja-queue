@@ -263,6 +263,7 @@ let baseTabulatorOptions = {
     hozAlign: "center",
     vertAlign: "middle",
   },
+  // reactiveData: true,
 };
 
 let tabulatorCurrent = null;
