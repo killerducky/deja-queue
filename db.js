@@ -82,7 +82,10 @@ export async function saveVideos(videos) {
   return new Promise((resolve, reject) => {
     const tx = db.transaction("videos", "readwrite");
     const store = tx.objectStore("videos");
-    videoArray.forEach((v) => store.put(v));
+    videoArray.forEach((v) => {
+      const actual = v.ref ? v.ref : v;
+      store.put(actual);
+    });
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });
