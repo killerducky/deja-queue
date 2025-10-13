@@ -4,9 +4,9 @@
 - [ ] thumb with weird aspect ratio -- tabulator doing something?
 - [ ] add playlist - should add to queue as PL, not individual songs
 - [x] don't allow sort queue
-- [ ] playlist mode -- do not autoqueue single songs
+- [?] playlist mode -- do not autoqueue single songs
 - [ ] filter X should be there even when not in focus
-- [ ] click on current song thumb should not reload the page
+- [ ] click on current song thumb should not reload the youtube page
 - [ ] shift-click to insta play
 - [ ] full screen playlist/database
 
@@ -15,6 +15,7 @@
 - [ ] Make title, etc editable and searchable
 - [x] Same video in multiple playlists
 - [ ] refresh should not change current playing song
+- [x] Clicking playlist _moves_ in queue instead of adding another one
 
 ## UI
 

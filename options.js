@@ -1239,20 +1239,7 @@ async function renderPlaylists() {
       },
       cellClick: async function (e, cell) {
         const item = cell.getRow().getData();
-        if (item.type == "playlist") {
-          // make copy and clone videoIds because we will mutate it
-          let playlistCopy = addComputedFieldsPL({ ...item });
-          let insertIdx = 1;
-          if (
-            DBDATA.queue[insertIdx].type == "playlist" &&
-            DBDATA.queue[insertIdx]._currentTrack !== -1
-          ) {
-            insertIdx = 2;
-          }
-          DBDATA.queue.splice(insertIdx, 0, playlistCopy);
-        } else {
-          moveVideoToFront(item.id);
-        }
+        moveVideoToFront(item.id);
         await renderQueue();
         showToast("Added to front of queue");
       },
@@ -1357,8 +1344,8 @@ async function moveVideoToFront(id) {
     console.log("Error could not find ", id);
     return;
   }
-  if (idx == 0) {
-    return; // Already playing
+  if (idx == 0 || idx == 1) {
+    return; // Already playing or next in line
   }
   let insertIdx = 1;
   if (
