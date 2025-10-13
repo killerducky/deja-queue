@@ -1236,8 +1236,8 @@ async function renderPlaylists() {
           let playlistCopy = addComputedFieldsPL({ ...item });
           let insertIdx = 1;
           if (
-            DBDATA.queue[0].type == "playlist" &&
-            DBDATA.queue[0]._currentTrack !== -1
+            DBDATA.queue[insertIdx].type == "playlist" &&
+            DBDATA.queue[insertIdx]._currentTrack !== -1
           ) {
             insertIdx = 2;
           }
@@ -1353,8 +1353,8 @@ async function moveVideoToFront(id) {
   }
   let insertIdx = 1;
   if (
-    DBDATA.queue[0].type == "playlist" &&
-    DBDATA.queue[0]._currentTrack !== -1
+    DBDATA.queue[insertIdx].type == "playlist" &&
+    DBDATA.queue[insertIdx]._currentTrack !== -1
   ) {
     insertIdx = 2;
   }
