@@ -6,7 +6,7 @@
 - [x] don't allow sort queue
 - [?] playlist mode -- do not autoqueue single songs
 - [ ] filter X should be there even when not in focus
-- [ ] click on current song thumb should not reload the youtube page
+- [x] click on current song thumb should not reload the youtube page
 - [ ] shift-click to insta play
 - [ ] full screen playlist/database
 

@@ -6,13 +6,21 @@ const params = new URL(window.location.href).searchParams;
 // Workaround: use t=1s to signal this is the very first video.
 let cueVideo = params.get("t") === "1s";
 
+function getVideoId(url) {
+  const params = new URL(url).searchParams;
+  return params.get("v");
+}
 ipcRenderer.on("broadcast", (event, msg) => {
   console.log("ytp msg", msg);
   const video = document.querySelector("video");
   //   if (!video) return;
 
   if (msg.type === "playVideo") {
-    window.location.href = `https://www.youtube.com/watch?v=${msg.id}`;
+    if (getVideoId(window.location.href) == msg.id) {
+      video.play();
+    } else {
+      window.location.href = `https://www.youtube.com/watch?v=${msg.id}`;
+    }
   } else if (msg.type === "cueVideo") {
     window.location.href = `https://www.youtube.com/watch?v=${msg.id}&t=1s`;
   } else if (msg.type === "pauseVideo") {
