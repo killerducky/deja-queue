@@ -1192,6 +1192,23 @@ function headerMenu(event, tables) {
   renderMenu();
 }
 
+function wrapVideo(video, track, playlist) {
+  return new Proxy(
+    { ref: video, _track: track, playlist },
+    {
+      get(target, prop, receiver) {
+        if (prop in target) return Reflect.get(target, prop, receiver);
+        return target.ref[prop];
+      },
+      set(target, prop, value, receiver) {
+        if (prop in target) return Reflect.set(target, prop, value, receiver);
+        target.ref[prop] = value;
+        return true;
+      },
+    }
+  );
+}
+
 async function renderPlaylists() {
   let table2StyleColumns = getTableColumns(true);
   let columns = [
@@ -1209,7 +1226,10 @@ async function renderPlaylists() {
           // make copy and clone videoIds because we will mutate it
           let playlistCopy = addComputedFieldsPL({ ...item });
           let insertIdx = 1;
-          if (DBDATA.queue[0]._currentTrack !== -1) {
+          if (
+            DBDATA.queue[0].type == "playlist" &&
+            DBDATA.queue[0]._currentTrack !== -1
+          ) {
             insertIdx = 2;
           }
           DBDATA.queue.splice(insertIdx, 0, playlistCopy);
@@ -1359,30 +1379,19 @@ function addComputedFieldsPL(playlist) {
   if (Array.isArray(playlist)) {
     return playlist.map((p) => addComputedFieldsPL(p));
   }
+  let allChildren = [];
   for (const [idx, id] of playlist.videoIds.entries()) {
-    let video = DBDATA.queue.find((v) => v.id === id);
-    video._track = idx;
+    let origVideo = DBDATA.queue.find((v) => v.id === id);
+    let video = wrapVideo(origVideo, idx, playlist);
+    allChildren.push(video);
   }
   return Object.defineProperties(playlist, {
     _currentTrack: { value: -1, enumerable: false, writable: true },
+    _allChildren: { value: allChildren, enumerable: false, writable: true },
     _children: {
       get() {
         const start = this._currentTrack == -1 ? 0 : this._currentTrack;
-        const ids = (this.videoIds || []).slice(start);
-        return ids.map((id) => {
-          let video = DBDATA.queue.find((v) => v.id === id);
-          return video;
-        });
-        // TODO: Think about this more.
-        // return ids.map((id, idx) => {
-        //   let video = DBDATA.queue.find((v) => v.id === id);
-        //   const cloneWithDescriptors = Object.create(
-        //     Object.getPrototypeOf(video),
-        //     Object.getOwnPropertyDescriptors(video)
-        //   );
-        //   cloneWithDescriptors._track = idx;
-        //   return cloneWithDescriptors;
-        // });
+        return this._allChildren.slice(start);
       },
       enumerable: false,
     },
