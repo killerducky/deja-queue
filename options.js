@@ -1259,6 +1259,7 @@ async function renderPlaylists() {
     table2StyleColumns.tags,
     table2StyleColumns.dur,
     table2StyleColumns.lastPlayed,
+    table2StyleColumns.due,
     table2StyleColumns.playCnt,
     table2StyleColumns.PL_channel,
     table2StyleColumns.dateAdded,
@@ -1415,6 +1416,11 @@ function addComputedFieldsPL(playlist) {
     rating: { value: playlist.rating ?? DEFAULT_RATING, writable: true },
     score: {
       value: scoreItem(playlist),
+      writable: true,
+      enumerable: false,
+    },
+    due: {
+      value: calcDue(playlist),
       writable: true,
       enumerable: false,
     },
