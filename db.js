@@ -78,6 +78,8 @@ export async function getLastNLogs(n) {
 export async function saveVideos(videos) {
   // console.log(`Saving ${videos.length} videos`);
   const videoArray = Array.isArray(videos) ? videos : [videos];
+  // console.log(saving #:${videos.length R:${videos[0].rating T:${videos[0].title}}}``)
+  // console.trace();
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction("videos", "readwrite");

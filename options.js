@@ -8,6 +8,7 @@ let LONG_DELAY_TIME = 7;
 let LONG_DELAY_BONUS = 2.5; // half a half a rating point per doubling
 let INIT_FACTOR = 30;
 let DEFAULT_RATING = 7.5;
+let COOLDOWN_PENALTY = -60;
 let COOLDOWN_JITTER_START = 3; // Subtract N days from the interval
 let COOLDOWN_JITTER_RATE = 0.2; // Add up to X% jitter to that part of the interval
 let RATING_FACTOR = 0.5; // 0 = all ratings same. 1 = 10 points per rating point
@@ -88,7 +89,7 @@ function cooldownFactor(daysSince, rating, noise = true, salt = "salt") {
   let daysOverdue = daysSince - T * 1.5;
   if (ratio < 1) {
     const eased = Math.pow(ratio, 3);
-    return -50 * (1 - eased);
+    return COOLDOWN_PENALTY * (1 - eased);
     // return -10 * rating * (1 - eased);
   } else if (daysOverdue > 0) {
     // 7 days overdue:  +1LONG_DELAY_BONUS
@@ -103,7 +104,7 @@ function cooldownFactor(daysSince, rating, noise = true, salt = "salt") {
   }
 }
 
-// split out so we can test eaiser
+// split out so we can test easier
 function scoreHelper(daysSince, rating, noise = true, salt = "salt") {
   let score = 0;
   // Mix rating and DEFAULT_RATING, and multiply by 10
@@ -636,6 +637,7 @@ async function addYoutubeInfo(video) {
   const data = await response.json();
   // console.log(data);
   if (data.items?.length > 0) {
+    data = trimYoutubeFields(data);
     video.yt = data.items[0];
     addComputedFieldsVideo(video);
     await db.saveVideos([video]);
@@ -660,12 +662,10 @@ async function addPlaylistVideos(playlistId) {
   let playlist = {
     id: playlistId,
     title: playlistInfo.snippet.title,
-    description: playlistInfo.snippet.description,
     channelTitle: playlistInfo.snippet.channelTitle,
     videoCount: playlistInfo.contentDetails.itemCount,
     thumbnailUrl: playlistInfo.snippet.thumbnails?.default?.url,
     dateAdded: Date.now(),
-    lastUpdated: Date.now(),
     rating: DEFAULT_RATING,
     yt: playlistInfo,
     videoIds: [],
@@ -683,15 +683,17 @@ async function addPlaylistVideos(playlistId) {
     let res = await fetch(url);
     let data = await res.json();
     console.log("playlistItems raw: ", data);
+    data = trimYoutubeFields(data);
 
     // moveVideoToFront needs to go backwards to work
     for (const yt of [...data.items].reverse()) {
       let video = {
         id: yt.snippet.resourceId.videoId,
-        playlistId: playlistId,
         rating: DEFAULT_RATING,
+        dateAdded: Date.now(),
         yt: yt,
       };
+      video = trimYoutubeFields(video);
       addComputedFieldsVideo(video);
       // Due to going backwards, we need to go backwards here too
       playlist.videoIds.unshift(video.id);
@@ -739,7 +741,11 @@ async function addVideoOrPlaylist(response) {
       showToast("Video already in DB");
       await moveVideoToFront(response.id);
     } else {
-      let video = { id: response.id, rating: DEFAULT_RATING };
+      let video = {
+        id: response.id,
+        rating: DEFAULT_RATING,
+        dateAdded: Date.now(),
+      };
       await addYoutubeInfo(video);
       if (!video.yt) {
         alert("Failed to fetch video info, please check the ID");
@@ -1380,6 +1386,29 @@ function handleTabs() {
 }
 handleTabs();
 
+function trimYoutubeFields(obj) {
+  if (Array.isArray(obj)) {
+    return obj.map(trimYoutubeFields);
+  } else if (obj && typeof obj === "object") {
+    const newObj = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (key === "description" || key === "regionRestriction") {
+        continue; // skip all "description" fields
+      }
+      // Thumbnails: keep only "default"
+      if (key === "thumbnails" && value && typeof value === "object") {
+        if (value.default) {
+          newObj[key] = { default: trimYoutubeFields(value.default) };
+        }
+        continue; // skip other keys
+      }
+      newObj[key] = trimYoutubeFields(value);
+    }
+    return newObj;
+  }
+  return obj;
+}
+
 function addComputedFieldsPL(playlist) {
   if (Array.isArray(playlist)) {
     return playlist.map((p) => addComputedFieldsPL(p));
@@ -1505,6 +1534,10 @@ function dbCheck() {
   DBDATA.playlists = await db.loadPlaylists();
   // Check before adding computed fields
   dbCheck();
+  DBDATA.queue = trimYoutubeFields(DBDATA.queue);
+  DBDATA.playlists = trimYoutubeFields(DBDATA.playlists);
+  db.saveVideos(DBDATA.queue);
+  db.savePlaylists(DBDATA.playlists);
   DBDATA.queue = addComputedFieldsVideo(DBDATA.queue);
   DBDATA.queue.sort((a, b) => b.score - a.score);
   DBDATA.playlists = addComputedFieldsPL(DBDATA.playlists);
