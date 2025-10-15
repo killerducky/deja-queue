@@ -41,6 +41,7 @@
 
 ## Stats/Algorithm
 
+- [ ] graphs.js DRY
 - [ ] Graph scores of several illustrative cases
   - [ ] User can live adjust params?!
 - [ ] Lower impact of rating (due becomes relatively more important)

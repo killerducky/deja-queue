@@ -35,8 +35,10 @@ function sizeStore(win, label) {
 
   // Restore state
   const bounds = store.get(boundsKey);
+  console.log("bounds:", bounds, store.get(minMaxKey));
   win.once("ready-to-show", () => {
     if (bounds) {
+      console.log("set bounds:", bounds, store.get(minMaxKey));
       win.setBounds(bounds);
       if (store.get(minMaxKey) == "max") {
         win.maximize();
@@ -427,7 +429,11 @@ function buildMenu() {
             if (graphsWin && !graphsWin.isDestroyed()) {
               graphsWin.focus();
             } else {
-              graphsWin = new BrowserWindow({ width: 900, height: 700 });
+              graphsWin = new BrowserWindow({
+                width: 900,
+                height: 700,
+                webPreferences: { preload: path.join(__dirname, "preload.js") },
+              });
               graphsWin.loadFile("graphs.html");
             }
           },
