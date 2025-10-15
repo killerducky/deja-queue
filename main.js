@@ -7,6 +7,7 @@ const {
   globalShortcut,
   clipboard,
   shell,
+  dialog,
 } = require("electron");
 const path = require("path");
 const fs = require("fs");
@@ -326,7 +327,45 @@ function buildMenu() {
     // { role: 'fileMenu' }
     {
       label: "File",
-      submenu: [isMac ? { role: "close" } : { role: "quit" }],
+      submenu: [
+        {
+          label: "Delete Database",
+          click: async () => {
+            winRegister.main.object.webContents.send("broadcast", {
+              type: "deleteDatabaseRequest",
+            });
+          },
+        },
+        {
+          label: "Export Database",
+          click: () => {
+            winRegister.main.object.webContents.send("broadcast", {
+              type: "exportDatabase",
+            });
+          },
+        },
+        {
+          label: "Import Database",
+          click: async () => {
+            const result = await dialog.showOpenDialog(
+              winRegister.main.object.webContents,
+              {
+                properties: ["openFile"],
+                filters: [{ name: "JSON", extensions: ["json"] }],
+              }
+            );
+            if (!result.canceled && result.filePaths.length > 0) {
+              let filePath = result.filePaths[0];
+              winRegister.main.object.webContents.send("broadcast", {
+                type: "importDatabase",
+                filePath,
+              });
+            }
+          },
+        },
+        { type: "separator" },
+        isMac ? { role: "close" } : { role: "quit" },
+      ],
     },
     // { role: 'editMenu' }
     {

@@ -965,6 +965,12 @@ window.electronAPI.onBroadcast(async (msg) => {
     await addVideoOrPlaylist({ type: "video", id: msg.id });
   } else if (msg.type === "queue:addPlaylist") {
     await addVideoOrPlaylist({ type: "playlist", id: msg.id });
+  } else if (msg.type === "deleteDatabaseRequest") {
+    await deleteDB();
+  } else if (msg.type === "importDatabase") {
+    importDB(msg.filePath);
+  } else if (msg.type === "exportDatabase") {
+    await exportDB();
   }
 });
 
@@ -994,25 +1000,18 @@ async function exportDB() {
   URL.revokeObjectURL(url);
 }
 
-function importDB(file) {
+async function importDB(file) {
   console.log("Importing DB from file:", file);
-  const reader = new FileReader();
-  reader.onload = async (e) => {
-    try {
-      const data = JSON.parse(e.target.result);
-      await db.deleteDB();
-      await db.saveVideos(data.videos); // only replaces each id with new content
-      await db.savePlaylists(data.playlists); // only replaces each id with new content
-      await db.saveLog(data.log);
-      console.log("Videos imported successfully");
-    } catch (err) {
-      console.error("Failed to import videos:", err);
-    }
-  };
-  reader.readAsText(file);
+  const text = await window.electronAPI.readFile(file);
+  const data = JSON.parse(text);
+  await db.deleteDB();
+  await db.saveVideos(data.videos); // only replaces each id with new content
+  await db.savePlaylists(data.playlists); // only replaces each id with new content
+  await db.saveLog(data.log);
+  console.log("Videos imported successfully");
 }
 
-async function deleteVideos() {
+async function deleteDB() {
   const confirmed = window.confirm(
     "Are you sure you want to delete the database? This cannot be undone."
   );
@@ -1020,21 +1019,6 @@ async function deleteVideos() {
   await db.deleteDB();
   alert("Database deleted. Please reload the page.");
 }
-document.getElementById("exportBtn").addEventListener("click", exportDB);
-document.getElementById("deleteBtn").addEventListener("click", deleteVideos);
-
-const importBtn = document.getElementById("importBtn");
-const importFile = document.getElementById("importFile");
-
-importBtn.addEventListener("click", () => {
-  importFile.click();
-});
-
-importFile.addEventListener("change", () => {
-  if (importFile.files.length > 0) {
-    importDB(importFile.files[0]);
-  }
-});
 
 function getNestedValue(obj, path) {
   return path.split(".").reduce((o, key) => (o ? o[key] : undefined), obj);
