@@ -111,6 +111,25 @@ body {
   align-items: center;
   gap: 10px;
 }
+.narrow {
+  max-width: 1050px;
+  margin: 20px auto;
+}
+.wide {
+  width: auto;
+  margin: 20px 20px;
+}
+.graphs-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1.5rem;
+}
+.graphs-container > div {
+  flex: 0 0 800px;
+  width: 800px;
+}
 h2,
 h3 {
   margin: 4px;
