@@ -23,11 +23,11 @@ body {
 }
 .main-container {
   display: grid;
-  grid-template-columns: 450px minmax(300px, 1fr);
+  grid-template-columns: 500px minmax(300px, 1fr);
   grid-template-rows: auto 400px minmax(300px, 1fr);
   grid-template-areas:
     "left top"
-    "left mid"
+    "left bot"
     "left bot";
   gap: 8px;
   width: 100%;
@@ -43,12 +43,22 @@ body {
 .left * {
   flex: 0 0 auto;
 }
+.left #youtube {
+  flex: 0 0 300px;
+}
+hr {
+  height: 3px;
+  background-color: #3fb449;
+  border: none;
+  margin: 4px 0;
+}
 .left #queue {
   flex: 3;
 }
 .left #log {
   flex: 2;
 }
+/*
 .left:hover,
 .right:hover {
   position: absolute;
@@ -57,12 +67,21 @@ body {
   height: 100%;
   z-index: 10;
 }
-.left:hover {
+*/
+/* 
+VIP user: You can just hardcode expand width here for now.
+.left:hover,
+.right:hover {
+  width: 600px;
+  z-index: 10;
+}
+*/
+/* .left:hover {
   left: 0;
 }
 .right:hover {
   right: 0;
-}
+} */
 .left button,
 .right button {
   display: block;
