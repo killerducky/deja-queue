@@ -42,6 +42,7 @@
 ## Stats/Algorithm
 
 - [ ] graphs.js DRY
+- [ ] config params in .json file
 - [ ] Graph scores of several illustrative cases
   - [ ] User can live adjust params?!
 - [ ] Lower impact of rating (due becomes relatively more important)

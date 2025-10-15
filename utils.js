@@ -2,7 +2,8 @@ let DEFAULT_RATING = 7.5;
 let MAX_ERRS = 5; // After this many errors treat it as bad
 
 let DIVERSITY_FACTOR = 24;
-let LONG_DELAY_TIME = 7;
+let LONG_DELAY_START = 1.25;
+let LONG_DELAY_TIME = 4;
 let LONG_DELAY_BONUS = 2.5; // half a half a rating point per doubling
 let INIT_FACTOR = 30;
 let COOLDOWN_PENALTY = -60;
@@ -76,9 +77,9 @@ export function cooldownFactor(daysSince, rating, noise = true, salt = "salt") {
     }
   }
   let ratio = daysSince / T;
-  let daysOverdue = daysSince - T * 1.5;
+  let daysOverdue = daysSince - T * LONG_DELAY_START;
   if (ratio < 1) {
-    const eased = Math.pow(ratio, 3);
+    const eased = Math.pow(ratio, 2);
     return COOLDOWN_PENALTY * (1 - eased);
     // return -10 * rating * (1 - eased);
   } else if (daysOverdue > 0) {

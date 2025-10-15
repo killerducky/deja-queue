@@ -434,6 +434,7 @@ function buildMenu() {
                 height: 700,
                 webPreferences: { preload: path.join(__dirname, "preload.js") },
               });
+              graphsWin.maximize();
               graphsWin.loadFile("graphs.html");
             }
           },

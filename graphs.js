@@ -185,7 +185,7 @@ function plotScores(videos) {
   Plotly.newPlot("scores-chart", traces, layout);
 }
 
-function plotCooldownFactor(videos) {
+function plotCooldownFactor(videos, relative) {
   const ratings = [
     ...new Set(videos.map((v) => v.rating ?? DEFAULT_RATING)),
   ].sort((a, b) => a - b);
@@ -198,8 +198,16 @@ function plotCooldownFactor(videos) {
     for (let daysSince = 0; daysSince <= 365; daysSince += 0.1) {
       // ys.push(cooldownFactor(d / utils.rating2days(r)));
       ys.push(utils.scoreHelper(daysSince, rating, false));
-      xs.push(daysSince - utils.rating2days(rating));
-      // xs.push(daysSince);
+      if (relative) {
+        let x =
+          (daysSince - utils.rating2days(rating)) / utils.rating2days(rating);
+        xs.push(x);
+        if (relative && x > 5) {
+          break;
+        }
+      } else {
+        xs.push(daysSince - utils.rating2days(rating));
+      }
     }
     traces.push({
       x: xs,
@@ -213,12 +221,19 @@ function plotCooldownFactor(videos) {
   // Layout
   let layout = {
     title: "Function Test Graph",
-    xaxis: { title: { text: "days" }, range: [-5, 150] },
-    yaxis: { title: { text: "Cooldown penalty/bonus" } },
+    xaxis: {
+      title: { text: relative ? "intervals" : "days" },
+      range: relative ? [-1, 3] : [-5, 150],
+    },
+    yaxis: { title: { text: "Cooldown penalty/bonus" }, range: [50, 100] },
   };
   layout = applyDarkMode(layout);
   // Plot
-  Plotly.newPlot("cooldown-chart", traces, layout);
+  Plotly.newPlot(
+    relative ? "cooldown-chart-rel" : "cooldown-chart",
+    traces,
+    layout
+  );
 }
 
 function calcStringSimilarity(queue) {
@@ -261,7 +276,8 @@ function calcStringSimilarity(queue) {
   DBDATA.filtered = DBDATA.queue.filter((v) => (v.errCnt ?? 0) < 3 && !v.dup);
   plotRatings(DBDATA.filtered);
   plotScores(DBDATA.filtered);
-  plotCooldownFactor(DBDATA.filtered);
+  plotCooldownFactor(DBDATA.filtered, false);
+  plotCooldownFactor(DBDATA.filtered, true);
   db.closeDB();
   // calcStringSimilarity(DBDATA.queue);
   // renderQueue();
