@@ -631,7 +631,7 @@ async function addYoutubeInfo(video) {
   console.log("Fetching YouTube info for", video.id);
   const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${video.id}&key=${env.API_KEY}`;
   const response = await fetch(url);
-  const data = await response.json();
+  let data = await response.json();
   // console.log(data);
   if (data.items?.length > 0) {
     data = trimYoutubeFields(data);
