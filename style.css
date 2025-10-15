@@ -25,10 +25,14 @@ body,
     "left top"
     "left bot"
     "left bot";
-  gap: 8px;
+  gap: 20px;
   width: 100%;
   height: 100%;
+  /* background-color: #252525; */
 }
+/* .main-container > * {
+  background-color: #121212;
+} */
 .left {
   grid-area: left;
   display: flex;
@@ -43,10 +47,12 @@ body,
   flex: 0 0 300px;
 }
 hr {
-  height: 3px;
-  background-color: #3fb449;
+  height: 1px;
+  /* background-color: #3fb449; */
+  /* background-color: hsl(125, 48%, 48%); */
+  background-color: hsl(125, 48%, 38%);
   border: none;
-  margin: 4px 0;
+  margin: 8px 0;
 }
 .left #queue {
   flex: 3;
@@ -306,15 +312,15 @@ input[type="number"] {
   #tab-menu {
     background-color: #121212 !important;
     color: #eee;
-    z-index: 100;
   }
   #tab-menu {
-    padding: 4px;
+    z-index: 100;
+    padding: 12px;
     border-radius: 4px;
     cursor: pointer;
   }
   #tab-menu div {
-    padding: 2px;
+    padding: 4px;
   }
   .tabulator-menu-item:hover,
   #tab-menu div:hover {
