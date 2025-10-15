@@ -427,7 +427,11 @@ function buildMenu() {
           label: "Open Graphs",
           click: () => {
             if (graphsWin && !graphsWin.isDestroyed()) {
+              if (!graphsWin.isVisible()) {
+                graphsWin.show();
+              }
               graphsWin.focus();
+              graphsWin.moveTop();
             } else {
               graphsWin = new BrowserWindow({
                 width: 900,

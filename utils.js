@@ -198,4 +198,13 @@ function formatDuration(duration, isoFormat = true) {
   }
 }
 
-export { isoDuration2seconds, formatDuration };
+function calcDue(video) {
+  let daysSince = calcDaysSince(video);
+  if (daysSince === null) {
+    return null;
+  }
+  let days = rating2days(video.rating ?? DEFAULT_RATING) - daysSince;
+  return days;
+}
+
+export { isoDuration2seconds, formatDuration, calcDue };

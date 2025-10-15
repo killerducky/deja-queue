@@ -144,10 +144,10 @@ function plotRatings(videos) {
 
   let layout2 = {
     barmode: "stack",
-    title: "Ratings Breakdown",
-    xaxis: { title: "Count" },
+    title: { text: "Interval Load" },
+    xaxis: { title: { text: "Hours" } },
     yaxis: { showticklabels: false, fixedrange: true, range: [-0.5, 0.5] },
-    margin: { t: 15, b: 30 },
+    margin: { t: 30, b: 60 },
   };
 
   layout2 = applyDarkMode(layout2);
@@ -177,12 +177,47 @@ function plotScores(videos) {
 
   let layout = {
     title: "Scores Distribution",
-    xaxis: { title: "Score" },
-    yaxis: { title: "Count" },
+    yaxis: { title: { text: "Count" } },
+    xaxis: {
+      title: { text: "Score" },
+    },
     barmode: "stack",
   };
   layout = applyDarkMode(layout);
   Plotly.newPlot("scores-chart", traces, layout);
+}
+
+function plotDues(videos) {
+  // Get unique ratings
+  const ratings = [
+    ...new Set(videos.map((v) => v.rating ?? DEFAULT_RATING)),
+  ].sort((a, b) => a - b);
+
+  // Create a trace for each rating
+  const traces = ratings.map((r) => {
+    const duesForRating = videos
+      .filter((v) => (v.rating ?? DEFAULT_RATING) === r)
+      .map((v) => -v.due);
+    return {
+      x: duesForRating,
+      type: "histogram",
+      name: `Rating ${r.toFixed(1)}`,
+      marker: { color: utils.rating2color(r) },
+      xbins: { size: 2 },
+    };
+  });
+
+  let layout = {
+    title: "(Over)Due Distribution",
+    yaxis: { title: { text: "Count" } },
+    xaxis: {
+      title: { text: "Score" },
+      range: [-100, 30],
+    },
+    barmode: "stack",
+  };
+  layout = applyDarkMode(layout);
+  Plotly.newPlot("dues-chart", traces, layout);
 }
 
 function plotCooldownFactor(videos, relative) {
@@ -261,21 +296,75 @@ function calcStringSimilarity(queue) {
   }
 }
 
+// TODO: This is copy/pasted from options.js!!
+function addComputedFieldsVideo(video) {
+  if (Array.isArray(video)) {
+    return video.map((p) => addComputedFieldsVideo(p));
+  }
+  return Object.defineProperties(video, {
+    type: { value: "video", enumerable: false, writable: true },
+    rating: { value: video.rating ?? DEFAULT_RATING, writable: true },
+    title: { value: video.title ?? video.yt.snippet.title, writable: true },
+    thumbnailUrl: {
+      value: `https://i.ytimg.com/vi/${video.id}/default.jpg`,
+      enumerable: false,
+      writable: true,
+    },
+    channelTitle: {
+      value: video.yt?.snippet?.videoOwnerChannelTitle || "—",
+      writable: true,
+      enumerable: true,
+    },
+    due: {
+      value: utils.calcDue(video),
+      writable: true,
+      enumerable: false,
+    },
+    score: {
+      value: utils.scoreItem(video),
+      writable: true,
+      enumerable: false,
+    },
+    duration: {
+      get() {
+        if (video.scrapedDuration) {
+          return video.scrapedDuration;
+        } else {
+          return utils.isoDuration2seconds(video.yt?.contentDetails?.duration);
+        }
+      },
+      set(value) {
+        video.scrapedDuration = value;
+      }, // Why is tabultor doing this?
+      enumerable: false,
+    },
+    // _track is overwritten by playlists
+    // TODO: shallow copies to handle duplicates across playlists
+    // _track: {
+    //   value: video.yt.snippet.position,
+    //   enumerable: false,
+    //   writable: true,
+    // },
+  });
+}
+
 // Initial load
 (async () => {
   DBDATA.queue = await db.loadVideos();
-  DBDATA.queue.forEach((v) => {
-    v.score = utils.scoreItem(v);
-  });
+  DBDATA.queue = addComputedFieldsVideo(DBDATA.queue);
+  // DBDATA.queue.forEach((v) => {
+  //   v.score = utils.scoreItem(v);
+  // });
   DBDATA.queue.sort((a, b) => b.score - a.score);
   DBDATA.playlists = await db.loadPlaylists();
   // renderDB(DBDATA.queue);
   // renderPlaylists();
   // Remove errors and dups from graphs.
   // But leave in actual Queue (with low score), so we don't e.g. add it again
-  DBDATA.filtered = DBDATA.queue.filter((v) => (v.errCnt ?? 0) < 3 && !v.dup);
+  DBDATA.filtered = DBDATA.queue.filter((v) => (v.errCnt ?? 0) < 5 && !v.dup);
   plotRatings(DBDATA.filtered);
   plotScores(DBDATA.filtered);
+  plotDues(DBDATA.filtered);
   plotCooldownFactor(DBDATA.filtered, false);
   plotCooldownFactor(DBDATA.filtered, true);
   db.closeDB();

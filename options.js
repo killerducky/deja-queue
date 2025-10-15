@@ -1222,7 +1222,7 @@ function addComputedFieldsPL(playlist) {
       enumerable: false,
     },
     due: {
-      value: calcDue(playlist),
+      value: utils.calcDue(playlist),
       writable: true,
       enumerable: false,
     },
@@ -1237,14 +1237,6 @@ function addComputedFieldsPL(playlist) {
       writable: true,
     },
   });
-}
-function calcDue(video) {
-  let daysSince = utils.calcDaysSince(video);
-  if (daysSince === null) {
-    return null;
-  }
-  let days = utils.rating2days(video.rating ?? DEFAULT_RATING) - daysSince;
-  return days;
 }
 function addComputedFieldsVideo(video) {
   if (Array.isArray(video)) {
@@ -1265,7 +1257,7 @@ function addComputedFieldsVideo(video) {
       enumerable: true,
     },
     due: {
-      value: calcDue(video),
+      value: utils.calcDue(video),
       writable: true,
       enumerable: false,
     },
