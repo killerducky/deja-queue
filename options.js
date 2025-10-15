@@ -14,6 +14,7 @@ let COOLDOWN_JITTER_RATE = 0.2; // Add up to X% jitter to that part of the inter
 let RATING_FACTOR = 0.5; // 0 = all ratings same. 1 = 10 points per rating point
 let DUP_SCORE = -9;
 let ERR_SCORE = -10;
+let MAX_ERRS = 5; // After this many errors treat it as bad
 
 let COMPACT_TABLE_HEIGHT = 40;
 let NORMAL_TABLE_HEIGHT = 68;
@@ -129,7 +130,7 @@ function calcDaysSince(video) {
 }
 
 function scoreItem(video, noise = true) {
-  if (video.errCnt && video.errCnt >= 3) return ERR_SCORE; // too many errors, don't play
+  if (video.errCnt && video.errCnt >= MAX_ERRS) return ERR_SCORE; // too many errors, don't play
   if (video.dup) return DUP_SCORE; // Ignore dups
   let salt = `${video.id}${video.lastPlayDate}`;
   if (!video.rating) video.rating = DEFAULT_RATING;
@@ -621,10 +622,9 @@ function formatLastPlayDate(video) {
   return `${daysSince.toFixed(1)} days ago`;
 }
 function formatDue(due) {
-  // if (!video.lastPlayDate) {
-  //   return "—";
-  // }
-  // due = -due;
+  if (due === null) {
+    return "—";
+  }
   let color = due < -5 ? "#d11" : due < 0 ? "#e77" : "#6b6";
   let text = due < 0 ? "days ago" : "days from now";
   return `<span style="color:${color}">${Math.abs(due).toFixed(1)} ${text}</span>`;
@@ -1460,7 +1460,9 @@ function addComputedFieldsPL(playlist) {
 }
 function calcDue(video) {
   let daysSince = calcDaysSince(video);
-  // video.rating normalization didn't complete yet?
+  if (daysSince === null) {
+    return null;
+  }
   let days = rating2days(video.rating ?? DEFAULT_RATING) - daysSince;
   return days;
 }
@@ -1561,7 +1563,9 @@ function dbCheck() {
   renderPlaylists();
   // Remove errors and dups from graphs.
   // But leave in actual Queue (with low score), so we don't e.g. add it again
-  DBDATA.filtered = DBDATA.queue.filter((v) => (v.errCnt ?? 0) < 3 && !v.dup);
+  DBDATA.filtered = DBDATA.queue.filter(
+    (v) => (v.errCnt ?? 0) < MAX_ERRS && !v.dup
+  );
   // calcStringSimilarity(DBDATA.queue);
   renderQueue();
   const navType = performance.getEntriesByType("navigation")[0]?.type;
