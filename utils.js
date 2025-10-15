@@ -1,7 +1,7 @@
 let DEFAULT_RATING = 7.5;
 let MAX_ERRS = 5; // After this many errors treat it as bad
 
-let DIVERSITY_FACTOR = 24;
+let DIVERSITY_FACTOR = 12;
 let LONG_DELAY_START = 1.25;
 let LONG_DELAY_TIME = 4;
 let LONG_DELAY_BONUS = 2.5; // half a half a rating point per doubling
