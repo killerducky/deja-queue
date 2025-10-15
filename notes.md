@@ -1,28 +1,34 @@
-## VIP user session
+## VIP user
 
+- [ ] full screen playlist/database
 - [ ] 3rd playlist has no title, no thumb
-- [ ] thumb with weird aspect ratio -- tabulator doing something?
 - [ ] add playlist - should add to queue as PL, not individual songs
+- [ ] thumb with weird aspect ratio -- tabulator doing something?
 - [x] don't allow sort queue
 - [?] playlist mode -- do not autoqueue single songs
-- [ ] filter X should be there even when not in focus
 - [x] click on current song thumb should not reload the youtube page
-- [ ] shift-click to insta play
-- [ ] full screen playlist/database
+- [ ] filter X should be there even when not in focus
 
 ## Playlists
 
 - [ ] Make title, etc editable and searchable
+- [ ] Adding the same playlist should not overwrite fields
+  - [ ] Rating(!), DateAdded
+- [ ] Deleted songs in playlist should not be added
+- [ ] Remove videoCnt field, replace with computed field
 - [x] Same video in multiple playlists
 - [ ] refresh should not change current playing song
 - [x] Clicking playlist _moves_ in queue instead of adding another one
 - [ ] Playlist should not pop single songs out into the queue
 - [ ] Go backwards in playlist / reset playlist
+- [ ] log doesn't show track number
+- [ ] log doesn't show playlists
 
 ## UI
 
 - [ ] restore window size bug
   - [ ] config if sidebar expands on hover or not
+- [ ] shift-click to insta play
 - [ ] Pasting into Add to Queue -- popup for video/playlist
 - [ ] 404 thumbs
   - [ ] That one playlist has a 404 thumb?
@@ -38,6 +44,10 @@
 - [ ] Graph scores of several illustrative cases
   - [ ] User can live adjust params?!
 - [ ] Lower impact of rating (due becomes relatively more important)
+
+## Misc
+
+- [x] github rename to deja-queue -- github does 403 redirect indefinitely
 
 ## Tagline ideas
 
