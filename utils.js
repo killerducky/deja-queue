@@ -2,9 +2,10 @@ let DEFAULT_RATING = 7.5;
 let MAX_ERRS = 5; // After this many errors treat it as bad
 
 let DIVERSITY_FACTOR = 24;
-let LONG_DELAY_START = 1.25;
-let LONG_DELAY_TIME = 4;
-let LONG_DELAY_BONUS = 5;
+let SHORT_DELAY_LINEAR_RATE = 2; // tiny linear growth until
+let LONG_DELAY_START = 1.25; // 1.25X overdue
+let LONG_DELAY_BONUS = 5; // bonus +5...
+let LONG_DELAY_TIME = 4; // every 4^N days
 let INIT_FACTOR = 30;
 let COOLDOWN_PENALTY = -80;
 let COOLDOWN_JITTER_START = 3; // Subtract N days from the interval
@@ -65,6 +66,10 @@ export function rating2days(rating) {
   return 365 * 3;
 }
 
+export function ratingScore(rating) {
+  return 10 * ((1 - RATING_FACTOR) * DEFAULT_RATING + RATING_FACTOR * rating);
+}
+
 export function cooldownFactor(daysSince, rating, noise = true, salt = "salt") {
   if (daysSince == null) {
     return INIT_FACTOR;
@@ -77,21 +82,23 @@ export function cooldownFactor(daysSince, rating, noise = true, salt = "salt") {
     }
   }
   let ratio = daysSince / T;
-  let daysOverdue = daysSince - T * LONG_DELAY_START;
+  let longDelayStartDay = T * LONG_DELAY_START;
+  let daysOverdue = daysSince - T;
   if (ratio < 1) {
     const eased = Math.pow(ratio, 2);
-    return COOLDOWN_PENALTY * (1 - eased);
-    // return -10 * rating * (1 - eased);
-  } else if (daysOverdue > 0) {
+    return -ratingScore(rating) * (1 - eased);
+  } else if (daysSince < longDelayStartDay) {
+    return SHORT_DELAY_LINEAR_RATE * (daysOverdue / (longDelayStartDay - T));
+  } else {
     // 7 days overdue:  +1LONG_DELAY_BONUS
     // 14 days overdue: +2LONG_DELAY_BONUS
     // 28 days overdue: +3LONG_DELAY_BONUS
     // 56 days overdue: +4LONG_DELAY_BONUS
     // 365 days overdue: +14 = 5.6x LONG_DELAY_BONUS
-    let log2 = Math.log1p(daysOverdue / LONG_DELAY_TIME) / Math.log(2);
-    return log2 * LONG_DELAY_BONUS;
-  } else {
-    return 0;
+    let log2 =
+      Math.log1p((daysSince - longDelayStartDay) / LONG_DELAY_TIME) /
+      Math.log(2);
+    return SHORT_DELAY_LINEAR_RATE + log2 * LONG_DELAY_BONUS;
   }
 }
 
@@ -99,7 +106,7 @@ export function cooldownFactor(daysSince, rating, noise = true, salt = "salt") {
 export function scoreHelper(daysSince, rating, noise = true, salt = "salt") {
   let score = 0;
   // Mix rating and DEFAULT_RATING, and multiply by 10
-  score += 10 * ((1 - RATING_FACTOR) * DEFAULT_RATING + RATING_FACTOR * rating);
+  score += ratingScore(rating);
   score += cooldownFactor(daysSince, rating, noise);
   score += !noise ? 0 : hashRandom(`${salt}noise`) * DIVERSITY_FACTOR;
   return score;
