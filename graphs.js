@@ -240,7 +240,7 @@ function generateXs(T) {
   return [...new Set(xs)].sort((a, b) => a - b);
 }
 function plotCooldownFactor(relative) {
-  let ratings = [8.5, 8, 7.5, 7, 6.5, 6, 5.5, 5];
+  let ratings = [5.5, 6, 6.5, 7, 7.5, 8, 8.5];
 
   const traces = [];
   for (let i = ratings.length - 1; i >= 0; i--) {
@@ -271,7 +271,10 @@ function plotCooldownFactor(relative) {
         let days = interval2days(interval, T);
         // let score = ys[i];
         // ${score.toFixed(1)}
-        return `<span style="font-family:monospace">${rating.toFixed(1)} (${T.toFixed(0).padStart(4)}d) ${days.toFixed(2).padStart(6)}d ${interval.toFixed(2).padStart(4)}X</span>`;
+        return (
+          `<span style="font-family:monospace; font-size:1.5em">` +
+          `${rating.toFixed(1)} (${T.toFixed(0).padStart(3)}d) ${days.toFixed(2).padStart(6)}d ${interval.toFixed(2).padStart(4)}X</span>`
+        );
       }),
       hoverinfo: "text",
     });
