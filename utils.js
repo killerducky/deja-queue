@@ -3,7 +3,7 @@ let MAX_ERRS = 5; // After this many errors treat it as bad
 
 let DIVERSITY_FACTOR = 24;
 let SHORT_DELAY_LINEAR_RATE = 2; // tiny linear growth until
-let LONG_DELAY_START = 1.25; // 1.25X overdue
+let LONG_DELAY_START = 7; // 7 days overdue
 let LONG_DELAY_BONUS = 5; // bonus +5...
 let LONG_DELAY_TIME = 4; // every 4^N days
 let INIT_FACTOR = 30;
@@ -83,7 +83,7 @@ export function cooldownFactor(daysSince, rating, noise = true, salt = "salt") {
     }
   }
   let ratio = daysSince / T;
-  let longDelayStartDay = T * LONG_DELAY_START;
+  let longDelayStartDay = T + LONG_DELAY_START;
   let daysOverdue = daysSince - T;
   if (ratio < 1) {
     const eased = Math.pow(ratio, COOLDOWN_POWER_FACTOR);

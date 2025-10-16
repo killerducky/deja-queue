@@ -234,6 +234,9 @@ function generateXs(T) {
   for (let x_days = -5; x_days < 5; x_days += 0.01) {
     xs.push(days2interval(x_days, T));
   }
+  for (let x_days = 5; x_days < 365; x_days += 1) {
+    xs.push(days2interval(x_days, T));
+  }
   return [...new Set(xs)].sort((a, b) => a - b);
 }
 function plotCooldownFactor(videos, relative) {
