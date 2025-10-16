@@ -269,7 +269,13 @@ function plotCooldownFactor(videos, relative) {
       mode: "lines",
       name: `Rating ${rating.toFixed(1)}`,
       line: { color: utils.rating2color(rating) },
-      hovertemplate: relative ? "%{x:.2f}X" : "%{x:.2f} days",
+      text: xs.map((interval, i) => {
+        let days = interval2days(interval, T);
+        // let score = ys[i];
+        // ${score.toFixed(1)}
+        return `<span style="font-family:monospace">${rating.toFixed(1)} (${T.toFixed(0).padStart(4)}d) ${days.toFixed(2).padStart(6)}d ${interval.toFixed(2).padStart(4)}X</span>`;
+      }),
+      hoverinfo: "text",
     });
   }
 
