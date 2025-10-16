@@ -89,6 +89,8 @@ function youtubeWindowOpenHandler(details, parentWin) {
   const { url } = details;
   console.log("Intercepted window open:", url);
   const childWin = new BrowserWindow({
+    width: 1000,
+    height: 700,
     icon: path.join(__dirname, "favicon.ico"),
   });
   childWin.webContents.loadURL(url);
@@ -434,7 +436,7 @@ function buildMenu() {
               graphsWin.moveTop();
             } else {
               graphsWin = new BrowserWindow({
-                width: 900,
+                width: 1000,
                 height: 700,
                 webPreferences: { preload: path.join(__dirname, "preload.js") },
               });
