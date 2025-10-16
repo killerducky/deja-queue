@@ -85,8 +85,15 @@ export async function saveVideos(videos) {
     const tx = db.transaction("videos", "readwrite");
     const store = tx.objectStore("videos");
     videoArray.forEach((v) => {
-      const actual = v.ref ? v.ref : v;
-      store.put(actual);
+      if (v.type && v.type !== "video") {
+        console.log("saveVideos: Error wrong type", v);
+        alert(
+          "DB integrity check fail. saveVideos: Error wrong type Check dev console."
+        );
+      } else {
+        const actual = v.ref ? v.ref : v;
+        store.put(actual);
+      }
     });
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
@@ -124,7 +131,16 @@ export async function savePlaylists(playlists) {
   return new Promise((resolve, reject) => {
     const tx = db.transaction("playlists", "readwrite");
     const store = tx.objectStore("playlists");
-    playlistArray.forEach((p) => store.put(p));
+    playlistArray.forEach((p) => {
+      if (p.type && p.type !== "playlist") {
+        console.log("saveVideos: Error wrong type", v);
+        alert(
+          "DB integrity check fail. saveVideos: Error wrong type. Check dev console."
+        );
+      } else {
+        store.put(p);
+      }
+    });
     tx.oncomplete = () => resolve();
     tx.onerror = () => reject(tx.error);
   });

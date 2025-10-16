@@ -138,21 +138,15 @@ function thumbnailFormatter(cell) {
       ? item.thumbnailUrl
       : `https://i.ytimg.com/vi/${data.id}/default.jpg`;
 
-  img.src = DEFAULT_THUMB;
-
-  fetch(candidateUrl, { method: "HEAD" })
-    .then((res) => {
-      if (res.ok) {
-        img.src = candidateUrl;
-      } else {
-        // console.log("thumb fail", item);
-        img.src = DEFAULT_THUMB;
-      }
-    })
-    .catch(() => {
-      img.src = DEFAULT_THUMB;
-    });
-
+  // img.src = DEFAULT_THUMB;
+  img.src = candidateUrl;
+  img.onerror = (e) => {
+    console.log("img error");
+    console.log(e);
+    console.log(cell.getData());
+    console.log(cell.getRow().getData());
+    console.log(cell.getData().id);
+  };
   return img;
 }
 
@@ -527,7 +521,7 @@ async function addPlaylistVideos(playlistId) {
   );
 
   playlist.videoCount = playlist.videoIds.length; // This seems more accurate
-  addComputedFieldsPL(playlist);
+  utils.addComputedFieldsPL(playlist, DBDATA.queue);
   console.log("add", playlist);
   await db.savePlaylists(playlist);
 
@@ -1179,107 +1173,6 @@ function trimYoutubeFields(obj) {
   return obj;
 }
 
-function addComputedFieldsPL(playlist) {
-  if (Array.isArray(playlist)) {
-    return playlist.map((p) => addComputedFieldsPL(p));
-  }
-  let allChildren = [];
-  for (const [idx, id] of playlist.videoIds.entries()) {
-    let origVideo = DBDATA.queue.find((v) => v.id === id);
-    let video = utils.wrapVideo(origVideo, { _track: idx, playlist });
-    allChildren.push(video);
-  }
-  return Object.defineProperties(playlist, {
-    _currentTrack: { value: -1, enumerable: false, writable: true },
-    _allChildren: { value: allChildren, enumerable: false, writable: true },
-    _children: {
-      get() {
-        const start = this._currentTrack == -1 ? 0 : this._currentTrack;
-        return this._allChildren.slice(start);
-      },
-      enumerable: false,
-    },
-    _track: {
-      value: playlist.videoIds.length,
-      enumerable: false,
-      writable: true,
-    },
-    type: { value: "playlist", enumerable: false, writable: true },
-    rating: { value: playlist.rating ?? DEFAULT_RATING, writable: true },
-    score: {
-      value: utils.scoreItem(playlist),
-      writable: true,
-      enumerable: false,
-    },
-    due: {
-      value: utils.calcDue(playlist),
-      writable: true,
-      enumerable: false,
-    },
-    duration: {
-      value: playlist.videoIds
-        .map((id) => {
-          const video = DBDATA.queue.find((v) => v.id === id);
-          return video?.duration || 0;
-        })
-        .reduce((sum, dur) => sum + dur, 0),
-      enumerable: false,
-      writable: true,
-    },
-  });
-}
-
-function addComputedFieldsVideo(video) {
-  if (Array.isArray(video)) {
-    return video.map((p) => addComputedFieldsVideo(p));
-  }
-  return Object.defineProperties(video, {
-    type: { value: "video", enumerable: false, writable: true },
-    rating: { value: video.rating ?? DEFAULT_RATING, writable: true },
-    title: { value: video.title ?? video.yt.snippet.title, writable: true },
-    thumbnailUrl: {
-      value: `https://i.ytimg.com/vi/${video.id}/default.jpg`,
-      enumerable: false,
-      writable: true,
-    },
-    channelTitle: {
-      value: video.yt?.snippet?.videoOwnerChannelTitle || "—",
-      writable: true,
-      enumerable: true,
-    },
-    due: {
-      value: utils.calcDue(video),
-      writable: true,
-      enumerable: false,
-    },
-    score: {
-      value: utils.scoreItem(video),
-      writable: true,
-      enumerable: false,
-    },
-    duration: {
-      get() {
-        if (video.scrapedDuration) {
-          return video.scrapedDuration;
-        } else {
-          return utils.isoDuration2seconds(video.yt?.contentDetails?.duration);
-        }
-      },
-      set(value) {
-        video.scrapedDuration = value;
-      }, // Why is tabultor doing this?
-      enumerable: false,
-    },
-    // _track is overwritten by playlists
-    // TODO: shallow copies to handle duplicates across playlists
-    // _track: {
-    //   value: video.yt.snippet.position,
-    //   enumerable: false,
-    //   writable: true,
-    // },
-  });
-}
-
 function dbCheck() {
   let error = false;
   DBDATA.queue.forEach((v) => {
@@ -1301,16 +1194,18 @@ function dbCheck() {
   dbCheck();
   DBDATA.queue = trimYoutubeFields(DBDATA.queue);
   DBDATA.playlists = trimYoutubeFields(DBDATA.playlists);
-  db.saveVideos(DBDATA.queue);
-  db.savePlaylists(DBDATA.playlists);
   DBDATA.queue = addComputedFieldsVideo(DBDATA.queue);
   DBDATA.queue.sort((a, b) => b.score - a.score);
-  DBDATA.playlists = addComputedFieldsPL(DBDATA.playlists);
+  DBDATA.playlists = utils.addComputedFieldsPL(DBDATA.playlists, DBDATA.queue);
   DBDATA.playlists.sort((a, b) => b.score - a.score);
+  // This is only needed if e.g. trimYoutubeFields did something.
+  // addComputedFieldsPL will also update a broken thumbnailUrl
+  db.saveVideos(DBDATA.queue.filter((v) => v.type == "video"));
+  db.savePlaylists(DBDATA.playlists);
   const playlistCopies = DBDATA.playlists.map((item) => {
     // shallow copy top-level + clone videoIds array
     const copy = { ...item };
-    return addComputedFieldsPL(copy);
+    return utils.addComputedFieldsPL(copy, DBDATA.queue);
   });
   if (queueModeEl.value == "playlist") {
     // Prepend all copies to the queue

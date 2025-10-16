@@ -237,6 +237,10 @@ function addComputedFieldsPL(playlist, queue) {
     let video = wrapVideo(origVideo, { _track: idx, playlist });
     allChildren.push(video);
   }
+  if (!playlist.thumbnailUrl) {
+    console.log("Warning: no PL URL for", playlist.title);
+    playlist.thumbnailUrl = allChildren[0].yt.snippet.thumbnails.default.url;
+  }
   return Object.defineProperties(playlist, {
     _currentTrack: { value: -1, enumerable: false, writable: true },
     _allChildren: { value: allChildren, enumerable: false, writable: true },

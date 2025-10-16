@@ -1,7 +1,6 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 console.log("youtube-preload loaded");
-let url = new URL(window.location.href);
 const params = new URL(window.location.href).searchParams;
 // Workaround: use t=1s to signal this is the very first video.
 let cueVideo = params.get("t") === "1s";
