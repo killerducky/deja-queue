@@ -7,12 +7,11 @@ let LONG_DELAY_START = 1.25; // 1.25X overdue
 let LONG_DELAY_BONUS = 5; // bonus +5...
 let LONG_DELAY_TIME = 4; // every 4^N days
 let INIT_FACTOR = 30;
-let COOLDOWN_PENALTY = -80;
 let COOLDOWN_JITTER_START = 3; // Subtract N days from the interval
 let COOLDOWN_JITTER_RATE = 0.2; // Add up to X% jitter to that part of the interval
 let RATING_FACTOR = 1.0; // 0 = all ratings same. 1 = 10 points per rating point
-let DUP_SCORE = -58;
-let ERR_SCORE = -59;
+let DUP_SCORE = -8;
+let ERR_SCORE = -9;
 
 export function rating2color(rating) {
   const colors = [
@@ -22,11 +21,11 @@ export function rating2color(rating) {
     "hsla(18, 84%, 68%, 1.00)",
     // "hsla(32, 60%, 68%, 1.00)",
     // "hsla(0, 0%, 65%, 1.00)",
-    "hsla(201, 50%, 70%, 1.00)",
-    "hsla(200, 63%, 60%, 1.00)",
-    "hsla(203, 66%, 47%, 1.00)",
-    "hsla(210, 70%, 36%, 1.00)",
-    "hsla(212, 90%, 20%, 1.00)",
+    "hsla(180, 50%, 70%, 1.00)",
+    "hsla(185, 63%, 60%, 1.00)",
+    "hsla(190, 66%, 47%, 1.00)",
+    "hsla(195, 70%, 36%, 1.00)",
+    "hsla(205, 73%, 30%, 1.00)",
   ];
 
   let colormap = {};

@@ -211,7 +211,7 @@ function plotDues(videos) {
     title: "(Over)Due Distribution",
     yaxis: { title: { text: "Count" } },
     xaxis: {
-      title: { text: "Score" },
+      title: { text: "(Over)Due days" },
       range: [-100, 30],
     },
     barmode: "stack",
