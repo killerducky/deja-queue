@@ -7,6 +7,7 @@
 - [x] don't allow sort queue
 - [?] playlist mode -- do not autoqueue single songs
 - [x] click on current song thumb should not reload the youtube page
+  - [ ] But I think now it's resulting in timeouts!
 - [ ] filter X should be there even when not in focus
 
 ## Playlists

@@ -84,7 +84,7 @@ export function cooldownFactor(daysSince, rating, noise = true, salt = "salt") {
   let longDelayStartDay = T * LONG_DELAY_START;
   let daysOverdue = daysSince - T;
   if (ratio < 1) {
-    const eased = Math.pow(ratio, 2);
+    const eased = Math.pow(ratio, 3);
     return -ratingScore(rating) * (1 - eased);
   } else if (daysSince < longDelayStartDay) {
     return SHORT_DELAY_LINEAR_RATE * (daysOverdue / (longDelayStartDay - T));
