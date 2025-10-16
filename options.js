@@ -1194,7 +1194,7 @@ function dbCheck() {
   dbCheck();
   DBDATA.queue = trimYoutubeFields(DBDATA.queue);
   DBDATA.playlists = trimYoutubeFields(DBDATA.playlists);
-  DBDATA.queue = addComputedFieldsVideo(DBDATA.queue);
+  DBDATA.queue = utils.addComputedFieldsVideo(DBDATA.queue);
   DBDATA.queue.sort((a, b) => b.score - a.score);
   DBDATA.playlists = utils.addComputedFieldsPL(DBDATA.playlists, DBDATA.queue);
   DBDATA.playlists.sort((a, b) => b.score - a.score);
