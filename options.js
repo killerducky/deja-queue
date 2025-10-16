@@ -676,7 +676,10 @@ async function playNextVideo(offset = 1, params = {}) {
   if (videoTimeout) clearTimeout(videoTimeout);
   videoTimeout = setTimeout(() => {
     console.log("Error:", nextVideoToPlay.id, nextVideoToPlay.title);
-    console.log("Video did NOT start playing within timeout");
+    sendMessage("broadcast", {
+      type: "error",
+      info: `timeout ${nextVideoToPlay.id} ${nextVideoToPlay.title}`,
+    });
     showToast("Video timeout");
     nextVideoToPlay.errCnt = (nextVideoToPlay.errCnt || 0) + 1;
     db.saveVideos([nextVideoToPlay]);

@@ -220,6 +220,59 @@ function plotDues(videos) {
   Plotly.newPlot("dues-chart", traces, layout);
 }
 
+function compareScoreScenarios() {
+  const ratings = [8.0, 7.5, 7.0, 6.5, 6.0, 5.5];
+  let dueFactors = [0.5, 0.75, 1, 1.1, 1.2];
+  let baseRating = 7.0;
+  let baseDaysSince = utils.rating2days(baseRating);
+  let rows = [];
+  dueFactors.forEach((dueFactor) => {
+    let baseScore = utils.scoreHelper(
+      baseDaysSince * dueFactor,
+      baseRating,
+      false
+    );
+    ratings.forEach((rating) => {
+      let score = -999;
+      let daysSince = 0;
+      while (score <= baseScore - 0.001) {
+        if (daysSince < 10) {
+          daysSince += 0.01;
+        } else {
+          daysSince += 1;
+        }
+        score = utils.scoreHelper(daysSince, rating, false);
+      }
+      let interval = utils.rating2days(rating);
+      let due = -(daysSince - utils.rating2days(rating));
+      let daysSinceNorm = daysSince / interval;
+      rows.push({
+        rating,
+        daysSince,
+        due,
+        daysSinceNorm,
+        interval,
+        score,
+      });
+    });
+  });
+  let columns = [
+    { title: "Rating", field: "rating" },
+    { title: "Int", field: "interval" },
+    { title: "Due", field: "due" },
+    { title: "N Ints", field: "daysSinceNorm" },
+    { title: "Score", field: "score" },
+  ];
+  columns.map((c) => {
+    c.formatter = (cell) => cell.getValue().toFixed(1);
+  });
+  new Tabulator(document.getElementById("score-scenarios"), {
+    data: rows,
+    layout: "fitData",
+    columns,
+  });
+}
+
 function plotCooldownFactor(videos, relative) {
   const ratings = [
     ...new Set(videos.map((v) => v.rating ?? DEFAULT_RATING)),
@@ -338,13 +391,6 @@ function addComputedFieldsVideo(video) {
       }, // Why is tabultor doing this?
       enumerable: false,
     },
-    // _track is overwritten by playlists
-    // TODO: shallow copies to handle duplicates across playlists
-    // _track: {
-    //   value: video.yt.snippet.position,
-    //   enumerable: false,
-    //   writable: true,
-    // },
   });
 }
 
@@ -352,21 +398,15 @@ function addComputedFieldsVideo(video) {
 (async () => {
   DBDATA.queue = await db.loadVideos();
   DBDATA.queue = addComputedFieldsVideo(DBDATA.queue);
-  // DBDATA.queue.forEach((v) => {
-  //   v.score = utils.scoreItem(v);
-  // });
   DBDATA.queue.sort((a, b) => b.score - a.score);
   DBDATA.playlists = await db.loadPlaylists();
-  // renderDB(DBDATA.queue);
-  // renderPlaylists();
-  // Remove errors and dups from graphs.
-  // But leave in actual Queue (with low score), so we don't e.g. add it again
   DBDATA.filtered = DBDATA.queue.filter((v) => (v.errCnt ?? 0) < 5 && !v.dup);
   plotRatings(DBDATA.filtered);
   plotScores(DBDATA.filtered);
   plotDues(DBDATA.filtered);
   plotCooldownFactor(DBDATA.filtered, false);
   plotCooldownFactor(DBDATA.filtered, true);
+  compareScoreScenarios();
   db.closeDB();
   // calcStringSimilarity(DBDATA.queue);
   // renderQueue();

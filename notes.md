@@ -50,6 +50,9 @@
 ## Misc
 
 - [x] github rename to deja-queue -- github does 403 redirect indefinitely
+- [ ] msg: {"type":"videoPlaying","duration":null,"url":"https://www.youtube.com/watch?v=t9y9TtMVJkk"}
+- [ ] msg: {"type":"videoPlaying","duration":null,"url":"https://www.youtube.com/watch?v=u9i_ZWcDHHQ&t=1s"}
+  - [ ] youtube was erroring
 
 ## Tagline ideas
 
