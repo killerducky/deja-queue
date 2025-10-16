@@ -9,6 +9,8 @@ let LONG_DELAY_TIME = 4; // every 4^N days
 let INIT_FACTOR = 30;
 let COOLDOWN_JITTER_START = 3; // Subtract N days from the interval
 let COOLDOWN_JITTER_RATE = 0.2; // Add up to X% jitter to that part of the interval
+let COOLDOWN_FLOOR = 0.2;
+let COOLDOWN_POWER_FACTOR = 5;
 let RATING_FACTOR = 1.0; // 0 = all ratings same. 1 = 10 points per rating point
 let DUP_SCORE = -8;
 let ERR_SCORE = -9;
@@ -84,8 +86,8 @@ export function cooldownFactor(daysSince, rating, noise = true, salt = "salt") {
   let longDelayStartDay = T * LONG_DELAY_START;
   let daysOverdue = daysSince - T;
   if (ratio < 1) {
-    const eased = Math.pow(ratio, 3);
-    return -ratingScore(rating) * (1 - eased);
+    const eased = Math.pow(ratio, COOLDOWN_POWER_FACTOR);
+    return -(1 - COOLDOWN_FLOOR) * ratingScore(rating) * (1 - eased);
   } else if (daysSince < longDelayStartDay) {
     return SHORT_DELAY_LINEAR_RATE * (daysOverdue / (longDelayStartDay - T));
   } else {
