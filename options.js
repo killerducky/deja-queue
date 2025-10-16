@@ -124,7 +124,7 @@ async function renderQueue() {
   let logVideoList = [];
   for (let entry of log) {
     let video = DBDATA.queue.find((v) => v.id === entry.id);
-    logVideoList.push(wrapVideo(video, { entry }));
+    logVideoList.push(utils.wrapVideo(video, { entry }));
   }
   tabulatorLog = await table2(tabulatorLog, logEl, logVideoList, "log");
 }
@@ -1002,23 +1002,6 @@ function headerMenu(event, tables) {
   renderMenu();
 }
 
-function wrapVideo(video, extras = {}) {
-  return new Proxy(
-    { ref: video, ...extras },
-    {
-      get(target, prop, receiver) {
-        if (prop in target) return Reflect.get(target, prop, receiver);
-        return target.ref[prop];
-      },
-      set(target, prop, value, receiver) {
-        if (prop in target) return Reflect.set(target, prop, value, receiver);
-        target.ref[prop] = value;
-        return true;
-      },
-    }
-  );
-}
-
 async function renderPlaylists() {
   let table2StyleColumns = getTableColumns(true);
   let columns = [
@@ -1203,7 +1186,7 @@ function addComputedFieldsPL(playlist) {
   let allChildren = [];
   for (const [idx, id] of playlist.videoIds.entries()) {
     let origVideo = DBDATA.queue.find((v) => v.id === id);
-    let video = wrapVideo(origVideo, { _track: idx, playlist });
+    let video = utils.wrapVideo(origVideo, { _track: idx, playlist });
     allChildren.push(video);
   }
   return Object.defineProperties(playlist, {
@@ -1245,6 +1228,7 @@ function addComputedFieldsPL(playlist) {
     },
   });
 }
+
 function addComputedFieldsVideo(video) {
   if (Array.isArray(video)) {
     return video.map((p) => addComputedFieldsVideo(p));

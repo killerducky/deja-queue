@@ -59,7 +59,7 @@ function applyDarkMode(layout) {
   };
 }
 
-function plotRatings(videos) {
+function plotRatings(type, videos) {
   const ratings = videos.map((v) => v.rating || DEFAULT_RATING);
 
   // Count how many videos for each rating
@@ -116,7 +116,7 @@ function plotRatings(videos) {
     ],
   };
   layout = applyDarkMode(layout);
-  Plotly.newPlot("ratings-chart", [trace], layout);
+  Plotly.newPlot(`${type}-ratings-chart`, [trace], layout);
 
   let loads = xs.map((r) => {
     const days = utils.rating2days(r);
@@ -152,10 +152,10 @@ function plotRatings(videos) {
 
   layout2 = applyDarkMode(layout2);
 
-  Plotly.newPlot("interval-chart", traces2, layout2);
+  Plotly.newPlot(`${type}-interval-chart`, traces2, layout2);
 }
 
-function plotScores(videos) {
+function plotScores(type, videos) {
   // Get unique ratings
   const ratings = [
     ...new Set(videos.map((v) => v.rating ?? DEFAULT_RATING)),
@@ -184,10 +184,10 @@ function plotScores(videos) {
     barmode: "stack",
   };
   layout = applyDarkMode(layout);
-  Plotly.newPlot("scores-chart", traces, layout);
+  Plotly.newPlot(`${type}-scores-chart`, traces, layout);
 }
 
-function plotDues(videos) {
+function plotDues(type, videos) {
   // Get unique ratings
   const ratings = [
     ...new Set(videos.map((v) => v.rating ?? DEFAULT_RATING)),
@@ -217,7 +217,7 @@ function plotDues(videos) {
     barmode: "stack",
   };
   layout = applyDarkMode(layout);
-  Plotly.newPlot("dues-chart", traces, layout);
+  Plotly.newPlot(`${type}-dues-chart`, traces, layout);
 }
 
 function interval2days(interval, T) {
@@ -239,10 +239,8 @@ function generateXs(T) {
   }
   return [...new Set(xs)].sort((a, b) => a - b);
 }
-function plotCooldownFactor(videos, relative) {
-  const ratings = [
-    ...new Set(videos.map((v) => v.rating ?? DEFAULT_RATING)),
-  ].sort((a, b) => a - b);
+function plotCooldownFactor(relative) {
+  let ratings = [8.5, 8, 7.5, 7, 6.5, 6, 5.5, 5];
 
   const traces = [];
   for (let i = ratings.length - 1; i >= 0; i--) {
@@ -324,63 +322,22 @@ function calcStringSimilarity(queue) {
   }
 }
 
-// TODO: This is copy/pasted from options.js!!
-function addComputedFieldsVideo(video) {
-  if (Array.isArray(video)) {
-    return video.map((p) => addComputedFieldsVideo(p));
-  }
-  return Object.defineProperties(video, {
-    type: { value: "video", enumerable: false, writable: true },
-    rating: { value: video.rating ?? DEFAULT_RATING, writable: true },
-    title: { value: video.title ?? video.yt.snippet.title, writable: true },
-    thumbnailUrl: {
-      value: `https://i.ytimg.com/vi/${video.id}/default.jpg`,
-      enumerable: false,
-      writable: true,
-    },
-    channelTitle: {
-      value: video.yt?.snippet?.videoOwnerChannelTitle || "—",
-      writable: true,
-      enumerable: true,
-    },
-    due: {
-      value: utils.calcDue(video),
-      writable: true,
-      enumerable: false,
-    },
-    score: {
-      value: utils.scoreItem(video),
-      writable: true,
-      enumerable: false,
-    },
-    duration: {
-      get() {
-        if (video.scrapedDuration) {
-          return video.scrapedDuration;
-        } else {
-          return utils.isoDuration2seconds(video.yt?.contentDetails?.duration);
-        }
-      },
-      set(value) {
-        video.scrapedDuration = value;
-      }, // Why is tabultor doing this?
-      enumerable: false,
-    },
-  });
-}
-
 // Initial load
 (async () => {
   DBDATA.queue = await db.loadVideos();
-  DBDATA.queue = addComputedFieldsVideo(DBDATA.queue);
+  DBDATA.queue = utils.addComputedFieldsVideo(DBDATA.queue);
   DBDATA.queue.sort((a, b) => b.score - a.score);
   DBDATA.playlists = await db.loadPlaylists();
+  DBDATA.playlists = utils.addComputedFieldsPL(DBDATA.playlists, DBDATA.queue);
   DBDATA.filtered = DBDATA.queue.filter((v) => (v.errCnt ?? 0) < 5 && !v.dup);
-  plotRatings(DBDATA.filtered);
-  plotScores(DBDATA.filtered);
-  plotDues(DBDATA.filtered);
-  plotCooldownFactor(DBDATA.filtered, false);
-  plotCooldownFactor(DBDATA.filtered, true);
+  plotRatings("videos", DBDATA.queue);
+  plotScores("videos", DBDATA.queue);
+  plotDues("videos", DBDATA.queue);
+  plotRatings("playlists", DBDATA.playlists);
+  plotScores("playlists", DBDATA.playlists);
+  plotDues("playlists", DBDATA.playlists);
+  plotCooldownFactor(false);
+  plotCooldownFactor(true);
   db.closeDB();
   // calcStringSimilarity(DBDATA.queue);
   // renderQueue();

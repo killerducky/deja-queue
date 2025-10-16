@@ -227,5 +227,122 @@ function calcDue(video) {
   let days = rating2days(video.rating ?? DEFAULT_RATING) - daysSince;
   return days;
 }
+function addComputedFieldsPL(playlist, queue) {
+  if (Array.isArray(playlist)) {
+    return playlist.map((p) => addComputedFieldsPL(p, queue));
+  }
+  let allChildren = [];
+  for (const [idx, id] of playlist.videoIds.entries()) {
+    let origVideo = queue.find((v) => v.id === id);
+    let video = wrapVideo(origVideo, { _track: idx, playlist });
+    allChildren.push(video);
+  }
+  return Object.defineProperties(playlist, {
+    _currentTrack: { value: -1, enumerable: false, writable: true },
+    _allChildren: { value: allChildren, enumerable: false, writable: true },
+    _children: {
+      get() {
+        const start = this._currentTrack == -1 ? 0 : this._currentTrack;
+        return this._allChildren.slice(start);
+      },
+      enumerable: false,
+    },
+    _track: {
+      value: playlist.videoIds.length,
+      enumerable: false,
+      writable: true,
+    },
+    type: { value: "playlist", enumerable: false, writable: true },
+    rating: { value: playlist.rating ?? DEFAULT_RATING, writable: true },
+    score: {
+      value: scoreItem(playlist),
+      writable: true,
+      enumerable: false,
+    },
+    due: {
+      value: calcDue(playlist),
+      writable: true,
+      enumerable: false,
+    },
+    duration: {
+      value: playlist.videoIds
+        .map((id) => {
+          const video = queue.find((v) => v.id === id);
+          return video?.duration || 0;
+        })
+        .reduce((sum, dur) => sum + dur, 0),
+      enumerable: false,
+      writable: true,
+    },
+  });
+}
+// TODO: This is copy/pasted from options.js!!
+function addComputedFieldsVideo(video) {
+  if (Array.isArray(video)) {
+    return video.map((p) => addComputedFieldsVideo(p));
+  }
+  return Object.defineProperties(video, {
+    type: { value: "video", enumerable: false, writable: true },
+    rating: { value: video.rating ?? DEFAULT_RATING, writable: true },
+    title: { value: video.title ?? video.yt.snippet.title, writable: true },
+    thumbnailUrl: {
+      value: `https://i.ytimg.com/vi/${video.id}/default.jpg`,
+      enumerable: false,
+      writable: true,
+    },
+    channelTitle: {
+      value: video.yt?.snippet?.videoOwnerChannelTitle || "—",
+      writable: true,
+      enumerable: true,
+    },
+    due: {
+      value: calcDue(video),
+      writable: true,
+      enumerable: false,
+    },
+    score: {
+      value: scoreItem(video),
+      writable: true,
+      enumerable: false,
+    },
+    duration: {
+      get() {
+        if (video.scrapedDuration) {
+          return video.scrapedDuration;
+        } else {
+          return isoDuration2seconds(video.yt?.contentDetails?.duration);
+        }
+      },
+      set(value) {
+        video.scrapedDuration = value;
+      }, // Why is tabultor doing this?
+      enumerable: false,
+    },
+  });
+}
 
-export { isoDuration2seconds, formatDuration, calcDue };
+function wrapVideo(video, extras = {}) {
+  return new Proxy(
+    { ref: video, ...extras },
+    {
+      get(target, prop, receiver) {
+        if (prop in target) return Reflect.get(target, prop, receiver);
+        return target.ref[prop];
+      },
+      set(target, prop, value, receiver) {
+        if (prop in target) return Reflect.set(target, prop, value, receiver);
+        target.ref[prop] = value;
+        return true;
+      },
+    }
+  );
+}
+
+export {
+  isoDuration2seconds,
+  formatDuration,
+  calcDue,
+  wrapVideo,
+  addComputedFieldsVideo,
+  addComputedFieldsPL,
+};
