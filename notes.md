@@ -12,6 +12,7 @@
 
 ## Playlists
 
+- [ ] Skip playlist does not always(?) reset the current track number
 - [ ] Make title, etc editable and searchable
 - [ ] Adding the same playlist should not overwrite fields
   - [ ] Rating(!), DateAdded

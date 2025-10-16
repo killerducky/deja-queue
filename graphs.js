@@ -59,12 +59,23 @@ function applyDarkMode(layout) {
   };
 }
 
-function plotRatings(type, videos) {
-  const ratings = videos.map((v) => v.rating || DEFAULT_RATING);
+function plotRatings(type, items) {
+  const ratings = items.map((v) => v.rating || DEFAULT_RATING);
 
   // Count how many videos for each rating
   const counts = {};
+  const durations = {};
   ratings.forEach((r) => {
+    durations[r] = items.reduce(
+      (sum, item) =>
+        sum +
+        (item.rating === r
+          ? isNaN(item.duration)
+            ? 60 * 3
+            : item.duration
+          : 0),
+      0
+    );
     r = parseFloat(r.toFixed(1)); // normalize e.g. 7 → 7.0
     counts[r] = (counts[r] || 0) + 1;
   });
@@ -78,9 +89,9 @@ function plotRatings(type, videos) {
   const ys = xs.map((r) => counts[r]);
   const ticktext = xs.map((r) => {
     const days = utils.rating2days(r);
-    const totalTime = utils.formatDuration(counts[r] * 3, false); // hack: Send minutes not seconds
-    const time = utils.formatDuration((counts[r] * 3) / days, false);
-    return `${r.toFixed(1)}<br>${totalTime}/${days}d<br>${time}`;
+    const totalTime = durations[r] / 60 / 60;
+    const time = durations[r] / 60 / 60 / days;
+    return `${r.toFixed(1)}<br>${totalTime.toFixed(1)}h/${days}d<br>${time.toFixed(1)}h`;
   });
   const colors = xs.map((r) => utils.rating2color(r));
   const trace = {
@@ -118,9 +129,10 @@ function plotRatings(type, videos) {
   layout = applyDarkMode(layout);
   Plotly.newPlot(`${type}-ratings-chart`, [trace], layout);
 
+  // --- Plot 2: stacked horizontal bar ---
   let loads = xs.map((r) => {
     const days = utils.rating2days(r);
-    const load = (counts[r] * 3) / 60 / days;
+    const load = durations[r] / 60 / 60 / days;
     return load;
   });
 
@@ -129,7 +141,6 @@ function plotRatings(type, videos) {
   const colorsRev = [...colors].reverse();
   const loadsRev = [...loads].reverse();
 
-  // --- Plot 2: stacked horizontal bar ---
   const traces2 = xsRev.map((r, i) => ({
     name: `Rating ${r.toFixed(1)}`,
     type: "bar",
