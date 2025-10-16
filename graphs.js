@@ -220,59 +220,22 @@ function plotDues(videos) {
   Plotly.newPlot("dues-chart", traces, layout);
 }
 
-function compareScoreScenarios() {
-  const ratings = [8.0, 7.5, 7.0, 6.5, 6.0, 5.5];
-  let dueFactors = [0.5, 0.75, 1, 1.1, 1.2];
-  let baseRating = 7.0;
-  let baseDaysSince = utils.rating2days(baseRating);
-  let rows = [];
-  dueFactors.forEach((dueFactor) => {
-    let baseScore = utils.scoreHelper(
-      baseDaysSince * dueFactor,
-      baseRating,
-      false
-    );
-    ratings.forEach((rating) => {
-      let score = -999;
-      let daysSince = 0;
-      while (score <= baseScore - 0.001) {
-        if (daysSince < 10) {
-          daysSince += 0.01;
-        } else {
-          daysSince += 1;
-        }
-        score = utils.scoreHelper(daysSince, rating, false);
-      }
-      let interval = utils.rating2days(rating);
-      let due = -(daysSince - utils.rating2days(rating));
-      let daysSinceNorm = daysSince / interval;
-      rows.push({
-        rating,
-        daysSince,
-        due,
-        daysSinceNorm,
-        interval,
-        score,
-      });
-    });
-  });
-  let columns = [
-    { title: "Rating", field: "rating" },
-    { title: "Int", field: "interval" },
-    { title: "Due", field: "due" },
-    { title: "N Ints", field: "daysSinceNorm" },
-    { title: "Score", field: "score" },
-  ];
-  columns.map((c) => {
-    c.formatter = (cell) => cell.getValue().toFixed(1);
-  });
-  new Tabulator(document.getElementById("score-scenarios"), {
-    data: rows,
-    layout: "fitData",
-    columns,
-  });
+function interval2days(interval, T) {
+  return (interval - 1) * T;
 }
-
+function days2interval(days, T) {
+  return days / T + 1;
+}
+function generateXs(T) {
+  let xs = [];
+  for (let x_interval = 0; x_interval < 5; x_interval += 0.01) {
+    xs.push(x_interval);
+  }
+  for (let x_days = -5; x_days < 5; x_days += 0.01) {
+    xs.push(days2interval(x_days, T));
+  }
+  return [...new Set(xs)].sort((a, b) => a - b);
+}
 function plotCooldownFactor(videos, relative) {
   const ratings = [
     ...new Set(videos.map((v) => v.rating ?? DEFAULT_RATING)),
@@ -280,29 +243,30 @@ function plotCooldownFactor(videos, relative) {
 
   const traces = [];
   for (let i = ratings.length - 1; i >= 0; i--) {
-    const rating = ratings[i];
-    const ys = [];
-    const xs = [];
-    for (let daysSince = 0; daysSince <= 365; daysSince += 0.1) {
-      // ys.push(cooldownFactor(d / utils.rating2days(r)));
-      ys.push(utils.scoreHelper(daysSince, rating, false));
-      if (relative) {
-        let x =
-          (daysSince - utils.rating2days(rating)) / utils.rating2days(rating);
-        xs.push(x);
-        if (relative && x > 5) {
-          break;
-        }
-      } else {
-        xs.push(daysSince - utils.rating2days(rating));
-      }
+    let rating = ratings[i];
+    let T = utils.rating2days(rating);
+    let ys = [];
+    let xs = generateXs(T);
+    if (relative) {
+      xs = xs.filter((interval) => interval > 0 && interval < 5);
+    } else {
+      xs = xs.filter((interval) => {
+        let days = interval2days(interval, T);
+        return days > -365 && days < 365 && interval > 0;
+      });
     }
+
+    xs.forEach((x) => {
+      let daysSince = interval2days(x, T) + T;
+      ys.push(utils.scoreHelper(daysSince, rating, false));
+    });
     traces.push({
-      x: xs,
+      x: relative ? xs : xs.map((interval) => interval2days(interval, T)),
       y: ys,
       mode: "lines",
       name: `Rating ${rating.toFixed(1)}`,
       line: { color: utils.rating2color(rating) },
+      hovertemplate: relative ? "%{x:.2f}X" : "%{x:.2f} days",
     });
   }
 
@@ -311,9 +275,11 @@ function plotCooldownFactor(videos, relative) {
     title: "Function Test Graph",
     xaxis: {
       title: { text: relative ? "intervals" : "days" },
-      range: relative ? [-1, 3] : [-5, 150],
+      range: relative ? [0, 2] : [-5, 5],
     },
-    yaxis: { title: { text: "Cooldown penalty/bonus" }, range: [50, 100] },
+    yaxis: { title: { text: "Cooldown penalty/bonus" }, range: [0, 100] },
+    hovermode: "y unified",
+    unifiedhovertemplate: "%{x:.2f}",
   };
   layout = applyDarkMode(layout);
   // Plot
@@ -406,7 +372,6 @@ function addComputedFieldsVideo(video) {
   plotDues(DBDATA.filtered);
   plotCooldownFactor(DBDATA.filtered, false);
   plotCooldownFactor(DBDATA.filtered, true);
-  compareScoreScenarios();
   db.closeDB();
   // calcStringSimilarity(DBDATA.queue);
   // renderQueue();
