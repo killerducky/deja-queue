@@ -60,16 +60,24 @@ hr {
 .left #log {
   flex: 2;
 }
-/*
 .left:hover,
 .right:hover {
   position: absolute;
-  top: 0;
   width: auto;
-  height: 100%;
   z-index: 10;
 }
+/*
+This doesn't work because it's applying filter on a different element
+.main-container > * {
+  filter: blur(0px);
+  transition: filter 0.2s ease;
+}
+.main-container:has(.left:hover) > *:not(:hover) {
+  filter: blur(4px);
+  transition: filter 0.2s ease;
+}
 */
+
 /* 
 VIP user: You can just hardcode expand width here for now.
 .left:hover,

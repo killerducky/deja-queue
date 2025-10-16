@@ -124,7 +124,7 @@ async function renderQueue() {
   let logVideoList = [];
   for (let entry of log) {
     let video = DBDATA.queue.find((v) => v.id === entry.id);
-    logVideoList.push(video);
+    logVideoList.push(wrapVideo(video, { entry }));
   }
   tabulatorLog = await table2(tabulatorLog, logEl, logVideoList, "log");
 }
@@ -360,6 +360,10 @@ function getTableColumns(tableType) {
       },
       hozAlign: "center",
     },
+    logType: {
+      title: "Type",
+      field: "entry.event",
+    },
   };
   return tableColumns;
 }
@@ -384,7 +388,7 @@ async function table2(tabulator, htmlEl, videoList, tableType) {
   let tableColumns = getTableColumns(tableType);
 
   let columns = [
-    tableColumns.dataTree,
+    tableType == "log" ? tableColumns.logType : tableColumns.dataTree,
     tableColumns.thumb,
     tableColumns.title,
     tableColumns.track,
@@ -998,9 +1002,9 @@ function headerMenu(event, tables) {
   renderMenu();
 }
 
-function wrapVideo(video, track, playlist) {
+function wrapVideo(video, extras = {}) {
   return new Proxy(
-    { ref: video, _track: track, playlist },
+    { ref: video, ...extras },
     {
       get(target, prop, receiver) {
         if (prop in target) return Reflect.get(target, prop, receiver);
@@ -1199,7 +1203,7 @@ function addComputedFieldsPL(playlist) {
   let allChildren = [];
   for (const [idx, id] of playlist.videoIds.entries()) {
     let origVideo = DBDATA.queue.find((v) => v.id === id);
-    let video = wrapVideo(origVideo, idx, playlist);
+    let video = wrapVideo(origVideo, { _track: idx, playlist });
     allChildren.push(video);
   }
   return Object.defineProperties(playlist, {
