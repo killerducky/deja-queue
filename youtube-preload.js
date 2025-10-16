@@ -18,6 +18,10 @@ ipcRenderer.on("broadcast", (event, msg) => {
   if (msg.type === "playVideo") {
     if (getVideoId(window.location.href) == msg.id) {
       video.play();
+      sendBroadcast({
+        type: "videoPlaying",
+        info: "Video already loaded",
+      });
     } else {
       window.location.href = `https://www.youtube.com/watch?v=${msg.id}`;
     }
