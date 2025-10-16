@@ -344,9 +344,9 @@ function calcStringSimilarity(queue) {
   DBDATA.playlists = await db.loadPlaylists();
   DBDATA.playlists = utils.addComputedFieldsPL(DBDATA.playlists, DBDATA.queue);
   DBDATA.filtered = DBDATA.queue.filter((v) => (v.errCnt ?? 0) < 5 && !v.dup);
-  plotRatings("videos", DBDATA.queue);
-  plotScores("videos", DBDATA.queue);
-  plotDues("videos", DBDATA.queue);
+  plotRatings("videos", DBDATA.filtered);
+  plotScores("videos", DBDATA.filtered);
+  plotDues("videos", DBDATA.filtered);
   plotRatings("playlists", DBDATA.playlists);
   plotScores("playlists", DBDATA.playlists);
   plotDues("playlists", DBDATA.playlists);
