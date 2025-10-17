@@ -46,6 +46,8 @@ queueModeEl.addEventListener("change", () => {
 function handleDivider(divEl, vert) {
   console.log(divEl.id, vert);
   let isDragging = false;
+  let lastSent = 0;
+  let THROTTLE_MS = 100;
   const container = divEl.parentElement;
 
   divEl.addEventListener("mousedown", (e) => {
@@ -64,12 +66,18 @@ function handleDivider(divEl, vert) {
     const maxSize = 1000;
     newSize = Math.min(Math.max(newSize, minSize), maxSize);
     container.style.setProperty(`--${divEl.id}-size`, `${newSize}px`);
+    const now = Date.now();
+    if (now - lastSent > THROTTLE_MS) {
+      sendMessage({ type: "divider-drag" });
+      lastSent = now;
+    }
   });
 
   window.addEventListener("mouseup", () => {
     if (isDragging) {
       isDragging = false;
       document.body.style.cursor = "default";
+      sendMessage({ type: "divider-drag" });
     }
   });
 }

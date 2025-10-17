@@ -29,6 +29,29 @@ function safeKey(label, suffix) {
   return `${label.replace(/\./g, "_")}${suffix}`;
 }
 
+function saveBounds(win) {
+  if (!win.isMaximized() && !win.isMinimized()) {
+    store.set(boundsKey, win.getBounds());
+    // console.log(JSON.stringify(win.getBounds()));
+  }
+}
+
+async function handleResize(win) {
+  saveBounds(win);
+  const target = await win.webContents.executeJavaScript(`
+      (() => {
+        const activeButton = document.querySelector(".tab-button.active");
+        const target = activeButton?.dataset.target;
+        return target;
+      })()
+      `);
+  if (target == "youtube") {
+    setYoutubeBounds(winRegister.youtubePlayer.object, winMain, "youtube-full");
+  } else {
+    setYoutubeBounds(winRegister.youtubePlayer.object, winMain, "youtube");
+  }
+}
+
 function sizeStore(win, label) {
   const minMaxKey = safeKey(label, "WindowMinMax");
   const boundsKey = safeKey(label, "WindowBounds");
@@ -47,36 +70,10 @@ function sizeStore(win, label) {
       }
     }
 
-    // Save position and size
-    const saveBounds = () => {
-      if (!win.isMaximized() && !win.isMinimized()) {
-        store.set(boundsKey, win.getBounds());
-        // console.log(JSON.stringify(win.getBounds()));
-      }
-    };
-    const handleResize = async () => {
-      saveBounds();
-      const target = await win.webContents.executeJavaScript(`
-      (() => {
-        const activeButton = document.querySelector(".tab-button.active");
-        const target = activeButton?.dataset.target;
-        return target;
-      })()
-      `);
-      if (target == "youtube") {
-        setYoutubeBounds(
-          winRegister.youtubePlayer.object,
-          winMain,
-          "youtube-full"
-        );
-      } else {
-        setYoutubeBounds(winRegister.youtubePlayer.object, winMain, "youtube");
-      }
-    };
-    win.on("resize", handleResize);
-    win.webContents.on("devtools-opened", handleResize);
-    win.webContents.on("devtools-closed", handleResize);
-    win.on("move", saveBounds);
+    win.on("resize", () => handleResize(win));
+    win.webContents.on("devtools-opened", () => handleResize(win));
+    win.webContents.on("devtools-closed", () => handleResize(win));
+    win.on("move", () => saveBounds(win));
 
     // Save window state
     win.on("maximize", () => store.set(minMaxKey, "max"));
@@ -270,7 +267,9 @@ ipcMain.on("store-set-sync", (e, key, value) => {
 });
 
 ipcMain.on("broadcast", async (event, msg) => {
-  console.log("msg:", JSON.stringify(msg));
+  if (msg.type != "divider-drag") {
+    console.log("msg:", JSON.stringify(msg));
+  }
   // console.log(JSON.stringify(event));
 
   Object.values(winRegister).forEach((win) => {
@@ -285,6 +284,8 @@ ipcMain.on("broadcast", async (event, msg) => {
     } else {
       await setYoutubeBounds(playerWindow, winMain, "youtube");
     }
+  } else if (msg.type === "divider-drag") {
+    handleResize(winRegister.main.object);
   }
 });
 
