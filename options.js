@@ -43,6 +43,41 @@ queueModeEl.addEventListener("change", () => {
   localStorage.setItem("queueMode", queueModeEl.value);
 });
 
+function handleDivider(divEl, vert) {
+  console.log(divEl.id, vert);
+  let isDragging = false;
+  const container = divEl.parentElement;
+
+  divEl.addEventListener("mousedown", (e) => {
+    isDragging = true;
+    document.body.style.cursor = vert ? "row-resize" : "col-resize";
+    e.preventDefault();
+  });
+
+  window.addEventListener("mousemove", (e) => {
+    if (!isDragging) return;
+    const rect = container.getBoundingClientRect();
+    let newSize = vert ? e.clientY - rect.top : e.clientX - rect.left;
+
+    // Limit resizing range
+    const minSize = 250;
+    const maxSize = 1000;
+    newSize = Math.min(Math.max(newSize, minSize), maxSize);
+    container.style.setProperty(`--${divEl.id}-size`, `${newSize}px`);
+  });
+
+  window.addEventListener("mouseup", () => {
+    if (isDragging) {
+      isDragging = false;
+      document.body.style.cursor = "default";
+    }
+  });
+}
+document.querySelectorAll(".my-divider").forEach((divEl) => {
+  const isVertical = divEl.classList.contains("vertical");
+  handleDivider(divEl, isVertical);
+});
+
 function addToc() {
   const toc = document.getElementById("toc");
   const headings = document.querySelectorAll("h2");
@@ -581,18 +616,18 @@ delayBtn.addEventListener("click", async (e) => {
   }
 });
 pauseBtn.addEventListener("click", async () => {
-  sendMessage("youtube-message", { type: "pauseVideo" });
+  sendMessage({ type: "pauseVideo" });
 });
 playBtn.addEventListener("click", async () => {
-  sendMessage("youtube-message", { type: "resumeVideo" });
+  sendMessage({ type: "resumeVideo" });
 });
 fastForwardBtn.addEventListener("click", async () => {
-  sendMessage("youtube-message", { type: "fastForward" });
+  sendMessage({ type: "fastForward" });
 });
 
 let videoTimeout;
 
-function sendMessage(type, msg) {
+function sendMessage(msg) {
   console.log("sendMessage: ", JSON.stringify(msg));
   window.electronAPI.sendBroadcast(msg);
 }
@@ -665,14 +700,14 @@ async function playNextVideo(offset = 1, params = {}) {
   if (params?.autoplay == 0) {
     msg.type = "cueVideo";
   }
-  sendMessage("youtube-message", msg);
+  sendMessage(msg);
   if (offset !== 0) {
     await renderQueue();
   }
   if (videoTimeout) clearTimeout(videoTimeout);
   videoTimeout = setTimeout(() => {
     console.log("Error:", nextVideoToPlay.id, nextVideoToPlay.title);
-    sendMessage("broadcast", {
+    sendMessage({
       type: "error",
       info: `timeout ${nextVideoToPlay.id} ${nextVideoToPlay.title}`,
     });
@@ -1150,7 +1185,7 @@ function handleTabs() {
       const targetId = btn.dataset.target;
       const target = document.querySelector(`#${targetId}`);
       if (target) target.classList.add("active");
-      sendMessage("broadcast", { type: "tab-button", targetId });
+      sendMessage({ type: "tab-button", targetId });
     });
   });
   const defaultTarget =
