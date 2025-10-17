@@ -14,6 +14,7 @@ let COOLDOWN_POWER_FACTOR = 5;
 let RATING_FACTOR = 1.0; // 0 = all ratings same. 1 = 10 points per rating point
 let DUP_SCORE = -8;
 let ERR_SCORE = -9;
+let DEFAULT_VID_LENGTH = 3 * 60;
 
 export function rating2color(rating) {
   const colors2 = [
@@ -272,7 +273,7 @@ function addComputedFieldsPL(playlist, queue) {
       value: playlist.videoIds
         .map((id) => {
           const video = queue.find((v) => v.id === id);
-          return video?.duration || 0;
+          return video?.duration || DEFAULT_VID_LENGTH;
         })
         .reduce((sum, dur) => sum + dur, 0),
       enumerable: false,
