@@ -432,7 +432,7 @@ async function addYoutubeInfo(video) {
   if (data.items?.length > 0) {
     data = trimYoutubeFields(data);
     video.yt = data.items[0];
-    addComputedFieldsVideo(video);
+    utils.addComputedFieldsVideo(video);
     await saveVideos([video]);
   } else {
     console.log("Error fetching yt for: ", video.id);
@@ -487,7 +487,7 @@ async function addPlaylistVideos(playlistId) {
         yt: yt,
       };
       video = trimYoutubeFields(video);
-      addComputedFieldsVideo(video);
+      utils.addComputedFieldsVideo(video);
       // Due to going backwards, we need to go backwards here too
       playlist.videoIds.unshift(video.id);
       console.log("Add videoid", video.id);

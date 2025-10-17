@@ -1,19 +1,19 @@
 ## VIP user
 
 - [ ] full screen playlist/database
-- [ ] 3rd playlist has no title, no thumb
+- [x] 3rd playlist has no title, no thumb
 - [ ] add playlist - should add to queue as PL, not individual songs
 - [ ] thumb with weird aspect ratio -- tabulator doing something?
 - [x] don't allow sort queue
 - [?] playlist mode -- do not autoqueue single songs
 - [x] click on current song thumb should not reload the youtube page
-  - [ ] But I think now it's resulting in timeouts!
+  - [x] But I think now it's resulting in timeouts!
 - [ ] filter X should be there even when not in focus
 
 ## Playlists
 
 - [ ] Skip playlist does not always(?) reset the current track number
-- [ ] Make title, etc editable and searchable
+- [ ] Make title, etc editable
 - [ ] Adding the same playlist should not overwrite fields
   - [ ] Rating(!), DateAdded
 - [ ] Deleted songs in playlist should not be added
@@ -33,7 +33,7 @@
 - [ ] shift-click to insta play
 - [ ] Pasting into Add to Queue -- popup for video/playlist
 - [ ] 404 thumbs
-  - [ ] That one playlist has a 404 thumb?
+  - [x] That one playlist has a 404 thumb?
 - [ ] trick youtube to play songs back to back
 - [ ] Adding new videos should update playlist/DB/etc
 - [ ] Q mode dropdown is rounded weirdly
