@@ -1,5 +1,6 @@
 ## VIP user
 
+- [x] (Over)Dues -- reverse x-axis so future items are to the right
 - [ ] full screen playlist/database
 - [x] 3rd playlist has no title, no thumb
 - [ ] add playlist - should add to queue as PL, not individual songs

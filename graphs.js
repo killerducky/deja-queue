@@ -208,7 +208,7 @@ function plotDues(type, videos) {
   const traces = ratings.map((r) => {
     const duesForRating = videos
       .filter((v) => (v.rating ?? DEFAULT_RATING) === r)
-      .map((v) => -v.due);
+      .map((v) => v.due);
     return {
       x: duesForRating,
       type: "histogram",
@@ -223,7 +223,7 @@ function plotDues(type, videos) {
     yaxis: { title: { text: "Count" } },
     xaxis: {
       title: { text: "(Over)Due days" },
-      range: [-100, 30],
+      range: [-30, 100],
     },
     barmode: "stack",
   };
