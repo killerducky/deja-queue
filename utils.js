@@ -257,7 +257,7 @@ function addComputedFieldsPL(playlist, queue) {
       writable: true,
     },
     type: { value: "playlist", enumerable: false, writable: true },
-    rating: { value: playlist.rating ?? DEFAULT_RATING, writable: true },
+    // rating: { value: playlist.rating ?? DEFAULT_RATING, writable: true },
     score: {
       value: scoreItem(playlist),
       writable: true,

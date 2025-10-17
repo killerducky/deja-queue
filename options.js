@@ -291,7 +291,6 @@ function getTableColumns(tableType) {
             console.log(item);
           }
           cell.getRow().reformat();
-          console.log("Saved new rating", item.rating, "for", item.id);
         }
       },
     },
@@ -852,7 +851,7 @@ dbFilterEl.addEventListener(
   }, 300) // 300ms debounce
 );
 
-function renderDB(queue) {
+async function renderDB(queue) {
   queue = queue.filter((item) => item.type != "playlist");
   let tableColumns = getTableColumns(true);
   let columns = [
@@ -1089,8 +1088,20 @@ async function renderPlaylists() {
   ];
 
   if (playlistsTabulator) {
-    playlistsTabulator.replaceData(DBDATA.playlists);
-    return;
+    const expandedIds = [];
+    playlistsTabulator.getRows().forEach((row) => {
+      if (row.getData().type == "playlist" && row.isTreeExpanded()) {
+        expandedIds.push(row.getData().id);
+      }
+    });
+    playlistsTabulator.replaceData(DBDATA.playlists).then(() => {
+      playlistsTabulator.getRows().forEach((row) => {
+        if (expandedIds.includes(row.getData().id)) {
+          row.treeExpand();
+        }
+      });
+    });
+    return playlistsTabulator;
   }
 
   playlistsTabulator = new Tabulator("#playlists-grid", {
@@ -1186,16 +1197,29 @@ function dbCheck() {
   }
 }
 
+async function rerenderAll() {
+  if (playlistsTabulator) {
+    await renderPlaylists();
+  }
+  if (tabulatorQueue) {
+    await renderQueue();
+  }
+  if (tabulatorDB) {
+    await renderDB(DBDATA.queue);
+  }
+}
+
 async function saveVideos(videos) {
   videos = Array.isArray(videos) ? videos : [videos];
   await db.saveVideos(videos);
+  await rerenderAll();
 }
 
 async function savePlaylists(playlists) {
   playlists = Array.isArray(playlists) ? playlists : [playlists];
   await db.savePlaylists(playlists);
+  await rerenderAll();
 }
-
 // Initial load
 (async () => {
   DBDATA.queue = await db.loadVideos();
@@ -1210,11 +1234,10 @@ async function savePlaylists(playlists) {
   DBDATA.playlists.sort((a, b) => b.score - a.score);
   // This is only needed if e.g. trimYoutubeFields did something.
   // addComputedFieldsPL will also update a broken thumbnailUrl
-  saveVideos(DBDATA.queue.filter((v) => v.type == "video"));
-  savePlaylists(DBDATA.playlists);
+  // saveVideos(DBDATA.queue.filter((v) => v.type == "video"));
+  // savePlaylists(DBDATA.playlists);
   const playlistCopies = DBDATA.playlists.map((item) => {
-    // shallow copy top-level + clone videoIds array
-    const copy = { ...item };
+    const copy = utils.wrapVideo(item);
     return utils.addComputedFieldsPL(copy, DBDATA.queue);
   });
   if (queueModeEl.value == "playlist") {

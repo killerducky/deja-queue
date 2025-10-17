@@ -138,7 +138,8 @@ export async function savePlaylists(playlists) {
           "DB integrity check fail. saveVideos: Error wrong type. Check dev console."
         );
       } else {
-        store.put(p);
+        const actual = p.ref ? p.ref : p;
+        store.put(actual);
       }
     });
     tx.oncomplete = () => resolve();
