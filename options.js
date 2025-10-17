@@ -153,9 +153,9 @@ function thumbnailFormatter(cell) {
 async function tabulatorCellEdited(cell) {
   const item = cell.getData();
   if (item.type == "video") {
-    await db.saveVideos(item);
+    await saveVideos(item);
   } else if (item.type == "playlist") {
-    await db.savePlaylists(item);
+    await savePlaylists(item);
   } else {
     console.log("error");
   }
@@ -283,9 +283,9 @@ function getTableColumns(tableType) {
         }
         if (origRating != item.rating) {
           if (item.type == "playlist") {
-            await db.savePlaylists([item]);
+            await savePlaylists([item]);
           } else if (item.type == "video") {
-            await db.saveVideos([item]);
+            await saveVideos([item]);
           } else {
             alert(`unknown type ${item.type}`);
             console.log(item);
@@ -434,7 +434,7 @@ async function addYoutubeInfo(video) {
     data = trimYoutubeFields(data);
     video.yt = data.items[0];
     addComputedFieldsVideo(video);
-    await db.saveVideos([video]);
+    await saveVideos([video]);
   } else {
     console.log("Error fetching yt for: ", video.id);
   }
@@ -514,7 +514,7 @@ async function addPlaylistVideos(playlistId) {
     }
   } while (nextPageToken);
 
-  await db.saveVideos(newVideos);
+  await saveVideos(newVideos);
   console.log("addPlaylistVideos: newVideos ", newVideos);
   showToast(
     `Add playlist of ${playlist.videoIds.length} videos (${newVideos.length} new)`
@@ -523,7 +523,7 @@ async function addPlaylistVideos(playlistId) {
   playlist.videoCount = playlist.videoIds.length; // This seems more accurate
   utils.addComputedFieldsPL(playlist, DBDATA.queue);
   console.log("add", playlist);
-  await db.savePlaylists(playlist);
+  await savePlaylists(playlist);
 
   await renderPlaylists();
   await renderQueue();
@@ -614,7 +614,7 @@ async function playNextVideo(offset = 1, params = {}) {
     if (params.skipWholeList || params.delayWholeList) {
       currItem.lastPlayDate = Date.now();
       currItem.delay = !!params.delayWholeList;
-      await db.savePlaylists(currItem);
+      await savePlaylists(currItem);
       // Do not increment playCnt since we are skipping/delaying the list
       //currItem.playCnt += 1;
       playNextVideo(offset + 1);
@@ -634,7 +634,7 @@ async function playNextVideo(offset = 1, params = {}) {
       // Credit playlist as played
       currItem.lastPlayDate = Date.now();
       currItem.playCnt = currItem.playCnt ?? 0 + 1;
-      await db.savePlaylists(currItem);
+      await savePlaylists(currItem);
 
       // Reset the playlist container, push to end
       let playlist = DBDATA.queue.splice(offset, 1);
@@ -680,7 +680,7 @@ async function playNextVideo(offset = 1, params = {}) {
     });
     showToast("Video timeout");
     nextVideoToPlay.errCnt = (nextVideoToPlay.errCnt || 0) + 1;
-    db.saveVideos([nextVideoToPlay]);
+    saveVideos([nextVideoToPlay]);
     logEvent(nextVideoToPlay, "error");
     playNextVideo();
   }, 20000); // 20s -- Still some problems...
@@ -718,7 +718,7 @@ async function logEvent(video, event) {
   if (video.playCnt == 1) {
     video.firstPlayDate = now;
   }
-  await db.saveVideos([video]);
+  await saveVideos([video]);
   const logEntry = {
     id: video.id,
     timestamp: now,
@@ -750,7 +750,7 @@ window.electronAPI.onBroadcast(async (msg) => {
       msg.duration
     ) {
       currVideo.scrapedDuration = msg.duration;
-      await db.saveVideos([currVideo]);
+      await saveVideos([currVideo]);
     }
   } else if (msg?.type === "videoEnded") {
     if (lastEndedVideoId === videoId) {
@@ -805,8 +805,8 @@ async function importDB(file) {
   const text = await window.electronAPI.readFile(file);
   const data = JSON.parse(text);
   await db.deleteDB();
-  await db.saveVideos(data.videos); // only replaces each id with new content
-  await db.savePlaylists(data.playlists); // only replaces each id with new content
+  await saveVideos(data.videos); // only replaces each id with new content
+  await savePlaylists(data.playlists); // only replaces each id with new content
   await db.saveLog(data.log);
   console.log("Videos imported successfully");
 }
@@ -1071,7 +1071,7 @@ async function renderPlaylists() {
                 }
                 siblingRow.delete();
               }
-              await db.savePlaylists(playlist);
+              await savePlaylists(playlist);
             }
           } else {
             if (confirm(`Remove this video from playlist? ${data.title}`)) {
@@ -1079,7 +1079,7 @@ async function renderPlaylists() {
                 (vid) => vid !== data.id
               );
               cell.getRow().delete();
-              await db.savePlaylists(playlist);
+              await savePlaylists(playlist);
             }
           }
         }
@@ -1186,6 +1186,16 @@ function dbCheck() {
   }
 }
 
+async function saveVideos(videos) {
+  videos = Array.isArray(videos) ? videos : [videos];
+  await db.saveVideos(videos);
+}
+
+async function savePlaylists(playlists) {
+  playlists = Array.isArray(playlists) ? playlists : [playlists];
+  await db.savePlaylists(playlists);
+}
+
 // Initial load
 (async () => {
   DBDATA.queue = await db.loadVideos();
@@ -1200,8 +1210,8 @@ function dbCheck() {
   DBDATA.playlists.sort((a, b) => b.score - a.score);
   // This is only needed if e.g. trimYoutubeFields did something.
   // addComputedFieldsPL will also update a broken thumbnailUrl
-  db.saveVideos(DBDATA.queue.filter((v) => v.type == "video"));
-  db.savePlaylists(DBDATA.playlists);
+  saveVideos(DBDATA.queue.filter((v) => v.type == "video"));
+  savePlaylists(DBDATA.playlists);
   const playlistCopies = DBDATA.playlists.map((item) => {
     // shallow copy top-level + clone videoIds array
     const copy = { ...item };
