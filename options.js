@@ -490,7 +490,6 @@ async function addPlaylistVideos(playlistId) {
       utils.addComputedFieldsVideo(video);
       // Due to going backwards, we need to go backwards here too
       playlist.videoIds.unshift(video.id);
-      console.log("Add videoid", video.id);
       if (DBDATA.queue.find((v) => v.id === video.id)) {
         // Exists already, just move up
         await moveVideoToFront(video.id);
@@ -522,10 +521,10 @@ async function addPlaylistVideos(playlistId) {
   playlist.videoCount = playlist.videoIds.length; // This seems more accurate
   utils.addComputedFieldsPL(playlist, DBDATA.queue);
   console.log("add", playlist);
+  DBDATA.playlists.push(playlist);
   await savePlaylists(playlist);
 
-  await renderPlaylists();
-  await renderQueue();
+  await rerenderAll();
 }
 
 async function addVideoOrPlaylist(response) {
@@ -553,7 +552,7 @@ async function addVideoOrPlaylist(response) {
     alert("Error: could not parse input");
     return;
   }
-  await renderQueue();
+  await rerenderAll();
 }
 addBtn.addEventListener("click", async () => {
   let response = getVideoIdFromInput(input.value.trim());

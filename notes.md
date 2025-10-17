@@ -35,7 +35,7 @@
 - [ ] 404 thumbs
   - [x] That one playlist has a 404 thumb?
 - [ ] trick youtube to play songs back to back
-- [ ] Adding new videos should update playlist/DB/etc
+- [x] Adding new videos should update playlist/DB/etc
 - [ ] Q mode dropdown is rounded weirdly
 - [ ] visual bar graph or star system for ratings
 - [ ] import/export db into file menu
@@ -45,9 +45,9 @@
 
 - [ ] graphs.js DRY
 - [ ] config params in .json file
-- [ ] Graph scores of several illustrative cases
+- [x] Graph scores of several illustrative cases
   - [ ] User can live adjust params?!
-- [ ] Lower impact of rating (due becomes relatively more important)
+- [x] Lower impact of rating (due becomes relatively more important)
 
 ## Misc
 
