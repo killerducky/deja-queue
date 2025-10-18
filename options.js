@@ -14,17 +14,43 @@ let NORMAL_THUMB_WIDTH = 90;
 let TITLE_WIDTH = 120;
 const DEFAULT_THUMB = "./favicon.ico";
 
-let env;
-async function loadEnv() {
-  try {
-    const data = await window.electronAPI.readFile("./.env.json");
-    env = JSON.parse(data);
-  } catch (err) {
-    console.error("Failed to load .env.json", err);
-    alert("Could not load .env.json");
+let env = {};
+async function loadEnv2() {
+  env.youtube_api_key = window.electronAPI.get("youtube_api_key");
+  if (env.youtube_api_key) {
+    return;
   }
+
+  document.addEventListener("click", async (e) => {
+    const link = e.target.closest("a.external-link");
+    if (!link) return;
+
+    e.preventDefault();
+    await window.electronAPI.openExternal(link.href);
+  });
+
+  const dialog = document.getElementById("add-api-key-dialog");
+  const form = dialog.querySelector("form");
+  const input = form.querySelector("input");
+
+  dialog.showModal();
+  // Make it harder to skip this, but not impossible?
+  let dismissable = false;
+  if (dismissable) {
+    dialog.addEventListener("click", (e) => {
+      if (e.target === dialog) {
+        dialog.close();
+      }
+    });
+  }
+  form.addEventListener("submit", async (e) => {
+    env.youtube_api_key = input.value.trim();
+    if (env.youtube_api_key) {
+      window.electronAPI.set("youtube_api_key", env.youtube_api_key);
+    }
+  });
 }
-loadEnv();
+loadEnv2();
 
 const fastForwardBtn = document.getElementById("fastForward");
 const skipBtn = document.getElementById("skip");
@@ -466,7 +492,7 @@ function formatDue(due) {
 
 async function addYoutubeInfo(video) {
   console.log("Fetching YouTube info for", video.id);
-  const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${video.id}&key=${env.API_KEY}`;
+  const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${video.id}&key=${env.youtube_api_key}`;
   const response = await fetch(url);
   let data = await response.json();
   // console.log(data);
@@ -482,7 +508,7 @@ async function addYoutubeInfo(video) {
 
 async function addPlaylistVideos(playlistId) {
   // First, fetch playlist metadata
-  let playlistUrl = `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&id=${playlistId}&key=${env.API_KEY}`;
+  let playlistUrl = `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&id=${playlistId}&key=${env.youtube_api_key}`;
   let playlistRes = await fetch(playlistUrl);
   let playlistData = await playlistRes.json();
   console.log("playlists raw:", playlistData);
@@ -513,7 +539,7 @@ async function addPlaylistVideos(playlistId) {
   do {
     let url =
       `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails` +
-      `&maxResults=50&pageToken=${nextPageToken}&playlistId=${playlistId}&key=${env.API_KEY}`;
+      `&maxResults=50&pageToken=${nextPageToken}&playlistId=${playlistId}&key=${env.youtube_api_key}`;
     let res = await fetch(url);
     let data = await res.json();
     console.log("playlistItems raw: ", data);

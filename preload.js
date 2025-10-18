@@ -1,4 +1,4 @@
-const { contextBridge, ipcRenderer } = require("electron");
+const { contextBridge, ipcRenderer, shell } = require("electron");
 
 contextBridge.exposeInMainWorld("electronAPI", {
   readFile: (filePath) => {
@@ -9,4 +9,7 @@ contextBridge.exposeInMainWorld("electronAPI", {
     ipcRenderer.on("broadcast", (event, msg) => callback(msg)),
   get: (key) => ipcRenderer.sendSync("store-get-sync", key),
   set: (key, value) => ipcRenderer.sendSync("store-set-sync", key, value),
+  openExternal: (url) => {
+    return ipcRenderer.invoke("openExternal", url);
+  },
 });

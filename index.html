@@ -71,6 +71,39 @@
     </div>
     <div id="toast-container"></div>
   </body>
+  <dialog id="add-api-key-dialog">
+    <h1>DejaQueue</h1>
+    <!-- <h2>“Your queue, reborn.”</h2> -->
+    <p>
+      DejaQueue needs a YouTube API Key to fetch information about the videos
+      and playlists you import. You should also sign into your YouTube account
+      in the embedded YouTube window (upper left).
+    </p>
+    <ol>
+      <li>
+        Go to the
+        <a
+          href="https://console.cloud.google.com/apis/credentials"
+          class="external-link"
+          >Google Cloud Console</a
+        >
+        (link opens in your browser)
+      </li>
+      <li>Click the <b>Create credentials</b> dropdown.</li>
+      <li>
+        Select <b>API key</b>, keep the default options, and click
+        <b>Create</b>
+      </li>
+      <li>Copy your new API key and paste it into the field below</li>
+    </ol>
+    <form method="dialog" id="add-api-key-form">
+      <label for="API-Key">YouTube API Key:</label>
+      <input id="API-Key" type="text" placeholder="" />
+      <menu>
+        <button value="ok" type="submit">Ok</button>
+      </menu>
+    </form>
+  </dialog>
   <dialog id="addDialog">
     <form method="dialog" id="addForm">
       <label for="videoInput">YouTube ID or URL:</label>

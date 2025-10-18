@@ -21,6 +21,22 @@ let store;
 const winRegister = {};
 let winMain = null;
 
+const args = process.argv.slice(2); // skip .exe and path
+
+let profile = "default";
+const profileIndex = args.indexOf("--profile");
+if (profileIndex !== -1 && args[profileIndex + 1]) {
+  profile = args[profileIndex + 1];
+  console.log("Using profile:", profile);
+  const userDataPath = path.join(
+    app.getPath("appData"),
+    "deja-queue/profiles",
+    profile
+  );
+  console.log(userDataPath);
+  app.setPath("userData", userDataPath);
+}
+
 app.commandLine.appendSwitch("disable-logging"); // disable general Chromium logging
 app.commandLine.appendSwitch("log-level", "3"); // 0=verbose, 3=errors only
 app.commandLine.appendSwitch("disable-features", "VizDisplayCompositor"); // optional GPU warning reduction
@@ -249,6 +265,10 @@ async function createYoutubeWindow(winParent, winInfo) {
   });
   return playerWindow;
 }
+
+ipcMain.handle("openExternal", async (event, url) => {
+  shell.openExternal(url);
+});
 
 ipcMain.handle("read-file", async (event, filePath) => {
   try {
@@ -481,6 +501,7 @@ app.whenReady().then(async () => {
       createAllWindows();
     }
   });
+  console.log("User Data Path:", app.getPath("userData"));
 });
 
 app.on("window-all-closed", () => {

@@ -13,6 +13,7 @@ main {
 } */
 body,
 .tabulator-popup-container,
+#tab-menu,
 dialog {
   background-color: #fff;
   color: #000;
@@ -174,7 +175,10 @@ This doesn't work because it's applying filter on a different element
   flex: 0 0 800px;
   width: 800px;
 }
-h2,
+h1,
+h2 {
+  text-align: center;
+}
 h3 {
   margin: 4px;
 }
@@ -274,7 +278,7 @@ dialog {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
 }
 dialog::backdrop {
-  background: rgba(0, 0, 0, 0.4); /* semi-transparent overlay */
+  background: rgba(0, 0, 0, 0.4);
 }
 dialog form {
   display: flex;
@@ -380,6 +384,12 @@ dialog menu button[value="ok"] {
   #tab-menu {
     background-color: #121212 !important;
     color: #eee;
+  }
+  body b,
+  .tabulator-popup-container b,
+  dialog b,
+  #tab-menu b {
+    color: #8ab4f8;
   }
   #tab-menu {
     z-index: 100;
