@@ -26,8 +26,6 @@ async function loadEnv() {
 }
 loadEnv();
 
-const input = document.getElementById("videoId");
-const addBtn = document.getElementById("add");
 const fastForwardBtn = document.getElementById("fastForward");
 const skipBtn = document.getElementById("skip");
 const delayBtn = document.getElementById("delay");
@@ -583,7 +581,7 @@ async function addVideoOrPlaylist(response) {
       };
       await addYoutubeInfo(video);
       if (!video.yt) {
-        alert("Failed to fetch video info, please check the ID");
+        showToast("Failed to fetch video info, please check the ID");
         return;
       }
       showToast("Video added");
@@ -592,19 +590,32 @@ async function addVideoOrPlaylist(response) {
   } else if (response.type == "playlist") {
     await addPlaylistVideos(response.id);
   } else {
-    alert("Error: could not parse input");
+    showToast("Error: could not parse input");
     return;
   }
   await rerenderAll();
 }
-addBtn.addEventListener("click", async () => {
-  let response = getVideoIdFromInput(input.value.trim());
-  if (!response.id) {
-    alert(`Could not parse URL`);
-    return;
+
+const addDialog = document.getElementById("addDialog");
+const addForm = document.getElementById("addForm");
+const addInput = document.getElementById("videoInput");
+const addBtn = document.getElementById("add");
+
+addBtn.addEventListener("click", () => {
+  addInput.value = "";
+  addDialog.showModal();
+});
+addDialog.addEventListener("click", (e) => {
+  if (e.target === addDialog) {
+    addDialog.close();
   }
-  addVideoOrPlaylist(response);
-  input.value = "";
+});
+addForm.addEventListener("submit", async (e) => {
+  const url = addInput.value.trim();
+  const response = getVideoIdFromInput(url);
+  if (response.id) {
+    addVideoOrPlaylist(response);
+  }
 });
 
 skipBtn.addEventListener("click", async (e) => {

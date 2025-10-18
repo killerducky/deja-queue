@@ -30,8 +30,7 @@
           <div class="spacer"></div>
           <button id="skip">Skip</button>
           <div class="spacer"></div>
-          <input id="videoId" type="text" placeholder="YT ID/URL" />
-          <button id="add">Add to Queue</button>
+          <button id="add">Add URL</button>
           <div class="spacer"></div>
           <label for="queueMode">Q mode</label>
           <select id="queueMode">
@@ -68,12 +67,19 @@
           <div id="database-grid"></div>
         </div>
       </div>
-      <!-- <div id="youtube" class="mid tab-content database-container active"></div> -->
-      <!-- <div class="mid"></div> -->
       <div id="youtube-full"></div>
     </div>
     <div id="toast-container"></div>
   </body>
+  <dialog id="addDialog">
+    <form method="dialog" id="addForm">
+      <label for="videoInput">YouTube ID or URL:</label>
+      <input id="videoInput" type="text" placeholder="" />
+      <menu>
+        <button id="confirmAdd" value="ok" type="submit">Ok</button>
+      </menu>
+    </form>
+  </dialog>
   <link
     id="tabulator-theme"
     rel="stylesheet"

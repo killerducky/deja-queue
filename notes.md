@@ -5,6 +5,11 @@
 - [ ] thumb with weird aspect ratio -- tabulator doing something?
 - [ ] filter X should be there even when not in focus
 
+## Onboarding
+
+- [ ] Walk user through API key, dialog, store local.
+- [ ] Better release process
+
 ## Playlists
 
 - [ ] Skip playlist does not always(?) reset the current track number
