@@ -29,15 +29,18 @@ function safeKey(label, suffix) {
   return `${label.replace(/\./g, "_")}${suffix}`;
 }
 
-function saveBounds(win) {
+function saveBounds(win, label) {
+  const minMaxKey = safeKey(label, "WindowMinMax");
+  const boundsKey = safeKey(label, "WindowBounds");
+
   if (!win.isMaximized() && !win.isMinimized()) {
     store.set(boundsKey, win.getBounds());
     // console.log(JSON.stringify(win.getBounds()));
   }
 }
 
-async function handleResize(win) {
-  saveBounds(win);
+async function handleResize(win, label) {
+  saveBounds(win, label);
   const target = await win.webContents.executeJavaScript(`
       (() => {
         const activeButton = document.querySelector(".tab-button.active");
@@ -70,10 +73,10 @@ function sizeStore(win, label) {
       }
     }
 
-    win.on("resize", () => handleResize(win));
-    win.webContents.on("devtools-opened", () => handleResize(win));
-    win.webContents.on("devtools-closed", () => handleResize(win));
-    win.on("move", () => saveBounds(win));
+    win.on("resize", () => handleResize(win, label));
+    win.webContents.on("devtools-opened", () => handleResize(win, label));
+    win.webContents.on("devtools-closed", () => handleResize(win, label));
+    win.on("move", () => saveBounds(win, label));
 
     // Save window state
     win.on("maximize", () => store.set(minMaxKey, "max"));
@@ -285,7 +288,7 @@ ipcMain.on("broadcast", async (event, msg) => {
       await setYoutubeBounds(playerWindow, winMain, "youtube");
     }
   } else if (msg.type === "divider-drag") {
-    handleResize(winRegister.main.object);
+    handleResize(winRegister.main.object, winRegister.main.metadata.name);
   }
 });
 

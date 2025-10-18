@@ -13,7 +13,7 @@
   - [ ] Rating(!), DateAdded
 - [ ] Deleted songs in playlist should not be added
 - [ ] Remove videoCnt field, replace with computed field
-- [ ] refresh should not change current playing song
+- [ ] refresh should not change current playing song / playlist
 - [ ] Playlist should not pop single songs out into the queue
 - [ ] Go backwards in playlist / reset playlist
 - [ ] log doesn't show track number
@@ -22,7 +22,7 @@
 ## UI
 
 - [ ] restore window size bug
-- [ ] config if sidebar expands on hover or not
+- [x] drag divider for sidebar/youtube
 - [ ] shift-click to insta play
 - [ ] Pasting into Add to Queue -- popup for video/playlist
 - [ ] 404 thumbs
@@ -31,6 +31,8 @@
 - [ ] visual bar graph or star system for ratings
 - [ ] import/export db into file menu
 - [ ] delay/skip song buttons in the queue?
+- [ ] When last played changes (and maybe other things?), recalculate score
+  - [ ] Score is supposed to be semi-stable so don't just always recalculate
 
 ## Stats/Algorithm
 
