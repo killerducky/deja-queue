@@ -7,7 +7,7 @@
 
 ## Onboarding
 
-- [ ] Walk user through API key, dialog, store local.
+- [x] Walk user through API key, dialog, store local.
 - [ ] Better release process
 
 ## Playlists

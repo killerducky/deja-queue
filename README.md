@@ -16,12 +16,11 @@ Features:
 
 ## Create a Google API key
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
-2. Create an API key.
-3. Copy the example environment file:
-   `cp .env-example.json .env.json`
-4. Paste your API key into .env.json
-   - ⚠️ do not check this file into git
+- When you first launch, a dialog will give instructions on how to get a Google API key.
+  - Go to the [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
+  - Click the **Create credentials** dropdown.
+  - Select **API key**, keep the default options, and click **Create**.
+  - You'll need to provide this key when you first run DejaQueue
 
 ## Install and run
 
@@ -32,5 +31,5 @@ Features:
 ## Usage
 
 - Right click on videos in the youtube player to **Add to Queue**
-- Or paste a video/playlist link from external youtube and **Add to Queue**
+- Click **Add URL** button and paste a video/playlist link
 - The app will automatically select and play the next video based on your ratings and play history.
