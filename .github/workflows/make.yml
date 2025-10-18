@@ -33,7 +33,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: DejaQueue-windows # win/mac/ubuntu? -latest?
-          path: out/make/**/*.zip
+          path: out/make/zip/win32/x64/*.zip
 
   release:
     needs: build
