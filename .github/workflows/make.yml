@@ -3,8 +3,8 @@ name: Build DejaQueue
 on:
   workflow_dispatch: # manual trigger
   push:
-  tags:
-    - "v*" # run when you push a version tag like v1.0.0
+    tags:
+      - "v*" # run when you push a version tag like v1.0.0
 
 jobs:
   build:
