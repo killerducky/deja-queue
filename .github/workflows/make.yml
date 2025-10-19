@@ -43,6 +43,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: DejaQueue-windows
+          # Copy all build artifacts (e.g. from out/make/zip/win32/x64) to dist
           path: dist
 
       - name: Create GitHub Release
@@ -50,6 +51,7 @@ jobs:
         with:
           tag_name: ${{ github.ref_name }}
           name: DejaQueue ${{ github.ref_name }}
+          # Recursively find all zip files and make available on release page
           files: dist/**/*.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

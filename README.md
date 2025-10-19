@@ -1,35 +1,37 @@
 # DejaQueue
 
-Build and manage a **video queue** for YouTube.  
-Paste individual video or playlist links, add them to your queue, and the app will automatically start playback.
+Your YouTube queue, reimagined.
 
-Features:
+DejaQueue makes it easy to manage videos and playlists, automatically picking what to play next so you can focus on watching—not searching.
 
-- Automatically selects videos to play based on:
-  - Rating
-  - How recently each video was last played
-- Playback control directly within the app
+## Why use DejaQueue?
 
----
+- Automatically plays the next video based on your ratings and play history
+- Build and manage queues from videos or entire playlists
+- Quick search, tagging, and playback controls—all in one app
 
-# Setup
+## Quick Start (Windows)
 
-## Create a Google API key
+1. Download the latest [release](https://github.com/killerducky/deja-queue/releases)
+1. Unzip and run deja-queue.exe.
+1. Enter a YouTube API Key (see below).
 
-- When you first launch, a dialog will give instructions on how to get a Google API key.
-  - Go to the [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
-  - Click the **Create credentials** dropdown.
-  - Select **API key**, keep the default options, and click **Create**.
-  - You'll need to provide this key when you first run DejaQueue
+## Getting a Google API Key
 
-## Install and run
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
+1. Click Create credentials → API key.
+1. Keep defaults, click Create, and copy your key.
 
-`npm install`
+## Using DejaQueue
 
-`npm start`
+- Right-click videos in the YouTube player → Add to Queue
+- Or click Add URL and paste a video/playlist link
+- Playback automatically picks the next video based on your ratings & history
 
-## Usage
+## Build from Source
 
-- Right click on videos in the youtube player to **Add to Queue**
-- Click **Add URL** button and paste a video/playlist link
-- The app will automatically select and play the next video based on your ratings and play history.
+```
+git clone https://github.com/killerducky/deja-queue
+npm install
+npm start
+```
