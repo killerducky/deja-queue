@@ -20,6 +20,7 @@ let store;
 // graphs: BrowserWindow
 const winRegister = {};
 let winMain = null;
+let winYoutubeProxy = null;
 
 const args = process.argv.slice(2); // skip .exe and path
 
@@ -45,6 +46,7 @@ class YoutubePlayerProxy {
   constructor(winParent, winInfo) {
     this.views = [];
     this.active = 0;
+    this.winInfo = winInfo;
     let webPreferences = {};
     if (winInfo.preload) {
       webPreferences.preload = path.join(__dirname, winInfo.preload);
@@ -62,11 +64,35 @@ class YoutubePlayerProxy {
       playerWindow.webContents.loadURL("https://www.youtube.com/");
       this.views[i] = playerWindow;
     }
-    winRegister[winInfo.name] = {
+    winRegister[this.winInfo.name] = {
       type: "WebContentsView",
       object: this.views[this.active],
-      metadata: { ...winInfo },
+      metadata: { ...this.winInfo },
     };
+  }
+  backgroundCueNext(msg) {
+    // Change to cueVideo. We know the id by now
+    msg.type = "cueVideo";
+    this.views[(this.active + 1) % 2].webContents.send("broadcast", msg);
+  }
+  playVideo(msg) {
+    console.log(this.views[0].webContents.getURL());
+    console.log(this.views[1].webContents.getURL());
+    let ids = this.views.map((view) => {
+      let url = view.webContents.getURL();
+      let id = new URL(url).searchParams.get("v");
+      return id;
+    });
+    if (ids[(this.active + 1) % 2] == msg.id && ids[this.active] != msg.id) {
+      // If the non-active view has it loaded, and the current doesn't, switch
+      this.active = (this.active + 1) % 2;
+      winRegister[this.winInfo.name] = {
+        type: "WebContentsView",
+        object: this.views[this.active],
+        metadata: { ...this.winInfo },
+      };
+    }
+    this.views[this.active].webContents.send("broadcast", msg);
   }
 }
 
@@ -260,6 +286,17 @@ ipcMain.on("broadcast", async (event, msg) => {
   if (msg.type != "div-resize") {
     console.log("msg:", JSON.stringify(msg));
   }
+  if (msg.type === "div-resize") {
+    winRegister.youtubePlayer.object.setBounds(msg.bounds);
+    return;
+  }
+  if (msg.type === "backgroundCueVideo") {
+    winYoutubeProxy.backgroundCueNext(msg);
+    return;
+  }
+  if (msg.type === "playVideo") {
+    winYoutubeProxy.playVideo(msg);
+  }
   // console.log(JSON.stringify(event));
 
   Object.values(winRegister).forEach((win) => {
@@ -267,9 +304,6 @@ ipcMain.on("broadcast", async (event, msg) => {
       win.object.webContents.send("broadcast", msg);
     }
   });
-  if (msg.type === "div-resize") {
-    winRegister.youtubePlayer.object.setBounds(msg.bounds);
-  }
 });
 
 function createAllWindows() {
@@ -278,7 +312,7 @@ function createAllWindows() {
     target: "index.html",
     preload: "preload.js",
   });
-  new YoutubePlayerProxy(winMain, {
+  winYoutubeProxy = new YoutubePlayerProxy(winMain, {
     name: "youtubePlayer",
     preload: "youtube-preload.js",
   });

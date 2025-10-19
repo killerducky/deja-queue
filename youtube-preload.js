@@ -43,6 +43,8 @@ function sendBroadcast(msg) {
 
 let lastVideo = null;
 let video = null;
+const CUE_THRESHOLD = 10; // seconds remaining before end
+let hasCuedNext = false;
 function attachListener() {
   video = document.querySelector("video");
   if (!video) return;
@@ -92,6 +94,18 @@ function attachListener() {
       sendBroadcast({ type: "videoEnded", info: "pause at end" });
     }
   };
+  video.addEventListener("timeupdate", () => {
+    if (!video.duration || hasCuedNext) return;
+
+    const remaining = video.duration - video.currentTime;
+    if (remaining <= CUE_THRESHOLD) {
+      hasCuedNext = true; // ensure it only triggers once
+      sendBroadcast({
+        type: "videoCueNext",
+        remaining: Math.round(remaining), // Just because I don't want to see "9.900979999999976"
+      });
+    }
+  });
 }
 
 window.addEventListener("DOMContentLoaded", () => {

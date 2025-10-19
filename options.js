@@ -727,6 +727,12 @@ function sendMessage(msg) {
   window.electronAPI.sendBroadcast(msg);
 }
 
+function cueNextVideo(offset = 1) {
+  let nextVideoToPlay = pickNextVideoToPlay(offset);
+  let msg = { type: "backgroundCueVideo", id: nextVideoToPlay.id };
+  sendMessage(msg);
+}
+
 function pickNextVideoToPlay(offset) {
   let currItem = DBDATA.queue[offset];
   if (currItem.type == "playlist") {
@@ -808,10 +814,10 @@ async function playNextVideo(offset = 1, params = {}) {
   // console.log("after 0", DBDATA.queue[0]);
   // console.log("after 1", DBDATA.queue[1]);
 
-  let msg = { type: "playVideo", id: nextVideoToPlay.id };
-  if (params?.autoplay == 0) {
-    msg.type = "cueVideo";
-  }
+  let msg = {
+    type: params?.cueVideo ? "cueVideo" : "playVideo",
+    id: nextVideoToPlay.id,
+  };
   sendMessage(msg);
   if (offset !== 0) {
     await renderQueue();
@@ -916,6 +922,8 @@ window.electronAPI.onBroadcast(async (msg) => {
     importDB(msg.filePath);
   } else if (msg.type === "exportDatabase") {
     await exportDB();
+  } else if (msg.type === "videoCueNext") {
+    cueNextVideo();
   }
 });
 
@@ -1407,6 +1415,6 @@ async function savePlaylists(playlists) {
   renderQueue();
   const navType = performance.getEntriesByType("navigation")[0]?.type;
   if (navType !== "reload") {
-    playNextVideo(0, { autoplay: 0 });
+    playNextVideo(0, { cueVideo: true });
   }
 })();
