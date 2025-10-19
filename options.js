@@ -727,13 +727,13 @@ function sendMessage(msg) {
   window.electronAPI.sendBroadcast(msg);
 }
 
-function cueNextVideo(offset = 1) {
-  let nextVideoToPlay = pickNextVideoToPlay(offset);
+function cueNextVideo(offset = 1, params = {}) {
+  let nextVideoToPlay = pickNextVideoToPlay(offset, params);
   let msg = { type: "backgroundCueVideo", id: nextVideoToPlay.id };
   sendMessage(msg);
 }
 
-function pickNextVideoToPlay(offset) {
+function pickNextVideoToPlay(offset = 1, params = {}) {
   let currItem = DBDATA.queue[offset];
   if (currItem.type == "playlist") {
     if (params.skipWholeList || params.delayWholeList) {
@@ -750,7 +750,7 @@ async function playNextVideo(offset = 1, params = {}) {
     return;
   }
   offset = offset % DBDATA.queue.length; // deal with very small queues
-  let nextVideoToPlay = pickNextVideoToPlay(offset);
+  let nextVideoToPlay = pickNextVideoToPlay(offset, params);
   let currItem = DBDATA.queue[offset];
   // console.log(offset);
   // console.log("before 0", DBDATA.queue[0]);
