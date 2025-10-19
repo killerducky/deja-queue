@@ -52,6 +52,7 @@ function attachListener() {
   if (!video.paused && !video.ended && video.readyState > 2) {
     if (cueVideo) {
       video.pause();
+      video.currentTime = 0;
       cueVideo = false;
     }
     sendBroadcast({
@@ -63,6 +64,7 @@ function attachListener() {
   video.onplay = () => {
     if (cueVideo) {
       video.pause();
+      video.currentTime = 0;
       cueVideo = false;
     }
     sendBroadcast({
@@ -73,6 +75,7 @@ function attachListener() {
   video.onplaying = () => {
     if (cueVideo) {
       video.pause();
+      video.currentTime = 0;
       cueVideo = false;
     }
     sendBroadcast({

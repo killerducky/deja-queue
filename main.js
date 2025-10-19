@@ -39,7 +39,36 @@ if (profileIndex !== -1 && args[profileIndex + 1]) {
 
 app.commandLine.appendSwitch("disable-logging"); // disable general Chromium logging
 app.commandLine.appendSwitch("log-level", "3"); // 0=verbose, 3=errors only
-app.commandLine.appendSwitch("disable-features", "VizDisplayCompositor"); // optional GPU warning reduction
+// app.commandLine.appendSwitch("disable-features", "VizDisplayCompositor"); // optional GPU warning reduction
+
+class YoutubePlayerProxy {
+  constructor(winParent, winInfo) {
+    this.views = [];
+    this.active = 0;
+    let webPreferences = {};
+    if (winInfo.preload) {
+      webPreferences.preload = path.join(__dirname, winInfo.preload);
+    }
+    for (let i = 0; i < 2; i += 1) {
+      const playerWindow = new WebContentsView({ webPreferences });
+      winParent.contentView.addChildView(playerWindow);
+
+      addContextMenu(playerWindow);
+      playerWindow.webContents.setWindowOpenHandler((details) => {
+        return youtubeExplorerOpenHandler(details);
+      });
+
+      playerWindow.setBounds({ x: 700, y: 200, width: 700, height: 500 });
+      playerWindow.webContents.loadURL("https://www.youtube.com/");
+      this.views[i] = playerWindow;
+    }
+    winRegister[winInfo.name] = {
+      type: "WebContentsView",
+      object: this.views[this.active],
+      metadata: { ...winInfo },
+    };
+  }
+}
 
 function safeKey(label, suffix) {
   return `${label.replace(/\./g, "_")}${suffix}`;
@@ -79,7 +108,7 @@ function sizeStore(win, label) {
     win.on("restore", () => store.set(minMaxKey, ""));
   });
 }
-function youtubeWindowOpenHandler(details) {
+function youtubeExplorerOpenHandler(details) {
   const { url } = details;
   const childWin = new BrowserWindow({
     width: 1000,
@@ -89,7 +118,7 @@ function youtubeWindowOpenHandler(details) {
   childWin.webContents.loadURL(url);
   addContextMenu(childWin);
   childWin.webContents.setWindowOpenHandler((details) => {
-    return youtubeWindowOpenHandler(details);
+    return youtubeExplorerOpenHandler(details);
   });
 
   return { action: "deny" };
@@ -116,7 +145,7 @@ function createWindow(winInfo) {
     addContextMenu(win);
   }
   win.webContents.setWindowOpenHandler((details) => {
-    return youtubeWindowOpenHandler(details);
+    return youtubeExplorerOpenHandler(details);
   });
   winRegister[winInfo.name] = {
     type: "BrowserWindow",
@@ -203,32 +232,6 @@ async function addContextMenu(playerWindow) {
     menu.popup({ window: playerWindow });
   });
 }
-async function createYoutubeWindow(winParent, winInfo) {
-  let webPreferences = {};
-  if (winInfo.preload) {
-    webPreferences.preload = path.join(__dirname, winInfo.preload);
-  }
-  const playerWindow = new WebContentsView({
-    webPreferences,
-  });
-  winParent.contentView.addChildView(playerWindow);
-
-  addContextMenu(playerWindow);
-  playerWindow.webContents.setWindowOpenHandler((details) => {
-    return youtubeWindowOpenHandler(details);
-  });
-
-  playerWindow.webContents.loadURL("https://www.youtube.com/");
-  winRegister[winInfo.name] = {
-    type: "WebContentsView",
-    object: playerWindow,
-    metadata: { ...winInfo },
-  };
-  // winParent.once("ready-to-show", () => {
-  //   setYoutubeBounds(playerWindow, winParent, "youtube");
-  // });
-  return playerWindow;
-}
 
 ipcMain.handle("openExternal", async (event, url) => {
   shell.openExternal(url);
@@ -275,7 +278,7 @@ function createAllWindows() {
     target: "index.html",
     preload: "preload.js",
   });
-  createYoutubeWindow(winMain, {
+  new YoutubePlayerProxy(winMain, {
     name: "youtubePlayer",
     preload: "youtube-preload.js",
   });

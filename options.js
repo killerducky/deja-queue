@@ -727,13 +727,24 @@ function sendMessage(msg) {
   window.electronAPI.sendBroadcast(msg);
 }
 
+function pickNextVideoToPlay(offset) {
+  let currItem = DBDATA.queue[offset];
+  if (currItem.type == "playlist") {
+    if (params.skipWholeList || params.delayWholeList) {
+      return pickNextVideoToPlay(offset + 1);
+    }
+    return currItem._children[0];
+  } else {
+    return DBDATA.queue[offset];
+  }
+}
 async function playNextVideo(offset = 1, params = {}) {
   if (DBDATA.queue.length == 0) {
     console.log("Queue empty", offset);
     return;
   }
   offset = offset % DBDATA.queue.length; // deal with very small queues
-  let nextVideoToPlay;
+  let nextVideoToPlay = pickNextVideoToPlay(offset);
   let currItem = DBDATA.queue[offset];
   // console.log(offset);
   // console.log("before 0", DBDATA.queue[0]);
@@ -750,7 +761,10 @@ async function playNextVideo(offset = 1, params = {}) {
     }
     // console.log("pnv playlist");
     // take the next video from top of _children array
-    nextVideoToPlay = currItem._children[0];
+    if (nextVideoToPlay != currItem._children[0]) {
+      alert("error");
+      console.log(nextVideoToPlay, currItem._children[0]);
+    }
     if (currItem._currentTrack == -1) {
       // Track *zero* is going to play, so the Queue will point to track *one*
       currItem._currentTrack = 1;
@@ -784,7 +798,10 @@ async function playNextVideo(offset = 1, params = {}) {
       console.log(DBDATA.queue[0]);
       console.log(currItem);
     }
-    nextVideoToPlay = DBDATA.queue[0];
+    if (nextVideoToPlay != DBDATA.queue[0]) {
+      alert("error");
+      console.log(nextVideoToPlay, DBDATA.queue[0]);
+    }
   }
   // console.log("pnv", video);
   // // console.log("pnv", DBDATA.queue[offset]);
