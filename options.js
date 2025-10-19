@@ -68,10 +68,7 @@ queueModeEl.addEventListener("change", () => {
 });
 
 function handleDivider(divEl, vert) {
-  console.log(divEl.id, vert);
   let isDragging = false;
-  let lastSent = 0;
-  let THROTTLE_MS = 100;
   const container = divEl.parentElement;
 
   divEl.addEventListener("mousedown", (e) => {
@@ -90,24 +87,77 @@ function handleDivider(divEl, vert) {
     const maxSize = 1000;
     newSize = Math.min(Math.max(newSize, minSize), maxSize);
     container.style.setProperty(`--${divEl.id}-size`, `${newSize}px`);
-    const now = Date.now();
-    if (now - lastSent > THROTTLE_MS) {
-      sendMessage({ type: "divider-drag" });
-      lastSent = now;
-    }
   });
 
   window.addEventListener("mouseup", () => {
     if (isDragging) {
       isDragging = false;
       document.body.style.cursor = "default";
-      sendMessage({ type: "divider-drag" });
     }
   });
 }
 document.querySelectorAll(".my-divider").forEach((divEl) => {
   const isVertical = divEl.classList.contains("vertical");
   handleDivider(divEl, isVertical);
+});
+
+function youtubeDiv() {
+  return (
+    document.querySelector(".active#youtube-full") ||
+    document.getElementById("youtube")
+  );
+}
+
+// Track the currently active div
+let activeYoutubeDiv = youtubeDiv();
+
+// Observe changes in class attributes
+const observer = new MutationObserver((mutationsList) => {
+  for (const mutation of mutationsList) {
+    if (mutation.type !== "attributes" || mutation.attributeName !== "class") {
+      continue;
+    }
+    const target = mutation.target;
+    if (target.classList.contains("active") && target !== activeYoutubeDiv) {
+      activeYoutubeDiv = youtubeDiv();
+      // Start observing the new active div
+      startResizeObserver(activeYoutubeDiv);
+    }
+  }
+});
+
+let resizeObserver = null;
+
+function startResizeObserver(div) {
+  // Disconnect previous observer
+  if (resizeObserver) resizeObserver.disconnect();
+
+  // Create a new ResizeObserver
+  resizeObserver = new ResizeObserver((entries) => {
+    for (let entry of entries) {
+      const rect = entry.target.getBoundingClientRect();
+      const bounds = {
+        x: rect.left,
+        y: rect.top,
+        width: rect.width,
+        height: rect.height,
+      };
+
+      // Send new size to main process
+      electronAPI.sendBroadcast({
+        type: "div-resize",
+        bounds,
+      });
+    }
+  });
+
+  resizeObserver.observe(div);
+}
+
+// Observe all tab-content divs
+// TODO: Should really be the youtube divs only
+document.querySelectorAll(".tab-content").forEach((div) => {
+  observer.observe(div, { attributes: true });
 });
 
 function addToc() {

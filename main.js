@@ -45,42 +45,23 @@ function safeKey(label, suffix) {
   return `${label.replace(/\./g, "_")}${suffix}`;
 }
 
-function saveBounds(win, label) {
-  const minMaxKey = safeKey(label, "WindowMinMax");
-  const boundsKey = safeKey(label, "WindowBounds");
-
-  if (!win.isMaximized() && !win.isMinimized()) {
-    store.set(boundsKey, win.getBounds());
-    // console.log(JSON.stringify(win.getBounds()));
-  }
-}
-
-async function handleResize(win, label) {
-  saveBounds(win, label);
-  const target = await win.webContents.executeJavaScript(`
-      (() => {
-        const activeButton = document.querySelector(".tab-button.active");
-        const target = activeButton?.dataset.target;
-        return target;
-      })()
-      `);
-  if (target == "youtube") {
-    setYoutubeBounds(winRegister.youtubePlayer.object, winMain, "youtube-full");
-  } else {
-    setYoutubeBounds(winRegister.youtubePlayer.object, winMain, "youtube");
-  }
-}
-
 function sizeStore(win, label) {
+  function saveBounds(win, boundsKey) {
+    if (!win.isMaximized() && !win.isMinimized()) {
+      store.set(boundsKey, win.getBounds());
+      // console.log(JSON.stringify(win.getBounds()));
+    }
+  }
+
   const minMaxKey = safeKey(label, "WindowMinMax");
   const boundsKey = safeKey(label, "WindowBounds");
 
   // Restore state
   const bounds = store.get(boundsKey);
-  console.log("bounds:", bounds, store.get(minMaxKey));
+  console.log("bounds:", boundsKey, bounds, store.get(minMaxKey));
   win.once("ready-to-show", () => {
     if (bounds) {
-      console.log("set bounds:", bounds, store.get(minMaxKey));
+      console.log("set bounds:", boundsKey, bounds, store.get(minMaxKey));
       win.setBounds(bounds);
       if (store.get(minMaxKey) == "max") {
         win.maximize();
@@ -89,21 +70,17 @@ function sizeStore(win, label) {
       }
     }
 
-    win.on("resize", () => handleResize(win, label));
-    win.webContents.on("devtools-opened", () => handleResize(win, label));
-    win.webContents.on("devtools-closed", () => handleResize(win, label));
-    win.on("move", () => saveBounds(win, label));
-
     // Save window state
+    win.on("resize", () => saveBounds(win, boundsKey));
+    win.on("move", () => saveBounds(win, boundsKey));
     win.on("maximize", () => store.set(minMaxKey, "max"));
     win.on("unmaximize", () => store.set(minMaxKey, ""));
     win.on("minimize", () => store.set(minMaxKey, "min"));
     win.on("restore", () => store.set(minMaxKey, ""));
   });
 }
-function youtubeWindowOpenHandler(details, parentWin) {
+function youtubeWindowOpenHandler(details) {
   const { url } = details;
-  console.log("Intercepted window open:", url);
   const childWin = new BrowserWindow({
     width: 1000,
     height: 700,
@@ -112,7 +89,7 @@ function youtubeWindowOpenHandler(details, parentWin) {
   childWin.webContents.loadURL(url);
   addContextMenu(childWin);
   childWin.webContents.setWindowOpenHandler((details) => {
-    return youtubeWindowOpenHandler(details, childWin);
+    return youtubeWindowOpenHandler(details);
   });
 
   return { action: "deny" };
@@ -139,7 +116,7 @@ function createWindow(winInfo) {
     addContextMenu(win);
   }
   win.webContents.setWindowOpenHandler((details) => {
-    return youtubeWindowOpenHandler(details, win);
+    return youtubeWindowOpenHandler(details);
   });
   winRegister[winInfo.name] = {
     type: "BrowserWindow",
@@ -147,19 +124,6 @@ function createWindow(winInfo) {
     metadata: { ...winInfo },
   };
   return win;
-}
-
-async function setYoutubeBounds(playerWindow, winParent, divTarget) {
-  const bounds = await winParent.webContents.executeJavaScript(`
-    (() => {
-      const el = document.getElementById("${divTarget}");
-      const rect = el.getBoundingClientRect();
-      const bounds = { x: rect.left, y: rect.top, width: rect.width, height: rect.height };
-      return bounds;
-    })()
-  `);
-  // console.log(bounds);
-  playerWindow.setBounds(bounds);
 }
 
 async function addContextMenu(playerWindow) {
@@ -251,7 +215,7 @@ async function createYoutubeWindow(winParent, winInfo) {
 
   addContextMenu(playerWindow);
   playerWindow.webContents.setWindowOpenHandler((details) => {
-    return youtubeWindowOpenHandler(details, playerWindow);
+    return youtubeWindowOpenHandler(details);
   });
 
   playerWindow.webContents.loadURL("https://www.youtube.com/");
@@ -260,9 +224,9 @@ async function createYoutubeWindow(winParent, winInfo) {
     object: playerWindow,
     metadata: { ...winInfo },
   };
-  winParent.once("ready-to-show", () => {
-    setYoutubeBounds(playerWindow, winParent, "youtube");
-  });
+  // winParent.once("ready-to-show", () => {
+  //   setYoutubeBounds(playerWindow, winParent, "youtube");
+  // });
   return playerWindow;
 }
 
@@ -290,25 +254,18 @@ ipcMain.on("store-set-sync", (e, key, value) => {
 });
 
 ipcMain.on("broadcast", async (event, msg) => {
-  if (msg.type != "divider-drag") {
+  if (msg.type != "div-resize") {
     console.log("msg:", JSON.stringify(msg));
   }
   // console.log(JSON.stringify(event));
 
   Object.values(winRegister).forEach((win) => {
-    win.object.webContents.send("broadcast", msg);
-  });
-  // tab-button are the buttons that change the view.
-  // Change where embedded youtube is shown.
-  if (msg.type === "tab-button") {
-    let playerWindow = winRegister.youtubePlayer.object;
-    if (msg.targetId === "youtube") {
-      await setYoutubeBounds(playerWindow, winMain, "youtube-full");
-    } else {
-      await setYoutubeBounds(playerWindow, winMain, "youtube");
+    if (win.object.webContents.id !== event.sender.id) {
+      win.object.webContents.send("broadcast", msg);
     }
-  } else if (msg.type === "divider-drag") {
-    handleResize(winRegister.main.object, winRegister.main.metadata.name);
+  });
+  if (msg.type === "div-resize") {
+    winRegister.youtubePlayer.object.setBounds(msg.bounds);
   }
 });
 
@@ -322,10 +279,6 @@ function createAllWindows() {
     name: "youtubePlayer",
     preload: "youtube-preload.js",
   });
-  // createYoutubeWindow(winMain, {
-  //   name: "youtubePlayer2",
-  //   preload: "",
-  // });
   // winRegister.main.object.webContents.openDevTools();
   // winRegister.youtubePlayer.object.webContents.openDevTools();
 }

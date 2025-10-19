@@ -214,7 +214,7 @@ function plotDues(type, videos) {
       type: "histogram",
       name: `Rating ${r.toFixed(1)}`,
       marker: { color: utils.rating2color(r) },
-      xbins: { size: 2 },
+      xbins: { size: 1 },
     };
   });
 
@@ -223,7 +223,7 @@ function plotDues(type, videos) {
     yaxis: { title: { text: "Count" } },
     xaxis: {
       title: { text: "(Over)Due days" },
-      range: [-30, 100],
+      range: [-20, 40],
     },
     barmode: "stack",
   };
