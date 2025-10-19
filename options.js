@@ -62,9 +62,9 @@ const queueEl = document.getElementById("queue");
 const logEl = document.getElementById("log");
 const queueModeEl = document.getElementById("queueMode");
 
-queueModeEl.value = localStorage.getItem("queueMode") || "Video";
+queueModeEl.value = window.electronAPI.get("queueMode") || "Video";
 queueModeEl.addEventListener("change", () => {
-  localStorage.setItem("queueMode", queueModeEl.value);
+  window.electronAPI.set("queueMode", queueModeEl.value);
 });
 
 function handleDivider(divEl, vert) {

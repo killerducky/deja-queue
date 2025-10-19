@@ -46,6 +46,8 @@ class YoutubePlayerProxy {
   constructor(winParent, winInfo) {
     this.views = [];
     this.active = 0;
+    this.enable = true; // If true, actually swap views. Otherwise keep main always.
+    this.debug = true; // If true, show inactive view on screen
     this.winInfo = winInfo;
     let webPreferences = {};
     if (winInfo.preload) {
@@ -60,7 +62,8 @@ class YoutubePlayerProxy {
         return youtubeExplorerOpenHandler(details);
       });
 
-      playerWindow.setBounds({ x: 700, y: 200, width: 700, height: 500 });
+      // Set to inactive on both. Div size listener will set bounds for the active one later.
+      playerWindow.setBounds(this.inactiveBounds());
       playerWindow.webContents.loadURL("https://www.youtube.com/");
       this.views[i] = playerWindow;
     }
@@ -73,19 +76,45 @@ class YoutubePlayerProxy {
   backgroundCueNext(msg) {
     // Change to cueVideo. We know the id by now
     msg.type = "cueVideo";
-    this.views[(this.active + 1) % 2].webContents.send("broadcast", msg);
+    this.views[this.inactive()].webContents.send("broadcast", msg);
   }
+  inactive() {
+    return (this.active + 1) % 2;
+  }
+  inactiveBounds(bounds = {}) {
+    if (this.debug) {
+      return {
+        x: 700,
+        y: 200,
+        width: bounds.width ?? 700,
+        height: bounds.height ?? 500,
+      };
+    } else {
+      return {
+        x: -9999,
+        y: -9999,
+        width: bounds.width ?? 700,
+        height: bounds.height ?? 500,
+      };
+    }
+  }
+
   playVideo(msg) {
-    console.log(this.views[0].webContents.getURL());
-    console.log(this.views[1].webContents.getURL());
     let ids = this.views.map((view) => {
       let url = view.webContents.getURL();
       let id = new URL(url).searchParams.get("v");
       return id;
     });
-    if (ids[(this.active + 1) % 2] == msg.id && ids[this.active] != msg.id) {
-      // If the non-active view has it loaded, and the current doesn't, switch
-      this.active = (this.active + 1) % 2;
+    if (
+      this.enable &&
+      ids[this.inactive()] == msg.id &&
+      ids[this.active] != msg.id
+    ) {
+      // If enabled and the non-active view has it loaded, and the current doesn't, switch
+      let bounds = this.views[this.active].getBounds();
+      this.views[this.inactive()].setBounds(bounds);
+      this.views[this.active].setBounds(this.inactiveBounds(bounds));
+      this.active = this.inactive();
       winRegister[this.winInfo.name] = {
         type: "WebContentsView",
         object: this.views[this.active],
