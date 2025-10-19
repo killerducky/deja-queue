@@ -47,7 +47,7 @@ class YoutubePlayerProxy {
     this.views = [];
     this.active = 0;
     this.enable = true; // If true, actually swap views. Otherwise keep main always.
-    this.debug = true; // If true, show inactive view on screen
+    this.debug = false; // If true, show inactive view on screen
     this.winInfo = winInfo;
     let webPreferences = {};
     if (winInfo.preload) {
@@ -67,6 +67,7 @@ class YoutubePlayerProxy {
       playerWindow.webContents.loadURL("https://www.youtube.com/");
       this.views[i] = playerWindow;
     }
+    this.views[this.inactive()].webContents.audioMuted = true;
     winRegister[this.winInfo.name] = {
       type: "WebContentsView",
       object: this.views[this.active],
@@ -115,6 +116,10 @@ class YoutubePlayerProxy {
       this.views[this.inactive()].setBounds(bounds);
       this.views[this.active].setBounds(this.inactiveBounds(bounds));
       this.active = this.inactive();
+      this.views[this.active].webContents.audioMuted = false;
+      this.views[this.inactive()].webContents.audioMuted = true;
+
+      // Some stuff still uses winRegister
       winRegister[this.winInfo.name] = {
         type: "WebContentsView",
         object: this.views[this.active],
