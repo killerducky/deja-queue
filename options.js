@@ -814,14 +814,6 @@ async function playNextVideo(offset = 1, params = {}) {
   // console.log("after 0", DBDATA.queue[0]);
   // console.log("after 1", DBDATA.queue[1]);
 
-  let msg = {
-    type: params?.cueVideo ? "cueVideo" : "playVideo",
-    id: nextVideoToPlay.id,
-  };
-  sendMessage(msg);
-  if (offset !== 0) {
-    await renderQueue();
-  }
   if (videoTimeout) clearTimeout(videoTimeout);
   videoTimeout = setTimeout(() => {
     console.log("Error:", nextVideoToPlay.id, nextVideoToPlay.title);
@@ -835,6 +827,14 @@ async function playNextVideo(offset = 1, params = {}) {
     logEvent(nextVideoToPlay, "error");
     playNextVideo();
   }, 20000); // 20s -- Still some problems...
+  let msg = {
+    type: params?.cueVideo ? "cueVideo" : "playVideo",
+    id: nextVideoToPlay.id,
+  };
+  sendMessage(msg);
+  if (offset !== 0) {
+    await renderQueue();
+  }
 }
 
 function getVideoIdFromInput(input) {
