@@ -32,6 +32,9 @@ ipcRenderer.on("broadcast", (event, msg) => {
     video.play();
   } else if (msg.type === "fastForward") {
     video.currentTime += 30;
+  } else if (msg.type === "volumeChanged") {
+    video.volume = msg.volume;
+    video.muted = msg.muted;
   }
 });
 
@@ -106,6 +109,13 @@ function attachListener() {
       });
     }
   });
+  video.onvolumechange = () => {
+    sendBroadcast({
+      type: "volumeChanged",
+      volume: video.volume,
+      muted: video.muted,
+    });
+  };
 }
 
 window.addEventListener("DOMContentLoaded", () => {

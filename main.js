@@ -50,9 +50,8 @@ class YoutubePlayerProxy {
     this.debug = false; // If true, show inactive view on screen
     this.winInfo = winInfo;
     let webPreferences = {};
-    if (winInfo.preload) {
-      webPreferences.preload = path.join(__dirname, winInfo.preload);
-    }
+    webPreferences.preload = path.join(__dirname, winInfo.preload);
+    webPreferences.title = "YoutubePlayer";
     for (let i = 0; i < 2; i += 1) {
       const playerWindow = new WebContentsView({ webPreferences });
       winParent.contentView.addChildView(playerWindow);
@@ -73,6 +72,9 @@ class YoutubePlayerProxy {
       object: this.views[this.active],
       metadata: { ...this.winInfo },
     };
+  }
+  volumeChanged(msg) {
+    this.views[this.inactive()].webContents.send("broadcast", msg);
   }
   backgroundCueNext(msg) {
     // Change to cueVideo. We know the id by now
@@ -319,22 +321,19 @@ ipcMain.on("broadcast", async (event, msg) => {
   }
   if (msg.type === "div-resize") {
     winRegister.youtubePlayer.object.setBounds(msg.bounds);
-    return;
-  }
-  if (msg.type === "backgroundCueVideo") {
+  } else if (msg.type === "backgroundCueVideo") {
     winYoutubeProxy.backgroundCueNext(msg);
-    return;
-  }
-  if (msg.type === "playVideo") {
+  } else if (msg.type === "volumeChanged") {
+    winYoutubeProxy.volumeChanged(msg);
+  } else if (msg.type === "playVideo") {
     winYoutubeProxy.playVideo(msg);
+  } else {
+    Object.values(winRegister).forEach((win) => {
+      if (win.object.webContents.id !== event.sender.id) {
+        win.object.webContents.send("broadcast", msg);
+      }
+    });
   }
-  // console.log(JSON.stringify(event));
-
-  Object.values(winRegister).forEach((win) => {
-    if (win.object.webContents.id !== event.sender.id) {
-      win.object.webContents.send("broadcast", msg);
-    }
-  });
 });
 
 function createAllWindows() {

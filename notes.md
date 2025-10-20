@@ -31,17 +31,15 @@
 
 ## UI
 
-- [ ] volume for dual youtubes
-- [ ] ability to yeet a song out of the queue
-- [ ] restore window size bug
+- [x] volume for dual youtubes
 - [x] drag divider for sidebar/youtube
 - [ ] shift-click to insta play
 - [ ] Pasting into Add to Queue -- popup for video/playlist
 - [ ] 404 thumbs
-- [ ] trick youtube to play songs back to back
+- [x] trick youtube to play songs back to back
 - [ ] Q mode dropdown is rounded weirdly
 - [ ] visual bar graph or star system for ratings
-- [ ] import/export db into file menu
+- [x] import/export db into file menu
 - [ ] delay/skip song buttons in the queue?
 - [ ] When last played changes (and maybe other things?), recalculate score
   - [ ] Score is supposed to be semi-stable so don't just always recalculate
