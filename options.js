@@ -1243,16 +1243,18 @@ async function renderPlaylists() {
 
   if (playlistsTabulator) {
     const expandedIds = [];
-    playlistsTabulator.getRows().forEach((row) => {
-      if (row.getData().type == "playlist" && row.isTreeExpanded()) {
-        expandedIds.push(row.getData().id);
+    playlistsTabulator.getData().forEach((data) => {
+      if (data.type === "playlist") {
+        const row = playlistsTabulator.getRow(data.id);
+        if (row && row.isTreeExpanded()) {
+          expandedIds.push(data.id);
+        }
       }
     });
     playlistsTabulator.replaceData(DBDATA.playlists).then(() => {
-      playlistsTabulator.getRows().forEach((row) => {
-        if (expandedIds.includes(row.getData().id)) {
-          row.treeExpand();
-        }
+      expandedIds.forEach((id) => {
+        const row = playlistsTabulator.getRow(id);
+        if (row) row.treeExpand();
       });
     });
     return playlistsTabulator;

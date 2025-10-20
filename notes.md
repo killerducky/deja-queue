@@ -1,12 +1,13 @@
 ## VIP user
 
-- [ ] change rating of playlist in the queue bug -- only when filtered
+- [x] change rating of playlist in the queue bug -- only when filtered
+- [ ] bounds being called too early (ready-to-show)
+  - [x] Attempted fix by not showing window before calling setBounds.
 - [ ] full screen playlist/database
 - [ ] add playlist - should add to queue as PL, not individual songs
 - [ ] thumb with weird aspect ratio -- tabulator doing something?
 - [ ] filter X should be there even when not in focus
 - [ ] API Key should be "invisible"
-- [ ] bounds being called too early (ready-to-show)
 - [ ] filter playlists and only queue those playlists
 
 ## Onboarding
