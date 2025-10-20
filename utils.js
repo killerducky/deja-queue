@@ -2,16 +2,21 @@ let DEFAULT_RATING = 7.5;
 let MAX_ERRS = 5; // After this many errors treat it as bad
 
 let DIVERSITY_FACTOR = 24;
-let SHORT_DELAY_LINEAR_RATE = 2; // tiny linear growth until
-let LONG_DELAY_START = 7; // 7 days overdue
-let LONG_DELAY_BONUS = 5; // bonus +5...
-let LONG_DELAY_TIME = 4; // every 4^N days
+// let SHORT_DELAY_LINEAR_RATE = 2; // tiny linear growth until
+// let LONG_DELAY_START = 7; // 7 days overdue
+// let LONG_DELAY_BONUS = 5; // bonus +5...
+// let LONG_DELAY_TIME = 4; // every 4^N days
+let SHORT_DELAY_LINEAR_RATE = 0; // Skip the linear part
+let LONG_DELAY_START = 0; //
+let LONG_DELAY_BONUS = 5; // Add 5
+let LONG_DELAY_TIME = 1; // every 1X intervals
+// let LONG_DELAY_TIME_MODE = "int"  // it's interval based not days now
 let INIT_FACTOR = 30;
 let COOLDOWN_JITTER_START = 3; // Subtract N days from the interval
 let COOLDOWN_JITTER_RATE = 0.2; // Add up to X% jitter to that part of the interval
 let COOLDOWN_FLOOR = 0.2;
 let COOLDOWN_POWER_FACTOR = 5;
-let RATING_FACTOR = 1.0; // 0 = all ratings same. 1 = 10 points per rating point
+let RATING_FACTOR = 0.0; // 0 = all ratings same. 1 = 10 points per rating point
 let DUP_SCORE = -8;
 let ERR_SCORE = -9;
 let DEFAULT_VID_LENGTH = 3 * 60;
@@ -111,7 +116,7 @@ export function cooldownFactor(daysSince, rating, noise = true, salt = "salt") {
     // 56 days overdue: +4LONG_DELAY_BONUS
     // 365 days overdue: +14 = 5.6x LONG_DELAY_BONUS
     let log2 =
-      Math.log1p((daysSince - longDelayStartDay) / LONG_DELAY_TIME) /
+      Math.log1p((daysSince - longDelayStartDay) / (T * LONG_DELAY_TIME)) /
       Math.log(2);
     return SHORT_DELAY_LINEAR_RATE + log2 * LONG_DELAY_BONUS;
   }
