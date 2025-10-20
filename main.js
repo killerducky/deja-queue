@@ -7,6 +7,7 @@ const {
   globalShortcut,
   clipboard,
   shell,
+  nativeTheme,
   dialog,
 } = require("electron");
 const path = require("path");
@@ -37,6 +38,8 @@ if (profileIndex !== -1 && args[profileIndex + 1]) {
   console.log(userDataPath);
   app.setPath("userData", userDataPath);
 }
+
+// nativeTheme.themeSource = "light";
 
 app.commandLine.appendSwitch("disable-logging"); // disable general Chromium logging
 app.commandLine.appendSwitch("log-level", "3"); // 0=verbose, 3=errors only

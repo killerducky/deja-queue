@@ -13,8 +13,8 @@ main {
 } */
 body,
 .tabulator-popup-container,
-.tabulator .tabulator-header,
-.tabulator .tabulator-header .tabulator-col,
+/* .tabulator .tabulator-header,
+.tabulator .tabulator-header .tabulator-col, */
 #tab-menu,
 dialog {
   background-color: #fff;
@@ -378,8 +378,8 @@ dialog menu button[value="ok"] {
 @media (prefers-color-scheme: dark) {
   body,
   .tabulator-popup-container,
-  .tabulator .tabulator-header,
-  .tabulator .tabulator-header .tabulator-col,
+  /* .tabulator .tabulator-header,
+  .tabulator .tabulator-header .tabulator-col, */
   dialog,
   #tab-menu {
     background-color: #121212 !important;
