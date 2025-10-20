@@ -154,17 +154,15 @@ function sizeStore(win, label) {
       win.setBounds(bounds);
       if (store.get(minMaxKey) == "max") {
         win.maximize();
-      } else if (store.get(minMaxKey) == "min") {
-        win.minimize();
       }
     }
+    win.show();
 
     // Save window state
     win.on("resize", () => saveBounds(win, boundsKey));
     win.on("move", () => saveBounds(win, boundsKey));
     win.on("maximize", () => store.set(minMaxKey, "max"));
     win.on("unmaximize", () => store.set(minMaxKey, ""));
-    win.on("minimize", () => store.set(minMaxKey, "min"));
     win.on("restore", () => store.set(minMaxKey, ""));
   });
 }
@@ -187,9 +185,8 @@ function createWindow(winInfo) {
   let win = new BrowserWindow({
     icon: path.join(__dirname, "favicon.ico"),
     webPreferences: {
-      ...(winInfo.preload
-        ? { preload: path.join(__dirname, winInfo.preload) }
-        : {}),
+      show: false,
+      preload: path.join(__dirname, winInfo.preload),
     },
   });
   if (winInfo.target.startsWith("http")) {
