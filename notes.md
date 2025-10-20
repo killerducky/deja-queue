@@ -1,9 +1,13 @@
 ## VIP user
 
+- [ ] change rating of playlist in the queue bug -- only when filtered
 - [ ] full screen playlist/database
 - [ ] add playlist - should add to queue as PL, not individual songs
 - [ ] thumb with weird aspect ratio -- tabulator doing something?
 - [ ] filter X should be there even when not in focus
+- [ ] API Key should be "invisible"
+- [ ] bounds being called too early (ready-to-show)
+- [ ] filter playlists and only queue those playlists
 
 ## Onboarding
 
@@ -26,6 +30,8 @@
 
 ## UI
 
+- [ ] volume for dual youtubes
+- [ ] ability to yeet a song out of the queue
 - [ ] restore window size bug
 - [x] drag divider for sidebar/youtube
 - [ ] shift-click to insta play
