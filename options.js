@@ -160,6 +160,23 @@ document.querySelectorAll(".tab-content").forEach((div) => {
   observer.observe(div, { attributes: true });
 });
 
+const themeLink = document.getElementById("tabulator-theme");
+
+function updateTheme() {
+  const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  themeLink.href = isDark
+    ? "node_modules/tabulator-tables/dist/css/tabulator_site_dark.min.css"
+    : "node_modules/tabulator-tables/dist/css/tabulator_site.min.css";
+}
+
+// Run on load
+updateTheme();
+
+// Listen for user preference changes
+window
+  .matchMedia("(prefers-color-scheme: dark)")
+  .addEventListener("change", updateTheme);
+
 function addToc() {
   const toc = document.getElementById("toc");
   const headings = document.querySelectorAll("h2");

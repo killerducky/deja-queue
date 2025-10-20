@@ -13,11 +13,19 @@ main {
 } */
 body,
 .tabulator-popup-container,
+.tabulator .tabulator-header,
+.tabulator .tabulator-header .tabulator-col,
 #tab-menu,
 dialog {
   background-color: #fff;
   color: #000;
   font-family: sans-serif;
+}
+body b,
+.tabulator-popup-container b,
+dialog b,
+#tab-menu b {
+  color: #8ab4f8;
 }
 .main-container {
   --main-divider-size: 500px;
@@ -55,8 +63,16 @@ dialog {
   grid-area: divider;
 }
 .my-divider {
-  background-color: #333;
+  background-color: #eee;
+}
+.my-divider:hover {
+  background-color: #777;
+}
+.my-divider {
   transition: none;
+}
+.my-divider:hover {
+  transition: background-color 0.4s ease 0.2s;
 }
 .my-divider.horizontal {
   cursor: col-resize;
@@ -69,10 +85,6 @@ dialog {
 #left-youtube-divider {
   /* Flex props? */
   margin: 6px 0;
-}
-.my-divider:hover {
-  background-color: #666;
-  transition: background-color 0.4s ease 0.2s;
 }
 hr {
   height: 1px;
@@ -352,10 +364,22 @@ dialog menu button[value="ok"] {
   }
 }
 
+#tab-menu {
+  z-index: 100;
+  padding: 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+#tab-menu div {
+  padding: 4px;
+}
+
 /* Dark mode */
 @media (prefers-color-scheme: dark) {
   body,
   .tabulator-popup-container,
+  .tabulator .tabulator-header,
+  .tabulator .tabulator-header .tabulator-col,
   dialog,
   #tab-menu {
     background-color: #121212 !important;
@@ -367,15 +391,6 @@ dialog menu button[value="ok"] {
   #tab-menu b {
     color: #8ab4f8;
   }
-  #tab-menu {
-    z-index: 100;
-    padding: 12px;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  #tab-menu div {
-    padding: 4px;
-  }
   .tabulator-menu-item:hover,
   #tab-menu div:hover {
     background-color: #1e1e1e !important;
@@ -383,6 +398,12 @@ dialog menu button[value="ok"] {
 
   a {
     color: #8ab4f8;
+  }
+  .my-divider {
+    background-color: #333;
+  }
+  .my-divider:hover {
+    background-color: #666;
   }
 
   label,
