@@ -1204,6 +1204,7 @@ async function renderPlaylists() {
     // { title: "ID", field: "id_fake", hozAlign: "left", width: 20 },
     {
       title: "Act",
+      field: "act", // fake field
       formatter: (cell) => {
         let data = cell.getRow().getData();
         return data.type == "playlist" ? "🗑️" : "❌";

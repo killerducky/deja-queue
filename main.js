@@ -352,7 +352,6 @@ function buildMenu() {
   let graphsWin;
   const isMac = process.platform === "darwin";
   const template = [
-    // { role: 'appMenu' }
     ...(isMac
       ? [
           {
@@ -371,7 +370,6 @@ function buildMenu() {
           },
         ]
       : []),
-    // { role: 'fileMenu' }
     {
       label: "File",
       submenu: [
@@ -415,7 +413,6 @@ function buildMenu() {
         isMac ? { role: "close" } : { role: "quit" },
       ],
     },
-    // { role: 'editMenu' }
     {
       label: "Edit",
       submenu: [
@@ -439,13 +436,10 @@ function buildMenu() {
           : [{ role: "delete" }, { type: "separator" }, { role: "selectAll" }]),
       ],
     },
-    // { role: 'viewMenu' }
     {
       label: "View",
       submenu: [
         { role: "reload" },
-        { role: "forceReload" },
-        { role: "toggleDevTools" },
         { type: "separator" },
         { role: "resetZoom" },
         { role: "zoomIn" },
@@ -472,7 +466,6 @@ function buildMenu() {
         },
       ],
     },
-    // { role: 'windowMenu' }
     {
       label: "Window",
       submenu: [

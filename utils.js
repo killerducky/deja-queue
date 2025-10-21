@@ -2,15 +2,10 @@ let DEFAULT_RATING = 7.5;
 let MAX_ERRS = 5; // After this many errors treat it as bad
 
 let DIVERSITY_FACTOR = 24;
-// let SHORT_DELAY_LINEAR_RATE = 2; // tiny linear growth until
-// let LONG_DELAY_START = 7; // 7 days overdue
-// let LONG_DELAY_BONUS = 5; // bonus +5...
-// let LONG_DELAY_TIME = 4; // every 4^N days
 let SHORT_DELAY_LINEAR_RATE = 0; // Skip the linear part
 let LONG_DELAY_START = 0; //
 let LONG_DELAY_BONUS = 5; // Add 5
 let LONG_DELAY_TIME = 1; // every 1X intervals
-// let LONG_DELAY_TIME_MODE = "int"  // it's interval based not days now
 let INIT_FACTOR = 30;
 let COOLDOWN_JITTER_START = 3; // Subtract N days from the interval
 let COOLDOWN_JITTER_RATE = 0.2; // Add up to X% jitter to that part of the interval
@@ -95,12 +90,18 @@ export function cooldownFactor(daysSince, rating, noise = true, salt = "salt") {
     return INIT_FACTOR;
   }
   let T = rating2days(rating);
+  let jitter = 0;
   if (noise) {
+    // T1 is the interval (T) reduced by COOLDOWN_JITTER_START days
     let T1 = T - COOLDOWN_JITTER_START;
     if (T1 > 0) {
-      T += T1 * hashRandom(`${salt}cooldownJitter`) * COOLDOWN_JITTER_RATE;
+      // If after subtracting there is more left, apply random jitter to that part of it
+      jitter = T1 * hashRandom(`${salt}cooldownJitter`) * COOLDOWN_JITTER_RATE;
     }
   }
+  // And subtract jitter days, but don't allow jitter to reduce daysSince below 0
+  // Subtracting days from daysSince makes the video not become due as quickly.
+  daysSince = Math.max(0, daysSince - jitter);
   let ratio = daysSince / T;
   let longDelayStartDay = T + LONG_DELAY_START;
   let daysOverdue = daysSince - T;

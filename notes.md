@@ -1,6 +1,5 @@
 ## VIP user
 
-- [x] change rating of playlist in the queue bug -- only when filtered
 - [ ] bounds being called too early (ready-to-show)
   - [x] Attempted fix by not showing window before calling setBounds.
 - [ ] full screen playlist/database
@@ -9,11 +8,6 @@
 - [ ] filter X should be there even when not in focus
 - [ ] API Key should be "invisible"
 - [ ] filter playlists and only queue those playlists
-
-## Onboarding
-
-- [x] Walk user through API key, dialog, store local.
-- [x] Better release process
 
 ## Playlists
 
@@ -31,15 +25,11 @@
 
 ## UI
 
-- [x] volume for dual youtubes
-- [x] drag divider for sidebar/youtube
 - [ ] shift-click to insta play
 - [ ] Pasting into Add to Queue -- popup for video/playlist
 - [ ] 404 thumbs
-- [x] trick youtube to play songs back to back
 - [ ] Q mode dropdown is rounded weirdly
 - [ ] visual bar graph or star system for ratings
-- [x] import/export db into file menu
 - [ ] delay/skip song buttons in the queue?
 - [ ] When last played changes (and maybe other things?), recalculate score
   - [ ] Score is supposed to be semi-stable so don't just always recalculate
@@ -49,6 +39,8 @@
 - [ ] graphs.js DRY
 - [ ] config params in .json file
   - [ ] User can live adjust params?!
+- [ ] Combine jitter and delay
+  - [ ] And show as a number in the delay column
 
 ## Tagline ideas
 
@@ -57,6 +49,16 @@
 “Mixes that feel familiar.”
 “Because good songs deserve déjà vu.”
 “DejaQueue — play it again.”
+
+## Done 2025-10-20 v0.0.3
+
+- [x] change rating of playlist in the queue bug -- only when filtered
+- [x] Walk user through API key, dialog, store local.
+- [x] Better release process
+- [x] volume for dual youtubes
+- [x] drag divider for sidebar/youtube
+- [x] trick youtube to play songs back to back
+- [x] import/export db into file menu
 
 ## Done 2025-10-17
 
