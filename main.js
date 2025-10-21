@@ -39,11 +39,7 @@ if (profileIndex !== -1 && args[profileIndex + 1]) {
   app.setPath("userData", userDataPath);
 }
 
-// nativeTheme.themeSource = "light";
-
-app.commandLine.appendSwitch("disable-logging"); // disable general Chromium logging
 app.commandLine.appendSwitch("log-level", "3"); // 0=verbose, 3=errors only
-// app.commandLine.appendSwitch("disable-features", "VizDisplayCompositor"); // optional GPU warning reduction
 
 class YoutubePlayerProxy {
   constructor(winParent, winInfo) {
@@ -380,22 +376,6 @@ function buildMenu() {
       label: "File",
       submenu: [
         {
-          label: "Delete Database",
-          click: async () => {
-            winRegister.main.object.webContents.send("broadcast", {
-              type: "deleteDatabaseRequest",
-            });
-          },
-        },
-        {
-          label: "Export Database",
-          click: () => {
-            winRegister.main.object.webContents.send("broadcast", {
-              type: "exportDatabase",
-            });
-          },
-        },
-        {
           label: "Import Database",
           click: async () => {
             const result = await dialog.showOpenDialog(
@@ -412,6 +392,23 @@ function buildMenu() {
                 filePath,
               });
             }
+          },
+        },
+        {
+          label: "Export Database",
+          click: () => {
+            winRegister.main.object.webContents.send("broadcast", {
+              type: "exportDatabase",
+            });
+          },
+        },
+        { type: "separator" },
+        {
+          label: "Delete Database",
+          click: async () => {
+            winRegister.main.object.webContents.send("broadcast", {
+              type: "deleteDatabaseRequest",
+            });
           },
         },
         { type: "separator" },
@@ -455,6 +452,24 @@ function buildMenu() {
         { role: "zoomOut" },
         { type: "separator" },
         { role: "togglefullscreen" },
+        { type: "separator" },
+        {
+          label: "Theme",
+          submenu: [
+            {
+              label: "Light",
+              type: "radio",
+              checked: nativeTheme.themeSource === "light",
+              click: () => setTheme("light"),
+            },
+            {
+              label: "Dark",
+              type: "radio",
+              checked: nativeTheme.themeSource === "dark",
+              click: () => setTheme("dark"),
+            },
+          ],
+        },
       ],
     },
     // { role: 'windowMenu' }
@@ -513,10 +528,20 @@ function buildMenu() {
   Menu.setApplicationMenu(menu);
 }
 
+function setDefaults() {
+  // nativeTheme.themeSource = "light";
+  nativeTheme.themeSource = store.get("theme") || "dark";
+}
+function setTheme(theme) {
+  nativeTheme.themeSource = theme;
+  store.set("theme", theme);
+}
+
 app.whenReady().then(async () => {
   const StoreModule = await import("electron-store");
   const Store = StoreModule.default; // get the default export
   store = new Store();
+  setDefaults();
   buildMenu();
   createAllWindows();
   app.on("activate", () => {

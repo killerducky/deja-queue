@@ -274,6 +274,13 @@ function addComputedFieldsPL(playlist, queue) {
       writable: true,
       enumerable: false,
     },
+    interval: {
+      get() {
+        return rating2days(playlist.rating);
+      },
+      set() {}, // Ignore -- keep tabulator happy
+      enumerable: false,
+    },
     duration: {
       value: playlist.videoIds
         .map((id) => {
@@ -286,7 +293,6 @@ function addComputedFieldsPL(playlist, queue) {
     },
   });
 }
-// TODO: This is copy/pasted from options.js!!
 function addComputedFieldsVideo(video) {
   if (Array.isArray(video)) {
     return video.map((p) => addComputedFieldsVideo(p));
@@ -313,6 +319,13 @@ function addComputedFieldsVideo(video) {
     score: {
       value: scoreItem(video),
       writable: true,
+      enumerable: false,
+    },
+    interval: {
+      get() {
+        return rating2days(video.rating);
+      },
+      set() {}, // Ignore -- keep tabulator happy
       enumerable: false,
     },
     duration: {

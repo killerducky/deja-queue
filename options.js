@@ -430,8 +430,9 @@ function getTableColumns(tableType) {
     },
     interval: {
       title: "Int",
+      field: "interval",
       formatter: (cell) => {
-        return utils.rating2days(cell.getRow().getData().rating) + "d";
+        return cell.getValue() + "d";
       },
     },
     score: {
