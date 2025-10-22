@@ -144,9 +144,8 @@ function plotRatings(type, items) {
   const traces2 = xsRev.map((r, i) => ({
     name: `Rating ${r.toFixed(1)}`,
     type: "bar",
-    orientation: "h",
-    x: [loadsRev[i]], // width of this segment
-    y: ["Ratings"], // single category
+    y: [loadsRev[i]], // height of this segment
+    x: ["Ratings"], // single category
     marker: { color: colorsRev[i] },
     hovertemplate: `Rating ${r.toFixed(1)}<br>Hours/day: ${loadsRev[i].toFixed(
       1
@@ -156,8 +155,8 @@ function plotRatings(type, items) {
   let layout2 = {
     barmode: "stack",
     title: { text: "Interval Load" },
-    xaxis: { title: { text: "Hours" } },
-    yaxis: { showticklabels: false, fixedrange: true, range: [-0.5, 0.5] },
+    yaxis: { title: { text: "Hours" } },
+    xaxis: { showticklabels: false, fixedrange: true, range: [-0.5, 0.5] },
     margin: { t: 30, b: 60 },
   };
 
@@ -166,15 +165,15 @@ function plotRatings(type, items) {
   Plotly.newPlot(`${type}-interval-chart`, traces2, layout2);
 }
 
-function plotScores(type, videos) {
+function plotScores(type, items) {
   // Get unique ratings
   const ratings = [
-    ...new Set(videos.map((v) => v.rating ?? DEFAULT_RATING)),
+    ...new Set(items.map((v) => v.rating ?? DEFAULT_RATING)),
   ].sort((a, b) => a - b);
 
   // Create a trace for each rating
   const traces = ratings.map((r) => {
-    const scoresForRating = videos
+    const scoresForRating = items
       .filter((v) => (v.rating ?? DEFAULT_RATING) === r)
       .map((v) => v.score);
     return {
@@ -187,7 +186,7 @@ function plotScores(type, videos) {
   });
 
   let layout = {
-    title: "Scores Distribution",
+    title: { text: "Scores Distribution" },
     yaxis: { title: { text: "Count" } },
     xaxis: {
       title: { text: "Score" },
@@ -198,37 +197,41 @@ function plotScores(type, videos) {
   Plotly.newPlot(`${type}-scores-chart`, traces, layout);
 }
 
-function plotDues(type, videos) {
+function plotDues(type, absolute, items) {
   // Get unique ratings
   const ratings = [
-    ...new Set(videos.map((v) => v.rating ?? DEFAULT_RATING)),
+    ...new Set(items.map((v) => v.rating ?? DEFAULT_RATING)),
   ].sort((a, b) => a - b);
 
   // Create a trace for each rating
   const traces = ratings.map((r) => {
-    const duesForRating = videos
+    const duesForRating = items
       .filter((v) => (v.rating ?? DEFAULT_RATING) === r)
-      .map((v) => v.due);
+      .map((v) => (absolute ? v.due : v.due / v.interval));
     return {
       x: duesForRating,
       type: "histogram",
       name: `Rating ${r.toFixed(1)}`,
       marker: { color: utils.rating2color(r) },
-      xbins: { size: 1 },
+      xbins: { size: absolute ? 1 : 0.05 },
     };
   });
 
   let layout = {
-    title: "(Over)Due Distribution",
+    title: { text: "(Over)Due Distribution" },
     yaxis: { title: { text: "Count" } },
     xaxis: {
-      title: { text: "(Over)Due days" },
-      range: [-20, 40],
+      title: { text: absolute ? "(Over)Due days" : "(Over)Due intervals" },
+      range: absolute ? [-20.5, 40.5] : [-1.1, 1.1],
     },
     barmode: "stack",
   };
   layout = applyDarkMode(layout);
-  Plotly.newPlot(`${type}-dues-chart`, traces, layout);
+  Plotly.newPlot(
+    `${type}-${absolute ? "abs" : "int"}-dues-chart`,
+    traces,
+    layout
+  );
 }
 
 function interval2days(interval, T) {
@@ -346,10 +349,12 @@ function calcStringSimilarity(queue) {
   DBDATA.filtered = DBDATA.queue.filter((v) => (v.errCnt ?? 0) < 5 && !v.dup);
   plotRatings("videos", DBDATA.filtered);
   plotScores("videos", DBDATA.filtered);
-  plotDues("videos", DBDATA.filtered);
+  plotDues("videos", true, DBDATA.filtered);
+  plotDues("videos", false, DBDATA.filtered);
   plotRatings("playlists", DBDATA.playlists);
   plotScores("playlists", DBDATA.playlists);
-  plotDues("playlists", DBDATA.playlists);
+  plotDues("playlists", true, DBDATA.playlists);
+  plotDues("playlists", false, DBDATA.playlists);
   plotCooldownFactor(false);
   plotCooldownFactor(true);
   db.closeDB();
