@@ -206,7 +206,7 @@ input[type="number"] {
   -moz-appearance: textfield;
   appearance: textfield;
   text-align: center;
-  background-color: white;
+  /* background-color: white; */
 }
 .number-stepper input[type="number"] {
   padding: 2px 6px;
@@ -214,12 +214,11 @@ input[type="number"] {
   font-size: 1em;
   border: none;
   outline: none;
+  background-color: inherit !important;
 }
 .number-stepper {
   display: inline-flex;
   align-items: center;
-  border: 2px solid hsla(204, 70%, 53%, 1);
-  border-radius: 2px;
 }
 .number-stepper button {
   background-color: hsla(204, 70%, 53%, 1);
@@ -227,7 +226,7 @@ input[type="number"] {
   width: 25px;
   font-size: 1em;
   height: auto;
-  border-radius: 0px;
+  border: none;
 }
 .controls {
   display: flex;
@@ -260,7 +259,6 @@ dialog {
   max-width: 90%;
   padding: 1.5rem;
 
-  border: none;
   border: 1px solid #555;
   border-radius: 8px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
@@ -414,12 +412,12 @@ dialog menu button[value="ok"] {
     color: #eee;
     border-color: #555;
   }
-  .number-stepper {
-    border: 2px solid hsla(204, 50%, 15%, 1);
-    background-color: #1e1e1e;
-  }
   .number-stepper button {
-    background-color: hsla(204, 50%, 20%, 1);
+    background-color: hsla(204, 50%, 25%, 1);
+    color: #dddddd;
+  }
+  .number-stepper button:hover {
+    background-color: hsla(204, 50%, 35%, 1);
     color: #dddddd;
   }
 }
