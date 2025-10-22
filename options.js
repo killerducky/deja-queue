@@ -2,7 +2,7 @@ import * as db from "./db.js";
 import * as utils from "./utils.js";
 
 let DBDATA = { queue: [], filtered: [] };
-let LISTLEN = 50;
+let LISTLEN = 20;
 let MAXLOGDUMP = 99999;
 let DEFAULT_RATING = 7.5;
 let MAX_ERRS = 5; // After this many errors treat it as bad
