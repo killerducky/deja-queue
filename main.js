@@ -12,6 +12,7 @@ const {
 } = require("electron");
 const path = require("path");
 const fs = require("fs");
+const windowStateKeeper = require("electron-window-state");
 
 let store;
 
@@ -147,45 +148,6 @@ class YoutubePlayerProxy {
   }
 }
 
-function safeKey(label, suffix) {
-  return `${label.replace(/\./g, "_")}${suffix}`;
-}
-
-function sizeStore(win, label) {
-  function saveBounds(win, boundsKey) {
-    if (!win.isMaximized() && !win.isMinimized()) {
-      store.set(boundsKey, win.getBounds());
-      // console.log(JSON.stringify(win.getBounds()));
-    }
-  }
-
-  const minMaxKey = safeKey(label, "WindowMinMax");
-  const boundsKey = safeKey(label, "WindowBounds");
-
-  // Restore state
-  const bounds = store.get(boundsKey);
-  console.log("bounds:", boundsKey, bounds, store.get(minMaxKey));
-  win.once("ready-to-show", () => {
-    if (bounds) {
-      console.log("set bounds:", boundsKey, bounds, store.get(minMaxKey));
-      win.setBounds(bounds);
-      if (store.get(minMaxKey) == "max") {
-        win.maximize();
-      }
-    } else {
-      console.log("no saved bounds founds");
-      win.maximize();
-    }
-    win.show();
-
-    // Save window state
-    win.on("resize", () => saveBounds(win, boundsKey));
-    win.on("move", () => saveBounds(win, boundsKey));
-    win.on("maximize", () => store.set(minMaxKey, "max"));
-    win.on("unmaximize", () => store.set(minMaxKey, ""));
-    win.on("restore", () => store.set(minMaxKey, ""));
-  });
-}
 function youtubeExplorerOpenHandler(details) {
   const { url } = details;
   const childWin = new BrowserWindow({
@@ -202,15 +164,23 @@ function youtubeExplorerOpenHandler(details) {
   return { action: "deny" };
 }
 function createWindow(winInfo) {
+  winInfo.winState = windowStateKeeper({
+    defaultWidth: 1366,
+    defaultHeight: 768,
+    file: `${winInfo.name}.json`,
+  });
   let win = new BrowserWindow({
-    width: 1366,
-    height: 768,
+    x: winInfo.winState.x,
+    y: winInfo.winState.y,
+    width: winInfo.winState.width,
+    height: winInfo.winState.height,
     icon: path.join(__dirname, "favicon.ico"),
     webPreferences: {
-      show: false,
+      // show: false,
       preload: path.join(__dirname, winInfo.preload),
     },
   });
+  winInfo.winState.manage(win);
   if (winInfo.target.startsWith("http")) {
     win.loadURL(winInfo.target);
   } else {
@@ -219,7 +189,6 @@ function createWindow(winInfo) {
   win.on("closed", () => {
     win = null;
   });
-  sizeStore(win, winInfo.name);
   if (winInfo.addContextMenu) {
     addContextMenu(win);
   }
