@@ -11,7 +11,7 @@
   <body>
     <div class="main-container">
       <div class="left">
-        <div id="youtube"></div>
+        <div id="youtube" class="tab-content"></div>
         <div id="left-youtube-divider" class="my-divider vertical"></div>
         <h3>Current Song</h3>
         <div id="current"></div>
@@ -41,10 +41,8 @@
             <button class="tab-button" data-target="playlists">
               Playlists
             </button>
-            <button class="tab-button active" data-target="database">
-              Database
-            </button>
-            <button class="tab-button" data-target="youtube-full">
+            <button class="tab-button" data-target="database">Database</button>
+            <button class="tab-button active" data-target="youtube-full">
               Youtube
             </button>
           </span>
@@ -60,7 +58,7 @@
           <div id="playlists-grid"></div>
         </div>
       </div>
-      <div id="database" class="bot tab-content active">
+      <div id="database" class="bot tab-content">
         <div class="flex-horiz">
           <h3>Database</h3>
           Global Filter <input id="dbFilter" type="search" placeholder="" />
@@ -69,7 +67,7 @@
           <div id="database-grid"></div>
         </div>
       </div>
-      <div id="youtube-full" class="tab-content"></div>
+      <div id="youtube-full" class="tab-content active"></div>
     </div>
     <div id="toast-container"></div>
   </body>

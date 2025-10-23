@@ -1,13 +1,14 @@
 ## VIP user
 
 - [ ] bounds being called too early (ready-to-show)
-  - [x] Attempted fix by not showing window before calling setBounds.
+  - [ ] TV high res is screwing the restore bounds command
 - [ ] full screen playlist/database
 - [ ] add playlist - should add to queue as PL, not individual songs
 - [ ] thumb with weird aspect ratio -- tabulator doing something?
 - [ ] filter X should be there even when not in focus
 - [ ] API Key should be "invisible"
 - [ ] filter playlists and only queue those playlists
+- [ ] manual rating change does not work
 
 ## Playlists
 
@@ -25,6 +26,8 @@
 
 ## UI
 
+- [ ] skip/defer in queue/database
+- [ ] multi row select
 - [ ] shift-click to insta play
 - [ ] Pasting into Add to Queue -- popup for video/playlist
 - [ ] 404 thumbs

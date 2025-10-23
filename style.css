@@ -57,6 +57,9 @@ dialog b,
   flex: 0 0 auto;
 }
 .left #youtube {
+  flex: 0 0 0;
+}
+.left #youtube.active {
   flex: 0 0 var(--left-youtube-divider-size); /* height */
 }
 #main-divider {
@@ -85,6 +88,9 @@ dialog b,
 #left-youtube-divider {
   /* Flex props? */
   margin: 6px 0;
+}
+#youtube:not(.active) + #left-youtube-divider {
+  display: none;
 }
 hr {
   height: 1px;
@@ -330,7 +336,7 @@ dialog menu button[value="ok"] {
 #toast-container {
   position: fixed;
   bottom: 20px;
-  right: 20px;
+  left: 20px;
   z-index: 9999;
 }
 .toast {
@@ -346,7 +352,7 @@ dialog menu button[value="ok"] {
 @keyframes flyinFadeout {
   0% {
     opacity: 0;
-    transform: translateX(100%);
+    transform: translateX(-100%);
   }
   3% {
     opacity: 1;
@@ -358,7 +364,7 @@ dialog menu button[value="ok"] {
   }
   100% {
     opacity: 0;
-    transform: translateX(100%);
+    transform: translateX(-100%);
   }
 }
 

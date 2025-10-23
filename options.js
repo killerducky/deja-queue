@@ -109,7 +109,7 @@ function youtubeDiv() {
 }
 
 // Track the currently active div
-let activeYoutubeDiv = youtubeDiv();
+let activeYoutubeDiv;
 
 // Observe changes in class attributes
 const observer = new MutationObserver((mutationsList) => {
@@ -1325,13 +1325,14 @@ function handleTabs() {
       btn.classList.add("active");
       const targetId = btn.dataset.target;
       const target = document.querySelector(`#${targetId}`);
-      if (target) target.classList.add("active");
+      target.classList.add("active");
+      if (targetId !== "youtube-full") {
+        document.querySelector("#youtube").classList.add("active");
+      }
       sendMessage({ type: "tab-button", targetId });
     });
   });
-  const defaultTarget =
-    queueModeEl.value === "playlist" ? "playlists" : "database";
-  const btn = document.querySelector(`[data-target="${defaultTarget}"]`);
+  const btn = document.querySelector(`[data-target="youtube-full"]`);
   btn.click();
 }
 handleTabs();
