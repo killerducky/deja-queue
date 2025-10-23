@@ -21,6 +21,7 @@ async function loadEnv2() {
     return;
   }
 
+  sendMessage({ type: "hideYoutube" });
   document.addEventListener("click", async (e) => {
     const link = e.target.closest("a.external-link");
     if (!link) return;
@@ -40,6 +41,7 @@ async function loadEnv2() {
     dialog.addEventListener("click", (e) => {
       if (e.target === dialog) {
         dialog.close();
+        sendMessage({ type: "showYoutube" });
       }
     });
   }
@@ -48,6 +50,7 @@ async function loadEnv2() {
     if (env.youtube_api_key) {
       window.electronAPI.set("youtube_api_key", env.youtube_api_key);
     }
+    sendMessage({ type: "showYoutube" });
   });
 }
 loadEnv2();

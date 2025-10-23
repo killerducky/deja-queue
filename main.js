@@ -47,6 +47,7 @@ class YoutubePlayerProxy {
     this.active = 0;
     this.enable = true; // If true, actually swap views. Otherwise keep main always.
     this.debug = false; // If true, show inactive view on screen
+    this.visible = true;
     this.winInfo = winInfo;
     let webPreferences = {};
     webPreferences.preload = path.join(__dirname, winInfo.preload);
@@ -99,6 +100,21 @@ class YoutubePlayerProxy {
         height: bounds.height ?? 500,
       };
     }
+  }
+  setBounds(bounds) {
+    this.bounds = bounds;
+    this.views[this.active].setBounds(
+      this.visible ? bounds : this.inactiveBounds(this.bounds)
+    );
+  }
+  hide() {
+    this.visible = false;
+    this.views[this.active].setBounds(this.inactiveBounds(this.bounds));
+  }
+  show() {
+    this.visible = true;
+    console.log("restore", this.bounds);
+    this.views[this.active].setBounds(this.bounds);
   }
 
   playVideo(msg) {
@@ -156,6 +172,9 @@ function sizeStore(win, label) {
       if (store.get(minMaxKey) == "max") {
         win.maximize();
       }
+    } else {
+      console.log("no saved bounds founds");
+      win.maximize();
     }
     win.show();
 
@@ -170,8 +189,8 @@ function sizeStore(win, label) {
 function youtubeExplorerOpenHandler(details) {
   const { url } = details;
   const childWin = new BrowserWindow({
-    width: 1000,
-    height: 700,
+    width: 1366,
+    height: 768,
     icon: path.join(__dirname, "favicon.ico"),
   });
   childWin.webContents.loadURL(url);
@@ -184,6 +203,8 @@ function youtubeExplorerOpenHandler(details) {
 }
 function createWindow(winInfo) {
   let win = new BrowserWindow({
+    width: 1366,
+    height: 768,
     icon: path.join(__dirname, "favicon.ico"),
     webPreferences: {
       show: false,
@@ -319,7 +340,11 @@ ipcMain.on("broadcast", async (event, msg) => {
     console.log("msg:", JSON.stringify(msg));
   }
   if (msg.type === "div-resize") {
-    winRegister.youtubePlayer.object.setBounds(msg.bounds);
+    winYoutubeProxy.setBounds(msg.bounds);
+  } else if (msg.type == "hideYoutube") {
+    winYoutubeProxy.hide();
+  } else if (msg.type == "showYoutube") {
+    winYoutubeProxy.show();
   } else if (msg.type === "backgroundCueVideo") {
     winYoutubeProxy.backgroundCueNext(msg);
   } else if (msg.type === "volumeChanged") {
