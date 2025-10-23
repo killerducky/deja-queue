@@ -748,92 +748,83 @@ function sendMessage(msg) {
   window.electronAPI.sendBroadcast(msg);
 }
 
-function cueNextVideo(offset = 1, params = {}) {
-  let nextVideoToPlay = pickNextVideoToPlay(offset, params);
+async function pickNextVideoToPlay(offset, params = {}) {
+  console.log("pnv params:", params);
+  let skip = params.skipWholeList || params.delayWholeList;
+  if (offset != 0 && offset != 1) {
+    console.log("ERROR");
+  }
+  // offset = 0 is for playing/cueing the current video.
+  // That shouldn't happen together with skip.
+  if (offset == 0 && skip) {
+    console.log("ERROR");
+  }
+  let currItem = DBDATA.queue[0];
+  let video = currItem.type == "playlist" ? currItem._children[0] : currItem;
+
+  // If we want to play/cue the current video, just return the first video
+  if (offset == 0) {
+    if (currItem.type == "playlist") {
+      currItem._currentTrack = 0;
+    }
+    console.log("pnv easy", video);
+    return video;
+  }
+
+  // If the first item is a playlist, and there are songs left, and we don't skip...
+  if (currItem.type == "playlist" && currItem._children.length > 1 && !skip) {
+    console.log("increment playlist pointer");
+    let video = currItem._children[1];
+    if (!params.cueVideo) {
+      currItem._currentTrack += 1;
+    }
+    return video;
+  }
+
+  // By now we know we are done with the first item.
+  // If it's a playlist, log completion/skip/delay, reset _currentTrack
+  if (currItem.type == "playlist" && !params.cueVideo) {
+    console.log("playlist update");
+    currItem.lastPlayDate = Date.now();
+    currItem.delay = !!params.delayWholeList;
+    if (!skip) {
+      currItem.playCnt = (currItem.playCnt ?? 0) + 1;
+    }
+    currItem._currentTrack = -1;
+    await savePlaylists(currItem);
+  }
+
+  // Pick the next item in the queue
+  let nextItem = DBDATA.queue[1];
+  video = nextItem.type == "playlist" ? nextItem._children[0] : nextItem;
+
+  if (!params.cueVideo) {
+    // Move current item to back of queue
+    console.log("Rotate queue");
+    let rotatedItem = DBDATA.queue.shift();
+    DBDATA.queue.push(rotatedItem);
+    if (rotatedItem.type == "playlist") {
+      rotatedItem._currentTrack = 0;
+    }
+  }
+  return video;
+}
+
+async function cueNextVideo(offset = 1, params = {}) {
+  params.cueVideo = true;
+  let nextVideoToPlay = await pickNextVideoToPlay(offset, params);
+  console.log("cnv", nextVideoToPlay);
   let msg = { type: "backgroundCueVideo", id: nextVideoToPlay.id };
   sendMessage(msg);
 }
 
-function pickNextVideoToPlay(offset = 1, params = {}) {
-  let currItem = DBDATA.queue[offset];
-  if (currItem.type == "playlist") {
-    if (params.skipWholeList || params.delayWholeList) {
-      return pickNextVideoToPlay(offset + 1);
-    }
-    return currItem._children[0];
-  } else {
-    return DBDATA.queue[offset];
-  }
-}
 async function playNextVideo(offset = 1, params = {}) {
   if (DBDATA.queue.length == 0) {
     console.log("Queue empty", offset);
     return;
   }
   offset = offset % DBDATA.queue.length; // deal with very small queues
-  let nextVideoToPlay = pickNextVideoToPlay(offset, params);
-  let currItem = DBDATA.queue[offset];
-  // console.log(offset);
-  // console.log("before 0", DBDATA.queue[0]);
-  // console.log("before 1", DBDATA.queue[1]);
-  if (currItem.type == "playlist") {
-    if (params.skipWholeList || params.delayWholeList) {
-      currItem.lastPlayDate = Date.now();
-      currItem.delay = !!params.delayWholeList;
-      await savePlaylists(currItem);
-      // Do not increment playCnt since we are skipping/delaying the list
-      //currItem.playCnt += 1;
-      playNextVideo(offset + 1);
-      return;
-    }
-    // console.log("pnv playlist");
-    // take the next video from top of _children array
-    if (nextVideoToPlay != currItem._children[0]) {
-      alert("error");
-      console.log(nextVideoToPlay, currItem._children[0]);
-    }
-    if (currItem._currentTrack == -1) {
-      // Track *zero* is going to play, so the Queue will point to track *one*
-      currItem._currentTrack = 1;
-    } else {
-      currItem._currentTrack += 1;
-    }
-    if (currItem._children.length == 0) {
-      // nextVideoToPlay was the last video of the playlist
-      // Credit playlist as played
-      currItem.lastPlayDate = Date.now();
-      currItem.playCnt = currItem.playCnt ?? 0 + 1;
-      await savePlaylists(currItem);
-
-      // Reset the playlist container, push to end
-      let playlist = DBDATA.queue.splice(offset, 1);
-      playlist._currentTrack = -1;
-      DBDATA.queue.push(playlist);
-    }
-    // cut the current track, push to end
-    const cut = DBDATA.queue.splice(0, offset);
-    DBDATA.queue.push(...cut);
-
-    // put next playlist video on top
-    DBDATA.queue.unshift(nextVideoToPlay);
-  } else {
-    // cut the first offset videos, and put back to end of queue
-    const cut = DBDATA.queue.splice(0, offset);
-    DBDATA.queue.push(...cut);
-    if (DBDATA.queue[0] != currItem) {
-      alert("oops");
-      console.log(DBDATA.queue[0]);
-      console.log(currItem);
-    }
-    if (nextVideoToPlay != DBDATA.queue[0]) {
-      alert("error");
-      console.log(nextVideoToPlay, DBDATA.queue[0]);
-    }
-  }
-  // console.log("pnv", video);
-  // // console.log("pnv", DBDATA.queue[offset]);
-  // console.log("after 0", DBDATA.queue[0]);
-  // console.log("after 1", DBDATA.queue[1]);
+  let nextVideoToPlay = await pickNextVideoToPlay(offset, params);
 
   if (videoTimeout) clearTimeout(videoTimeout);
   videoTimeout = setTimeout(() => {
@@ -847,7 +838,7 @@ async function playNextVideo(offset = 1, params = {}) {
     saveVideos([nextVideoToPlay]);
     logEvent(nextVideoToPlay, "error");
     playNextVideo();
-  }, 20000); // 20s -- Still some problems...
+  }, 150000000); // 15s -- see if this works
   let msg = {
     type: params?.cueVideo ? "cueVideo" : "playVideo",
     id: nextVideoToPlay.id,
@@ -885,7 +876,7 @@ async function logEvent(video, event) {
   video.lastPlayDate = now; // includes errors and skips
   video.delay = event === "delay";
   if (event == "play") {
-    video.playCnt = (video.playCnt || 0) + 1;
+    video.playCnt = (video.playCnt ?? 0) + 1;
   }
   if (video.playCnt == 1) {
     video.firstPlayDate = now;

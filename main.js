@@ -339,7 +339,7 @@ function createAllWindows() {
     name: "youtubePlayer",
     preload: "youtube-preload.js",
   });
-  // winRegister.main.object.webContents.openDevTools();
+  winRegister.main.object.webContents.openDevTools();
   // winRegister.youtubePlayer.object.webContents.openDevTools();
 }
 function buildMenu() {
