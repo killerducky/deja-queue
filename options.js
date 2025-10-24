@@ -265,10 +265,11 @@ async function renderQueue() {
     let video = DBDATA.queue.find((v) => v.id === entry.id);
     if (entry.type == "playlist") {
       if (entry.playlistId !== playlist?.id) {
+        // If there was a previous playlist, finalize computed fields
         playlist && utils.addComputedFieldsPL(playlist, DBDATA.queue);
-        playlist = utils.wrapVideo(
-          DBDATA.queue.find((pl) => pl.id === entry.playlistId)
-        );
+        // Make new playlist copy
+        playlist = DBDATA.queue.find((pl) => pl.id === entry.playlistId);
+        playlist = utils.wrapVideo({ ...playlist.ref });
         playlist.videoIds = [];
         logVideoList.push(playlist);
       }
@@ -784,7 +785,7 @@ function sendMessage(msg) {
 }
 
 async function pickNextVideoToPlay(offset, params = {}) {
-  console.log("pnv params:", params);
+  // console.log("pnv params:", params);
   let skip = params.skipWholeList || params.delayWholeList;
   if (offset != 0 && offset != 1) {
     console.log("ERROR");
@@ -801,20 +802,22 @@ async function pickNextVideoToPlay(offset, params = {}) {
   // Even if we end up skipping/whatever later
   if (currItem.type == "playlist" && currItem._currentTrack == -1) {
     currItem._currentTrack = 0;
+    // console.log("activate PL");
   }
 
   // If we want to play/cue the current video, just return the first video
   if (offset == 0) {
-    console.log("pnv easy", video);
+    // console.log("pnv easy", video);
     return video;
   }
 
   // If the first item is a playlist, and there are songs left, and we don't skip...
   if (currItem.type == "playlist" && currItem._children.length > 1 && !skip) {
-    console.log("increment playlist pointer");
+    // console.log("increment playlist pointer");
     let video = currItem._children[1];
     if (!params.cueVideo) {
       currItem._currentTrack += 1;
+      // console.log("next track:", currItem._currentTrack);
     }
     return video;
   }
@@ -822,7 +825,7 @@ async function pickNextVideoToPlay(offset, params = {}) {
   // By now we know we are done with the first item.
   // If it's a playlist, log completion/skip/delay, reset _currentTrack
   if (currItem.type == "playlist" && !params.cueVideo) {
-    console.log("playlist update");
+    // console.log("playlist update");
     currItem.lastPlayDate = Date.now();
     currItem.delay = !!params.delayWholeList;
     if (!skip) {
@@ -842,7 +845,7 @@ async function pickNextVideoToPlay(offset, params = {}) {
 
   if (!params.cueVideo) {
     // Move current item to back of queue
-    console.log("Rotate queue");
+    // console.log("Rotate queue");
     let rotatedItem = DBDATA.queue.shift();
     DBDATA.queue.push(rotatedItem);
     if (rotatedItem.type == "playlist") {
@@ -854,8 +857,11 @@ async function pickNextVideoToPlay(offset, params = {}) {
 
 async function cueNextVideo(offset = 1, params = {}) {
   params.cueVideo = true;
+  console.log("ct:", DBDATA.queue[0]._currentTrack);
   let nextVideoToPlay = await pickNextVideoToPlay(offset, params);
+  console.log("ct:", DBDATA.queue[0]._currentTrack);
   console.log("cnv", nextVideoToPlay);
+
   let msg = { type: "backgroundCueVideo", id: nextVideoToPlay.id };
   sendMessage(msg);
 }
@@ -866,7 +872,10 @@ async function playNextVideo(offset = 1, params = {}) {
     return;
   }
   offset = offset % DBDATA.queue.length; // deal with very small queues
+
+  // console.log("ct:", DBDATA.queue[0]._currentTrack);
   let nextVideoToPlay = await pickNextVideoToPlay(offset, params);
+  // console.log("ct:", DBDATA.queue[0]._currentTrack);
 
   if (videoTimeout) clearTimeout(videoTimeout);
   videoTimeout = setTimeout(() => {

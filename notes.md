@@ -10,6 +10,13 @@
 - [ ] API Key should be "invisible"
 - [ ] filter playlists and only queue those playlists
 - [ ] manual rating change does not work
+- [ ] click on single song inside a playlist should skip to that song
+- [ ]
+
+## DB
+
+- [ ] get rid of using DBDATA.queue as the DB!!
+- [ ] Use change to move to DB library instead of my own db.js
 
 ## Playlists
 
