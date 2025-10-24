@@ -1282,11 +1282,9 @@ async function renderPlaylists() {
   if (playlistsTabulator) {
     const expandedIds = [];
     playlistsTabulator.getData().forEach((data) => {
-      if (data.type === "playlist") {
-        const row = playlistsTabulator.getRow(data.id);
-        if (row && row.isTreeExpanded()) {
-          expandedIds.push(data.id);
-        }
+      const row = playlistsTabulator.getRow(data.id);
+      if (row && row.isTreeExpanded()) {
+        expandedIds.push(data.id);
       }
     });
     playlistsTabulator.replaceData(DBDATA.playlists).then(() => {
