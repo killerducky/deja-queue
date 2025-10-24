@@ -337,10 +337,11 @@ function getTableColumns(tableType) {
       width: COMPACT_THUMB_WIDTH,
       cellClick: async (e, cell) => {
         const row = cell.getRow();
-        const firstRow = cell.getTable().getRows()[0];
-        if (tableType == "current") {
+        const row0 = cell.getTable().getRows()[0];
+        const row1 = cell.getTable().getRows()[1];
+        if (tableType == "queue" && row == row0) {
           playNextVideo(0);
-        } else if (tableType == "queue" && row == firstRow) {
+        } else if (tableType == "queue" && row == row1) {
           playNextVideo(1);
         } else {
           moveVideoToFront(cell.getRow().getData().id);
