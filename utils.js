@@ -241,7 +241,7 @@ function addComputedFieldsPL(playlist, queue) {
   let allChildren = [];
   for (const [idx, id] of playlist.videoIds.entries()) {
     let origVideo = queue.find((v) => v.id === id);
-    let video = wrapVideo(origVideo, { _track: idx, playlist });
+    let video = wrapItem(origVideo, { _track: idx, playlist });
     allChildren.push(video);
   }
   if (!playlist.thumbnailUrl) {
@@ -345,7 +345,10 @@ function addComputedFieldsVideo(video) {
   });
 }
 
-function wrapVideo(video, extras = {}) {
+function wrapItem(video, extras = {}) {
+  if (video.ref) {
+    console.log("ERROR: Already wrapped?");
+  }
   return new Proxy(
     { ref: video, ...extras },
     {
@@ -366,7 +369,7 @@ export {
   isoDuration2seconds,
   formatDuration,
   calcDue,
-  wrapVideo,
+  wrapItem,
   addComputedFieldsVideo,
   addComputedFieldsPL,
 };

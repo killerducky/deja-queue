@@ -257,29 +257,47 @@ async function renderQueue() {
   //   [firstVideo],
   //   "current"
   // );
+
+  function finalizePlaylist(playlist, playlistChildren) {
+    if (playlist) {
+      utils.addComputedFieldsPL(playlist, DBDATA.queue);
+      playlist._allChildren = [...playlistChildren];
+    }
+    return { playlist: null, playlistChildren: [] };
+  }
+
   tabulatorQueue = await table2(tabulatorQueue, queueEl, restVideos, "queue");
   let log = await db.getLastNLogs(LISTLEN);
   let logVideoList = [];
   let playlist = null;
+  let playlistChildren = [];
   for (let entry of log) {
     let video = DBDATA.queue.find((v) => v.id === entry.id);
     if (entry.type == "playlist") {
       if (entry.playlistId !== playlist?.id) {
-        // If there was a previous playlist, finalize computed fields
-        playlist && utils.addComputedFieldsPL(playlist, DBDATA.queue);
+        ({ playlist, playlistChildren } = finalizePlaylist(
+          playlist,
+          playlistChildren
+        ));
         // Make new playlist copy
         playlist = DBDATA.queue.find((pl) => pl.id === entry.playlistId);
-        playlist = utils.wrapVideo({ ...playlist.ref });
+        playlist = utils.wrapItem({ ...playlist.ref });
         playlist.videoIds = [];
+        playlist._currentTrack = -1;
         logVideoList.push(playlist);
       }
       playlist.videoIds.push(entry.id);
-      playlist._currentTrack = -1;
+      playlistChildren.push(
+        utils.wrapItem(video, { entry, _track: entry._track })
+      );
     } else {
-      logVideoList.push(utils.wrapVideo(video, { entry }));
+      logVideoList.push(utils.wrapItem(video, { entry, track: entry.track }));
     }
   }
-  playlist && utils.addComputedFieldsPL(playlist, DBDATA.queue);
+  ({ playlist, playlistChildren } = finalizePlaylist(
+    playlist,
+    playlistChildren
+  ));
   tabulatorLog = await table2(tabulatorLog, logEl, logVideoList, "log");
 }
 
@@ -936,10 +954,13 @@ async function logEvent(item, event) {
   await saveVideos([video]);
   const logEntry = {
     type: item.type,
-    playlistId: item.type == "playlist" ? item.id : null,
     id: video.id,
     timestamp: now,
     event: event,
+    ...(item.type == "playlist" && {
+      playlistId: item.id,
+      _track: video._track,
+    }),
   };
   await db.saveLog([logEntry]);
 }
@@ -1456,7 +1477,7 @@ async function savePlaylists(playlists) {
   DBDATA.playlists = utils.addComputedFieldsPL(DBDATA.playlists, DBDATA.queue);
   DBDATA.playlists.sort((a, b) => b.score - a.score);
   const playlistCopies = DBDATA.playlists.map((item) => {
-    const copy = utils.wrapVideo(item);
+    const copy = utils.wrapItem(item);
     // copy.playlistRef = item;
     return utils.addComputedFieldsPL(copy, DBDATA.queue);
   });
