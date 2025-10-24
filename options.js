@@ -248,14 +248,15 @@ async function renderQueue() {
     console.log("Empty DBDATA.queue, nothing to render");
     return;
   }
-  const firstVideo = DBDATA.queue[0];
-  const restVideos = DBDATA.queue.slice(1, LISTLEN + 1);
-  tabulatorCurrent = await table2(
-    tabulatorCurrent,
-    currentEl,
-    [firstVideo],
-    "current"
-  );
+  // const firstVideo = DBDATA.queue[0];
+  // const restVideos = DBDATA.queue.slice(1, LISTLEN + 1);
+  const restVideos = DBDATA.queue;
+  // tabulatorCurrent = await table2(
+  //   tabulatorCurrent,
+  //   currentEl,
+  //   [firstVideo],
+  //   "current"
+  // );
   tabulatorQueue = await table2(tabulatorQueue, queueEl, restVideos, "queue");
   let log = await db.getLastNLogs(LISTLEN);
   let logVideoList = [];
@@ -759,14 +760,17 @@ async function pickNextVideoToPlay(offset, params = {}) {
   if (offset == 0 && skip) {
     console.log("ERROR");
   }
+
   let currItem = DBDATA.queue[0];
   let video = currItem.type == "playlist" ? currItem._children[0] : currItem;
+  // The current playlist should at least be "active"
+  // Even if we end up skipping/whatever later
+  if (currItem.type == "playlist" && currItem._currentTrack == -1) {
+    currItem._currentTrack = 0;
+  }
 
   // If we want to play/cue the current video, just return the first video
   if (offset == 0) {
-    if (currItem.type == "playlist") {
-      currItem._currentTrack = 0;
-    }
     console.log("pnv easy", video);
     return video;
   }
@@ -795,8 +799,12 @@ async function pickNextVideoToPlay(offset, params = {}) {
   }
 
   // Pick the next item in the queue
-  let nextItem = DBDATA.queue[1];
-  video = nextItem.type == "playlist" ? nextItem._children[0] : nextItem;
+  currItem = DBDATA.queue[1];
+  video = currItem.type == "playlist" ? currItem._children[0] : currItem;
+  // And set it active if it's a playlist
+  if (currItem.type == "playlist" && currItem._currentTrack == -1) {
+    currItem._currentTrack = 0;
+  }
 
   if (!params.cueVideo) {
     // Move current item to back of queue
@@ -871,8 +879,9 @@ function getVideoIdFromInput(input) {
   }
 }
 
-async function logEvent(video, event) {
+async function logEvent(item, event) {
   let now = Date.now();
+  let video = item.type == "playlist" ? item._children[0] : item;
   video.lastPlayDate = now; // includes errors and skips
   video.delay = event === "delay";
   if (event == "play") {
@@ -883,6 +892,8 @@ async function logEvent(video, event) {
   }
   await saveVideos([video]);
   const logEntry = {
+    type: item.type,
+    playlist: item.type == "playlist" ? item.id : null,
     id: video.id,
     timestamp: now,
     event: event,
@@ -1394,7 +1405,6 @@ async function savePlaylists(playlists) {
 (async () => {
   DBDATA.queue = await db.loadVideos();
   DBDATA.playlists = await db.loadPlaylists();
-  // Check before adding computed fields
   dbCheck();
   DBDATA.queue = trimYoutubeFields(DBDATA.queue);
   DBDATA.playlists = trimYoutubeFields(DBDATA.playlists);
@@ -1402,32 +1412,17 @@ async function savePlaylists(playlists) {
   DBDATA.queue.sort((a, b) => b.score - a.score);
   DBDATA.playlists = utils.addComputedFieldsPL(DBDATA.playlists, DBDATA.queue);
   DBDATA.playlists.sort((a, b) => b.score - a.score);
-  // This is only needed if e.g. trimYoutubeFields did something.
-  // addComputedFieldsPL will also update a broken thumbnailUrl
-  // saveVideos(DBDATA.queue.filter((v) => v.type == "video"));
-  // savePlaylists(DBDATA.playlists);
   const playlistCopies = DBDATA.playlists.map((item) => {
     const copy = utils.wrapVideo(item);
     return utils.addComputedFieldsPL(copy, DBDATA.queue);
   });
   if (queueModeEl.value == "playlist") {
-    // Prepend all copies to the queue
     DBDATA.queue.unshift(...playlistCopies);
-    let nextVideoToPlay = DBDATA.queue[0]._children[0];
-    // Track *zero* is going to play, so the Queue will point to track *one*
-    DBDATA.queue[0]._currentTrack = 1;
-    DBDATA.queue.unshift(nextVideoToPlay);
   } else {
     DBDATA.queue.push(...playlistCopies);
   }
   renderDB(DBDATA.queue);
   renderPlaylists();
-  // Remove errors and dups from graphs.
-  // But leave in actual Queue (with low score), so we don't e.g. add it again
-  DBDATA.filtered = DBDATA.queue.filter(
-    (v) => (v.errCnt ?? 0) < MAX_ERRS && !v.dup
-  );
-  // calcStringSimilarity(DBDATA.queue);
   renderQueue();
   const navType = performance.getEntriesByType("navigation")[0]?.type;
   if (navType !== "reload") {
