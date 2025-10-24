@@ -18,6 +18,8 @@ module.exports = function (options) {
       path: app.getPath("userData"),
       maximize: true,
       fullScreen: true,
+      defaultWidth: 800,
+      defaultHeight: 600,
     },
     options
   );
@@ -41,11 +43,9 @@ module.exports = function (options) {
 
   function resetStateToDefault() {
     const displayBounds = screen.getPrimaryDisplay().bounds;
-
-    // Reset state to default values on the primary display
     state = {
-      width: config.defaultWidth || 800,
-      height: config.defaultHeight || 600,
+      width: config.defaultWidth,
+      height: config.defaultHeight,
       x: 0,
       y: 0,
       displayBounds,
@@ -53,6 +53,14 @@ module.exports = function (options) {
   }
 
   function windowWithinBounds(bounds) {
+    console.log(JSON.stringify(state));
+    console.log(JSON.stringify(bounds));
+    let b =
+      state.x >= bounds.x &&
+      state.y >= bounds.y &&
+      state.x + state.width <= bounds.x + bounds.width &&
+      state.y + state.height <= bounds.y + bounds.height;
+    console.log(b);
     return (
       state.x >= bounds.x &&
       state.y >= bounds.y &&
@@ -65,12 +73,7 @@ module.exports = function (options) {
     const visible = screen.getAllDisplays().some((display) => {
       return windowWithinBounds(display.bounds);
     });
-
-    if (!visible) {
-      // Window is partially or fully not visible now.
-      // Reset it to safe defaults.
-      return resetStateToDefault();
-    }
+    if (!visible) resetStateToDefault();
   }
 
   function validateState() {
@@ -80,7 +83,6 @@ module.exports = function (options) {
       state = null;
       return;
     }
-
     if (hasBounds() && state.displayBounds) {
       ensureWindowVisibleOnSomeDisplay();
     }
@@ -88,41 +90,37 @@ module.exports = function (options) {
 
   function updateState(win) {
     win = win || winRef;
-    if (!win) {
-      return;
-    }
-    // Don't throw an error when window was closed
+    if (!win) return;
+
     try {
       const winBounds = win.getBounds();
+      const display = screen.getDisplayMatching(winBounds);
+      const scale = display.scaleFactor || 1;
+
       if (isNormal(win)) {
-        state.x = winBounds.x;
-        state.y = winBounds.y;
-        state.width = winBounds.width;
-        state.height = winBounds.height;
+        // Save logical bounds (pixels / scaleFactor)
+        state.x = Math.round(winBounds.x / scale);
+        state.y = Math.round(winBounds.y / scale);
+        state.width = Math.round(winBounds.width / scale);
+        state.height = Math.round(winBounds.height / scale);
       }
+
       state.isMaximized = win.isMaximized();
       state.isFullScreen = win.isFullScreen();
-      state.displayBounds = screen.getDisplayMatching(winBounds).bounds;
+      state.displayBounds = display.bounds;
+      state.displayScale = scale;
     } catch (err) {}
   }
 
   function saveState(win) {
-    // Update window state only if it was provided
-    if (win) {
-      updateState(win);
-    }
-
-    // Save state
+    if (win) updateState(win);
     try {
       mkdirp.sync(path.dirname(fullStoreFileName));
       jsonfile.writeFileSync(fullStoreFileName, state);
-    } catch (err) {
-      // Don't care
-    }
+    } catch (err) {}
   }
 
   function stateChangeHandler() {
-    // Handles both 'resize' and 'move'
     clearTimeout(stateChangeTimer);
     stateChangeTimer = setTimeout(updateState, eventHandlingDelay);
   }
@@ -132,51 +130,64 @@ module.exports = function (options) {
   }
 
   function closedHandler() {
-    // Unregister listeners and save state
     unmanage();
     saveState();
   }
 
   function manage(win) {
-    if (config.maximize && state.isMaximized) {
-      win.maximize();
+    // Apply saved bounds
+    if (hasBounds()) {
+      try {
+        const display = screen.getDisplayNearestPoint({
+          x: state.x,
+          y: state.y,
+        });
+        const scale = display.scaleFactor || 1;
+
+        const scaledBounds = {
+          x: Math.round(state.x * scale),
+          y: Math.round(state.y * scale),
+          width: Math.round(state.width * scale),
+          height: Math.round(state.height * scale),
+        };
+
+        win.setBounds(scaledBounds);
+      } catch (err) {}
     }
-    if (config.fullScreen && state.isFullScreen) {
-      win.setFullScreen(true);
-    }
+
+    if (config.maximize && state.isMaximized) win.maximize();
+    if (config.fullScreen && state.isFullScreen) win.setFullScreen(true);
+
     win.on("resize", stateChangeHandler);
     win.on("move", stateChangeHandler);
     win.on("close", closeHandler);
     win.on("closed", closedHandler);
+
     winRef = win;
   }
 
   function unmanage() {
-    if (winRef) {
-      winRef.removeListener("resize", stateChangeHandler);
-      winRef.removeListener("move", stateChangeHandler);
-      clearTimeout(stateChangeTimer);
-      winRef.removeListener("close", closeHandler);
-      winRef.removeListener("closed", closedHandler);
-      winRef = null;
-    }
+    if (!winRef) return;
+    winRef.removeListener("resize", stateChangeHandler);
+    winRef.removeListener("move", stateChangeHandler);
+    clearTimeout(stateChangeTimer);
+    winRef.removeListener("close", closeHandler);
+    winRef.removeListener("closed", closedHandler);
+    winRef = null;
   }
 
   // Load previous state
   try {
     state = jsonfile.readFileSync(fullStoreFileName);
-  } catch (err) {
-    // Don't care
-  }
+  } catch (err) {}
 
-  // Check state validity
   validateState();
 
-  // Set state fallback values
+  // Fallback defaults
   state = Object.assign(
     {
-      width: config.defaultWidth || 800,
-      height: config.defaultHeight || 600,
+      width: config.defaultWidth,
+      height: config.defaultHeight,
     },
     state
   );
