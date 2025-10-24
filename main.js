@@ -12,7 +12,7 @@ const {
 } = require("electron");
 const path = require("path");
 const fs = require("fs");
-const windowStateKeeper = require("electron-window-state");
+const windowStateKeeper = require("./electron-window-state");
 
 let store;
 
