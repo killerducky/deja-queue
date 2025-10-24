@@ -10,7 +10,7 @@ let INIT_FACTOR = 30;
 let COOLDOWN_JITTER_START = 3; // Subtract N days from the interval
 let COOLDOWN_JITTER_RATE = 0.0; // (0X = disable for now) Add up to X% jitter to that part of the interval
 let COOLDOWN_FLOOR = 0.0; // Go all the way to 0 for just played songs
-let COOLDOWN_POWER_FACTOR = 5; // 1 = linear, higher power = sharper curve
+let COOLDOWN_POWER_FACTOR = 2; // 1 = linear, higher power = sharper curve
 let RATING_FACTOR = 0.0; // 0 = all ratings same. 1 = 10 points per rating point
 let DUP_SCORE = -8;
 let ERR_SCORE = -9;
