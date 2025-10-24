@@ -265,18 +265,20 @@ async function renderQueue() {
     let video = DBDATA.queue.find((v) => v.id === entry.id);
     if (entry.type == "playlist") {
       if (entry.playlistId !== playlist?.id) {
+        playlist && utils.addComputedFieldsPL(playlist, DBDATA.queue);
         playlist = utils.wrapVideo(
           DBDATA.queue.find((pl) => pl.id === entry.playlistId)
         );
-        playlist = utils.addComputedFieldsPL(playlist, DBDATA.queue);
         playlist.videoIds = [];
         logVideoList.push(playlist);
       }
       playlist.videoIds.push(entry.id);
+      playlist._currentTrack = -1;
     } else {
       logVideoList.push(utils.wrapVideo(video, { entry }));
     }
   }
+  playlist && utils.addComputedFieldsPL(playlist, DBDATA.queue);
   tabulatorLog = await table2(tabulatorLog, logEl, logVideoList, "log");
 }
 
@@ -373,12 +375,14 @@ function getTableColumns(tableType) {
       formatter: (cell) => {
         let item = cell.getData();
         if (item.type == "playlist") {
-          return `${item._currentTrack + 1}/${item._track}`;
+          if (item._currentTrack == -1) {
+            return item._track;
+          } else {
+            return `${item._currentTrack + 1}/${item._track}`;
+          }
         } else {
           const dataTree = cell.getTable().options?.dataTree;
-          const row = cell.getRow();
-          const parent =
-            dataTree && row && row.getTreeParent ? row.getTreeParent() : null;
+          const parent = dataTree && cell.getRow().getTreeParent();
           if (parent) {
             return item._track + 1;
           } else {
