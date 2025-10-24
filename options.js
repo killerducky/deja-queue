@@ -2,7 +2,7 @@ import * as db from "./db.js";
 import * as utils from "./utils.js";
 
 let DBDATA = { queue: [], filtered: [] };
-let LISTLEN = 20;
+let LISTLEN = 30;
 let MAXLOGDUMP = 99999;
 let DEFAULT_RATING = 7.5;
 let MAX_ERRS = 5; // After this many errors treat it as bad
@@ -250,7 +250,7 @@ async function renderQueue() {
   }
   // const firstVideo = DBDATA.queue[0];
   // const restVideos = DBDATA.queue.slice(1, LISTLEN + 1);
-  const restVideos = DBDATA.queue;
+  const restVideos = DBDATA.queue.slice(0, LISTLEN);
   // tabulatorCurrent = await table2(
   //   tabulatorCurrent,
   //   currentEl,
