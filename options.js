@@ -947,7 +947,9 @@ async function logEvent(item, event) {
 let lastEndedVideoId = null;
 
 window.electronAPI.onBroadcast(async (msg) => {
-  const currVideo = DBDATA.queue[0];
+  let currItem = DBDATA.queue[0];
+  let currVideo =
+    currItem.type == "playlist" ? currItem._children[0] : currItem;
   let videoId = null;
   // TODO: We don't always have msg.url?
   // e.g. main.js could be sending the message.
@@ -975,7 +977,7 @@ window.electronAPI.onBroadcast(async (msg) => {
     }
     lastEndedVideoId = videoId;
     if (videoId && currVideo && videoId === currVideo.id) {
-      await logEvent(currVideo, "play");
+      await logEvent(currItem, "play");
     }
     playNextVideo();
   } else if (msg.type === "queue:addVideo") {
