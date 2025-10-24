@@ -1,7 +1,8 @@
 ## VIP user
 
 - [ ] bounds being called too early (ready-to-show)
-  - [ ] TV high res is screwing the restore bounds command
+  - [?] TV high res is screwing the restore bounds command
+  - [?] use electron-window-state library -- see if VIP user issue fixed
 - [ ] full screen playlist/database
 - [ ] add playlist - should add to queue as PL, not individual songs
 - [ ] thumb with weird aspect ratio -- tabulator doing something?

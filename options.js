@@ -260,10 +260,24 @@ async function renderQueue() {
   tabulatorQueue = await table2(tabulatorQueue, queueEl, restVideos, "queue");
   let log = await db.getLastNLogs(LISTLEN);
   let logVideoList = [];
+  let playlist = null;
   for (let entry of log) {
     let video = DBDATA.queue.find((v) => v.id === entry.id);
-    logVideoList.push(utils.wrapVideo(video, { entry }));
+    if (entry.type == "playlist") {
+      if (entry.playlistId !== playlist?.id) {
+        playlist = utils.wrapVideo(
+          DBDATA.queue.find((pl) => pl.id === entry.playlistId)
+        );
+        playlist = utils.addComputedFieldsPL(playlist, DBDATA.queue);
+        playlist.videoIds = [];
+        logVideoList.push(playlist);
+      }
+      playlist.videoIds.push(entry.id);
+    } else {
+      logVideoList.push(utils.wrapVideo(video, { entry }));
+    }
   }
+  console.log(logVideoList);
   tabulatorLog = await table2(tabulatorLog, logEl, logVideoList, "log");
 }
 
@@ -893,7 +907,7 @@ async function logEvent(item, event) {
   await saveVideos([video]);
   const logEntry = {
     type: item.type,
-    playlist: item.type == "playlist" ? item.id : null,
+    playlistId: item.type == "playlist" ? item.id : null,
     id: video.id,
     timestamp: now,
     event: event,
