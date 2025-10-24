@@ -277,7 +277,6 @@ async function renderQueue() {
       logVideoList.push(utils.wrapVideo(video, { entry }));
     }
   }
-  console.log(logVideoList);
   tabulatorLog = await table2(tabulatorLog, logEl, logVideoList, "log");
 }
 
@@ -371,6 +370,22 @@ function getTableColumns(tableType) {
       title: "Trk",
       field: "_track",
       sorter: "number",
+      formatter: (cell) => {
+        let item = cell.getData();
+        if (item.type == "playlist") {
+          return `${item._currentTrack + 1}/${item._track}`;
+        } else {
+          const dataTree = cell.getTable().options?.dataTree;
+          const row = cell.getRow();
+          const parent =
+            dataTree && row && row.getTreeParent ? row.getTreeParent() : null;
+          if (parent) {
+            return item._track + 1;
+          } else {
+            return "";
+          }
+        }
+      },
     },
     dur: {
       title: "Dur",
@@ -1427,6 +1442,7 @@ async function savePlaylists(playlists) {
   DBDATA.playlists.sort((a, b) => b.score - a.score);
   const playlistCopies = DBDATA.playlists.map((item) => {
     const copy = utils.wrapVideo(item);
+    // copy.playlistRef = item;
     return utils.addComputedFieldsPL(copy, DBDATA.queue);
   });
   if (queueModeEl.value == "playlist") {
