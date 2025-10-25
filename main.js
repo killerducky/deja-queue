@@ -144,7 +144,15 @@ class YoutubePlayerProxy {
         metadata: { ...this.winInfo },
       };
     }
-    this.views[this.active].webContents.send("broadcast", msg);
+
+    if (msg?.source == "local") {
+      this.views[this.active].webContents.loadFile(
+        path.join(__dirname, "videoplayer.html"),
+        { query: { f: msg.filename } }
+      );
+    } else {
+      this.views[this.active].webContents.send("broadcast", msg);
+    }
   }
 }
 

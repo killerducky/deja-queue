@@ -2,10 +2,20 @@
 
 let dbPromise; // promise while opening
 let dbInstance; // actual IDBDatabase
+
+export function uuidv4() {
+  return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
+    (
+      c ^
+      (crypto.getRandomValues(new Uint8Array(1))[0] & (15 >> (c / 4)))
+    ).toString(16)
+  );
+}
+
 async function openDB() {
   if (!dbPromise) {
     dbPromise = new Promise((resolve, reject) => {
-      const request = indexedDB.open("YouTubeDJ", 3);
+      const request = indexedDB.open("YouTubeDJ", 4);
 
       request.onupgradeneeded = (event) => {
         const db = event.target.result;
@@ -18,6 +28,61 @@ async function openDB() {
         }
         if (!db.objectStoreNames.contains("playlists")) {
           db.createObjectStore("playlists", { keyPath: "id" });
+        }
+
+        // --- Migrate existing data if version < 4 ---
+        if (event.oldVersion < 4) {
+          // Wrap in try/catch to prevent upgrade abort
+          try {
+            // Migrate videos
+            if (db.objectStoreNames.contains("videos")) {
+              const tx = event.target.transaction;
+              const store = tx.objectStore("videos");
+              const allVideosReq = store.getAll();
+              allVideosReq.onsuccess = () => {
+                const videos = allVideosReq.result;
+                videos.forEach((v) => {
+                  // generate uuid if id is missing or not a uuid
+                  v.foreignKey = v.id;
+                  v.id = uuidv4();
+                  v.source = "youtube";
+                  store.put(v);
+                });
+              };
+            }
+
+            // Migrate playlists
+            if (db.objectStoreNames.contains("playlists")) {
+              const tx = event.target.transaction;
+              const store = tx.objectStore("playlists");
+              const allPlaylistsReq = store.getAll();
+              allPlaylistsReq.onsuccess = () => {
+                const playlists = allPlaylistsReq.result;
+                playlists.forEach((p) => {
+                  p.foreignKey = p.id;
+                  p.id = uuidv4();
+                  p.source = "youtube";
+                  store.put(p);
+                });
+              };
+            }
+
+            // // Migrate logs
+            // if (db.objectStoreNames.contains("log")) {
+            //   const tx = event.target.transaction;
+            //   const store = tx.objectStore("log");
+            //   const allLogsReq = store.getAll();
+            //   allLogsReq.onsuccess = () => {
+            //     const logs = allLogsReq.result;
+            //     logs.forEach((l) => {
+            //       l.source = "youtube";
+            //       store.put(l);
+            //     });
+            //   };
+            // }
+          } catch (err) {
+            console.error("Migration error:", err);
+          }
         }
       };
 

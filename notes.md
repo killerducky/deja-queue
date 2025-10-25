@@ -99,3 +99,18 @@
 - [x] table column picker/sizer/save/restore
 - [x] Youtube window placement more responsive
 - [x] multiple youtube explorers
+
+## YT/Spotify/Local
+
+```
+      "uuid": "FJ0XmxA3SyU",
+      "source": "local" | "youtube" | "spotify"
+      "id": "FJ0XmxA3SyU", : "C:/path/to/file"
+      "playlistId": "RDGMEMR48zJN_YMORCOLhrAwXwKwVMoNCOyZNMeWE",  // don't even need this!
+      "rating": 5,
+      "yt": { },
+      "scrapedDuration": 73.881,
+      "lastPlayDate": 1759787562635,
+      "delay": true,
+      "channelTitle": "Tribal Trap"
+```

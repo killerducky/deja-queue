@@ -240,7 +240,9 @@ function addComputedFieldsPL(playlist, queue) {
   }
   let allChildren = [];
   for (const [idx, id] of playlist.videoIds.entries()) {
-    let origVideo = queue.find((v) => v.id === id);
+    let origVideo = queue.find(
+      (v) => v.source == "youtube" && v.foreignKey === id
+    );
     let video = wrapItem(origVideo, { _track: idx, playlist });
     allChildren.push(video);
   }
@@ -346,6 +348,9 @@ function addComputedFieldsVideo(video) {
 }
 
 function wrapItem(video, extras = {}) {
+  if (!video) {
+    console.log("ERROR: undefined input");
+  }
   if (video.ref) {
     console.log("ERROR: Already wrapped?");
   }

@@ -311,16 +311,13 @@ function thumbnailFormatter(cell) {
   const candidateUrl =
     item.type == "playlist"
       ? item.thumbnailUrl
-      : `https://i.ytimg.com/vi/${data.id}/default.jpg`;
+      : `https://i.ytimg.com/vi/${data.foreignKey}/default.jpg`;
 
   // img.src = DEFAULT_THUMB;
   img.src = candidateUrl;
   img.onerror = (e) => {
     console.log("img error");
-    console.log(e);
     console.log(cell.getData());
-    console.log(cell.getRow().getData());
-    console.log(cell.getData().id);
   };
   return img;
 }
@@ -620,8 +617,8 @@ function formatDue(due) {
 }
 
 async function addYoutubeInfo(video) {
-  console.log("Fetching YouTube info for", video.id);
-  const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${video.id}&key=${env.youtube_api_key}`;
+  console.log("Fetching YouTube info for", video.foreignKey);
+  const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${video.foreignKey}&key=${env.youtube_api_key}`;
   const response = await fetch(url);
   let data = await response.json();
   // console.log(data);
@@ -631,7 +628,7 @@ async function addYoutubeInfo(video) {
     utils.addComputedFieldsVideo(video);
     await saveVideos([video]);
   } else {
-    console.log("Error fetching yt for: ", video.id);
+    console.log("Error fetching yt for: ", video.foreignKey);
   }
 }
 
@@ -661,7 +658,9 @@ async function addPlaylistVideos(playlistId) {
   } else {
     console.log("New playlist");
     playlist = {
-      id: playlistId,
+      id: db.uuidv4(),
+      source: "youtube",
+      foreignKey: playlistId,
       title: playlistInfo.snippet.title,
       channelTitle: playlistInfo.snippet.channelTitle,
       thumbnailUrl: playlistInfo.snippet.thumbnails?.default?.url,
@@ -694,7 +693,9 @@ async function addPlaylistVideos(playlistId) {
       playlist.videoIds.push(id);
       if (!DBDATA.queue.find((v) => v.id === id)) {
         let video = {
-          id: id,
+          id: db.uuidv4(),
+          source: "youtube",
+          foreignKey: id,
           rating: DEFAULT_RATING,
           dateAdded: Date.now(),
           yt: yt,
@@ -720,9 +721,10 @@ async function addPlaylistVideos(playlistId) {
 
   await saveVideos(newVideos);
   // console.log("addPlaylistVideos: newVideos ", newVideos);
-  // console.log(playlist);
+  console.log(playlist);
   playlist.videoCount = playlist.videoIds.length;
   utils.addComputedFieldsPL(playlist, DBDATA.queue);
+  console.log(playlist);
   console.log(
     `Add playlist of ${playlist.videoCount} videos (${newVideos.length} new)`
   );
@@ -756,12 +758,14 @@ async function addPlaylistVideos(playlistId) {
 
 async function addVideoOrPlaylist(response) {
   if (response.type == "video") {
-    if (DBDATA.queue.find((v) => v.id === response.id)) {
+    if (DBDATA.queue.find((v) => v.foreignKey === response.id)) {
       showToast("Video already in DB");
       await moveVideoToFront(response.id);
     } else {
       let video = {
-        id: response.id,
+        id: db.uuidv4(),
+        source: "youtube",
+        foreignKey: response.id,
         rating: DEFAULT_RATING,
         dateAdded: Date.now(),
       };
@@ -915,7 +919,11 @@ async function cueNextVideo(offset = 1, params = {}) {
   console.log("ct:", DBDATA.queue[0]._currentTrack);
   console.log("cnv", nextVideoToPlay);
 
-  let msg = { type: "backgroundCueVideo", id: nextVideoToPlay.id };
+  let msg = {
+    type: "backgroundCueVideo",
+    source: nextVideoToPlay.source,
+    id: nextVideoToPlay.foreignKey,
+  };
   sendMessage(msg);
 }
 
@@ -945,7 +953,8 @@ async function playNextVideo(offset = 1, params = {}) {
   }, 150000000); // 15s -- see if this works
   let msg = {
     type: params?.cueVideo ? "cueVideo" : "playVideo",
-    id: nextVideoToPlay.id,
+    soruce: nextVideoToPlay.source,
+    id: nextVideoToPlay.foreignKey,
   };
   sendMessage(msg);
   if (offset !== 0) {
@@ -990,6 +999,8 @@ async function logEvent(item, event) {
   const logEntry = {
     type: item.type,
     id: video.id,
+    source: video.source,
+    foreignKey: video.foreignKey,
     timestamp: now,
     event: event,
     ...(item.type == "playlist" && {
