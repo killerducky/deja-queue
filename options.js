@@ -361,8 +361,9 @@ function getTableColumns(tableType) {
         const row1 = cell.getTable().getRows()[1];
         if (tableType == "queue" && row == row0) {
           playNextVideo(0);
-        } else if (tableType == "queue" && row == row1) {
-          playNextVideo(1);
+          // } else if (tableType == "queue" && row == row1) {
+          //   This doesn't really work in playlist mode
+          //    playNextVideo(1);
         } else {
           moveVideoToFront(cell.getRow().getData().id);
           await renderQueue();
@@ -644,22 +645,16 @@ async function addPlaylistVideos(playlistId) {
   }
 
   let playlistInfo = playlistData.items[0];
-  let playlist;
-  playlist = DBDATA.playlists.find((p) => p.id == playlistId);
+  let playlist = await db.getPlaylist(playlistId);
   if (playlist) {
-    // If it already exists, only update the yt info and the video list
     console.log("Updating existing playlist", playlist);
-    let old = playlist;
-    playlist = {
-      id: old.id,
-      title: playlistInfo.snippet.title,
-      channelTitle: playlistInfo.snippet.channelTitle,
-      thumbnailUrl: playlistInfo.snippet.thumbnails?.default?.url,
-      dateAdded: old.dateAdded,
-      rating: old.rating,
-      yt: playlistInfo,
-      videoIds: [],
-    };
+    // If it already exists, clear videoIds, and only update a few yt info fields.
+    // All other fields such as rating are kept as is
+    playlist.videoIds = [];
+    playlist.yt = playlistInfo;
+    playlist.title = playlistInfo.snippet.title;
+    playlist.channelTitle = playlistInfo.snippet.channelTitle;
+    playlist.thumbnailUrl = playlistInfo.snippet.thumbnails?.default?.url;
   } else {
     console.log("New playlist");
     playlist = {
