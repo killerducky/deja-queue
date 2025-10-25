@@ -1005,7 +1005,7 @@ let lastEndedVideoId = null;
 window.electronAPI.onBroadcast(async (msg) => {
   let currItem = DBDATA.queue[0];
   let currVideo =
-    currItem.type == "playlist" ? currItem._children[0] : currItem;
+    currItem?.type == "playlist" ? currItem._children[0] : currItem;
   let videoId = null;
   // TODO: We don't always have msg.url?
   // e.g. main.js could be sending the message.
