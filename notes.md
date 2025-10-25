@@ -3,6 +3,7 @@
 - [ ] bounds being called too early (ready-to-show)
   - [?] TV high res is screwing the restore bounds command
   - [?] use electron-window-state library -- see if VIP user issue fixed
+  - [?] chatgpt modify electron-window-state
 - [ ] full screen playlist/database
 - [ ] add playlist - should add to queue as PL, not individual songs
 - [ ] thumb with weird aspect ratio -- tabulator doing something?
@@ -20,6 +21,10 @@
 
 ## Playlists
 
+- [x] general improvement of playlists in queue/log
+- [x] Playlist should not pop single songs out into the queue
+- [x] log doesn't show track number
+- [x] log doesn't show playlists
 - [ ] Skip playlist does not always(?) reset the current track number
 - [ ] Make title, etc editable
 - [ ] Adding the same playlist should not overwrite fields
@@ -27,10 +32,7 @@
 - [ ] Deleted songs in playlist should not be added
 - [ ] Remove videoCnt field, replace with computed field
 - [ ] refresh should not change current playing song / playlist
-- [ ] Playlist should not pop single songs out into the queue
 - [ ] Go backwards in playlist / reset playlist
-- [ ] log doesn't show track number
-- [ ] log doesn't show playlists
 
 ## UI
 

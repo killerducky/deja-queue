@@ -636,7 +636,7 @@ async function addPlaylistVideos(playlistId) {
   let playlistUrl = `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&id=${playlistId}&key=${env.youtube_api_key}`;
   let playlistRes = await fetch(playlistUrl);
   let playlistData = await playlistRes.json();
-  console.log("playlists raw:", playlistData);
+  // console.log("playlists raw:", playlistData);
 
   if (!playlistData.items || playlistData.items.length === 0) {
     console.error("Playlist not found:", playlistId);
@@ -644,17 +644,35 @@ async function addPlaylistVideos(playlistId) {
   }
 
   let playlistInfo = playlistData.items[0];
-  let playlist = {
-    id: playlistId,
-    title: playlistInfo.snippet.title,
-    channelTitle: playlistInfo.snippet.channelTitle,
-    videoCount: playlistInfo.contentDetails.itemCount,
-    thumbnailUrl: playlistInfo.snippet.thumbnails?.default?.url,
-    dateAdded: Date.now(),
-    rating: DEFAULT_RATING,
-    yt: playlistInfo,
-    videoIds: [],
-  };
+  let playlist;
+  playlist = DBDATA.playlists.find((p) => p.id == playlistId);
+  if (playlist) {
+    // If it already exists, only update the yt info and the video list
+    console.log("Updating existing playlist", playlist);
+    let old = playlist;
+    playlist = {
+      id: old.id,
+      title: playlistInfo.snippet.title,
+      channelTitle: playlistInfo.snippet.channelTitle,
+      thumbnailUrl: playlistInfo.snippet.thumbnails?.default?.url,
+      dateAdded: old.dateAdded,
+      rating: old.rating,
+      yt: playlistInfo,
+      videoIds: [],
+    };
+  } else {
+    console.log("New playlist");
+    playlist = {
+      id: playlistId,
+      title: playlistInfo.snippet.title,
+      channelTitle: playlistInfo.snippet.channelTitle,
+      thumbnailUrl: playlistInfo.snippet.thumbnails?.default?.url,
+      dateAdded: Date.now(),
+      rating: DEFAULT_RATING,
+      yt: playlistInfo,
+      videoIds: [],
+    };
+  }
 
   // Now fetch all videos from the playlist
   let nextPageToken = "";
@@ -667,28 +685,26 @@ async function addPlaylistVideos(playlistId) {
       `&maxResults=50&pageToken=${nextPageToken}&playlistId=${playlistId}&key=${env.youtube_api_key}`;
     let res = await fetch(url);
     let data = await res.json();
-    console.log("playlistItems raw: ", data);
+    // console.log("playlistItems raw: ", data);
     data = trimYoutubeFields(data);
 
-    // moveVideoToFront needs to go backwards to work
-    for (const yt of [...data.items].reverse()) {
-      let video = {
-        id: yt.snippet.resourceId.videoId,
-        rating: DEFAULT_RATING,
-        dateAdded: Date.now(),
-        yt: yt,
-      };
-      video = trimYoutubeFields(video);
-      utils.addComputedFieldsVideo(video);
-      // Due to going backwards, we need to go backwards here too
-      playlist.videoIds.unshift(video.id);
-      if (DBDATA.queue.find((v) => v.id === video.id)) {
-        // Exists already, just move up
-        await moveVideoToFront(video.id);
-      } else {
-        // Doesn't exist, add and move up
+    for (const yt of data.items) {
+      let id = yt.snippet.resourceId.videoId;
+      if (playlist.videoIds.includes(id)) {
+        continue; // skip dups
+      }
+      playlist.videoIds.push(id);
+      if (!DBDATA.queue.find((v) => v.id === id)) {
+        let video = {
+          id: id,
+          rating: DEFAULT_RATING,
+          dateAdded: Date.now(),
+          yt: yt,
+        };
+        video = trimYoutubeFields(video);
+        utils.addComputedFieldsVideo(video);
         newVideos.push(video);
-        DBDATA.queue.splice(1, 0, video);
+        DBDATA.queue.push(video);
       }
     }
     nextPageToken = data.nextPageToken;
@@ -705,16 +721,37 @@ async function addPlaylistVideos(playlistId) {
   } while (nextPageToken);
 
   await saveVideos(newVideos);
-  console.log("addPlaylistVideos: newVideos ", newVideos);
+  // console.log("addPlaylistVideos: newVideos ", newVideos);
+  // console.log(playlist);
+  playlist.videoCount = playlist.videoIds.length;
+  utils.addComputedFieldsPL(playlist, DBDATA.queue);
+  console.log(
+    `Add playlist of ${playlist.videoCount} videos (${newVideos.length} new)`
+  );
   showToast(
-    `Add playlist of ${playlist.videoIds.length} videos (${newVideos.length} new)`
+    `Add playlist of ${playlist.videoCount} videos (${newVideos.length} new)`
   );
 
-  playlist.videoCount = playlist.videoIds.length; // This seems more accurate
-  utils.addComputedFieldsPL(playlist, DBDATA.queue);
-  console.log("add", playlist);
-  DBDATA.playlists.push(playlist);
+  // Replace or add in DBDATA.playlists
+  let idx = DBDATA.playlists.findIndex((p) => p.id === playlist.id);
+  if (idx !== -1) {
+    DBDATA.playlists[idx] = playlist;
+  } else {
+    DBDATA.playlists.push(playlist);
+  }
   await savePlaylists(playlist);
+
+  // Replace or add in DBDATA.queue
+  let copy = utils.wrapItem(playlist);
+  copy = utils.addComputedFieldsPL(copy, DBDATA.queue);
+  idx = DBDATA.queue.findIndex((p) => p.id === playlist.id);
+  if (idx !== -1) {
+    DBDATA.queue[idx] = playlist;
+  } else {
+    DBDATA.queue.push(playlist);
+  }
+  // Use this instead of unshift because it's not so simple
+  await moveVideoToFront(copy.id);
 
   await rerenderAll();
 }
@@ -1002,15 +1039,15 @@ window.electronAPI.onBroadcast(async (msg) => {
     }
     playNextVideo();
   } else if (msg.type === "queue:addVideo") {
-    await addVideoOrPlaylist({ type: "video", id: msg.id });
+    addVideoOrPlaylist({ type: "video", id: msg.id });
   } else if (msg.type === "queue:addPlaylist") {
-    await addVideoOrPlaylist({ type: "playlist", id: msg.id });
+    addVideoOrPlaylist({ type: "playlist", id: msg.id });
   } else if (msg.type === "deleteDatabaseRequest") {
-    await deleteDB();
+    deleteDB();
   } else if (msg.type === "importDatabase") {
     importDB(msg.filePath);
   } else if (msg.type === "exportDatabase") {
-    await exportDB();
+    exportDB();
   } else if (msg.type === "videoCueNext") {
     cueNextVideo();
   }
