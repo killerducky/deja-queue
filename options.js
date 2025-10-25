@@ -261,7 +261,7 @@ async function renderQueue() {
   function finalizePlaylist(playlist, playlistChildren) {
     if (playlist) {
       utils.addComputedFieldsPL(playlist, DBDATA.queue);
-      playlist._allChildren = [...playlistChildren];
+      playlist._allChildren = playlistChildren;
     }
     return { playlist: null, playlistChildren: [] };
   }
@@ -280,10 +280,13 @@ async function renderQueue() {
           playlistChildren
         ));
         // Make new playlist copy
-        playlist = DBDATA.queue.find((pl) => pl.id === entry.playlistId);
-        playlist = utils.wrapItem({ ...playlist.ref });
-        playlist.videoIds = [];
-        playlist._currentTrack = -1;
+        let origPlaylist = DBDATA.queue.find(
+          (pl) => pl.id === entry.playlistId
+        );
+        playlist = utils.wrapItem(origPlaylist.ref, {
+          _currentTrack: -1,
+          videoIds: [],
+        });
         logVideoList.push(playlist);
       }
       playlist.videoIds.push(entry.id);
@@ -1474,7 +1477,33 @@ function dbCheck() {
   }
 }
 
-async function rerenderAll() {
+async function updateTabulator(tabulator, items) {
+  if (!tabulator) {
+    return;
+  }
+  function walk(rows) {
+    for (const row of rows) {
+      let data = row.getData();
+      let item = items.find((item) => item.id == data.id);
+      if (item) {
+        row.reformat();
+      }
+      const children = row.getTreeChildren?.();
+      if (children?.length) {
+        walk(children);
+      }
+    }
+  }
+  walk(tabulator.getRows());
+}
+
+async function rerenderAll(items = []) {
+  if (items.length > 0) {
+    await updateTabulator(playlistsTabulator, items);
+    await updateTabulator(tabulatorQueue, items);
+    await updateTabulator(tabulatorDB, items);
+    return;
+  }
   if (playlistsTabulator) {
     await renderPlaylists();
   }
@@ -1489,14 +1518,15 @@ async function rerenderAll() {
 async function saveVideos(videos) {
   videos = Array.isArray(videos) ? videos : [videos];
   await db.saveVideos(videos);
-  await rerenderAll();
+  await rerenderAll(videos);
 }
 
 async function savePlaylists(playlists) {
   playlists = Array.isArray(playlists) ? playlists : [playlists];
   await db.savePlaylists(playlists);
-  await rerenderAll();
+  await rerenderAll(playlists);
 }
+
 // Initial load
 (async () => {
   DBDATA.queue = await db.loadVideos();
