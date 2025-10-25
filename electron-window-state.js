@@ -53,14 +53,6 @@ module.exports = function (options) {
   }
 
   function windowWithinBounds(bounds) {
-    console.log(JSON.stringify(state));
-    console.log(JSON.stringify(bounds));
-    let b =
-      state.x >= bounds.x &&
-      state.y >= bounds.y &&
-      state.x + state.width <= bounds.x + bounds.width &&
-      state.y + state.height <= bounds.y + bounds.height;
-    console.log(b);
     return (
       state.x >= bounds.x &&
       state.y >= bounds.y &&
@@ -95,7 +87,8 @@ module.exports = function (options) {
     try {
       const winBounds = win.getBounds();
       const display = screen.getDisplayMatching(winBounds);
-      const scale = display.scaleFactor || 1;
+      // const scale = display.scaleFactor || 1;
+      const scale = 1;
 
       if (isNormal(win)) {
         // Save logical bounds (pixels / scaleFactor)
@@ -142,7 +135,8 @@ module.exports = function (options) {
           x: state.x,
           y: state.y,
         });
-        const scale = display.scaleFactor || 1;
+        // const scale = display.scaleFactor || 1;
+        const scale = 1;
 
         const scaledBounds = {
           x: Math.round(state.x * scale),
