@@ -91,7 +91,7 @@ function plotRatings(type, items) {
     const days = utils.rating2days(r);
     const totalTime = durations[r] / 60 / 60;
     const time = durations[r] / 60 / 60 / days;
-    return `${r.toFixed(1)}<br>${totalTime.toFixed(1)}h/${days}d<br>${time.toFixed(1)}h`;
+    return `${r.toFixed(1)} ${utils.rating2days(r)}d<br>${totalTime.toFixed(1)}h/${days}d<br>${time.toFixed(1)}h`;
   });
   const colors = xs.map((r) => utils.rating2color(r));
   const trace = {
@@ -142,7 +142,7 @@ function plotRatings(type, items) {
   const loadsRev = [...loads].reverse();
 
   const traces2 = xsRev.map((r, i) => ({
-    name: `Rating ${r.toFixed(1)}`,
+    name: `Rating ${r.toFixed(1)} ${utils.rating2days(r)}d`,
     type: "bar",
     y: [loadsRev[i]], // height of this segment
     x: ["Ratings"], // single category
@@ -179,7 +179,7 @@ function plotScores(type, items) {
     return {
       x: scoresForRating,
       type: "histogram",
-      name: `Rating ${r.toFixed(1)}`,
+      name: `Rating ${r.toFixed(1)} ${utils.rating2days(r)}d`,
       marker: { color: utils.rating2color(r) },
       xbins: { size: 2 },
     };
@@ -211,7 +211,7 @@ function plotDues(type, absolute, items) {
     return {
       x: duesForRating,
       type: "histogram",
-      name: `Rating ${r.toFixed(1)}`,
+      name: `Rating ${r.toFixed(1)} ${utils.rating2days(r)}d`,
       marker: { color: utils.rating2color(r) },
       xbins: { size: absolute ? 1 : 0.05 },
     };
