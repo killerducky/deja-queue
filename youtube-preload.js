@@ -1,13 +1,72 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
-console.log("youtube-preload loaded");
+console.log("youtube-preload loaded", window.location.href);
 const params = new URL(window.location.href).searchParams;
 // Workaround: use t=1s to signal this is the very first video.
 let cueVideo = params.get("t") === "1s";
+let rotateAngle = params.get("rotateAngle") || 0;
 
 function getVideoId(url) {
   const params = new URL(url).searchParams;
   return params.get("v");
+}
+function calcHref(msg) {
+  let href = `https://www.youtube.com/watch?v=${msg.foreignKey}`;
+  if (msg.rotateAngle) {
+    href += `&rotateAngle=${msg.rotateAngle}`;
+  }
+  if (msg.type == "cueVideo") {
+    href += "&t=1s";
+  }
+  return href;
+}
+function applyRotate(rotateAngle) {
+  let container = document.querySelector(".local-video-container");
+  // console.log("container", container);
+  let video = document.querySelector("video");
+  let videoWidth = video.videoWidth;
+  let videoHeight = video.videoHeight;
+
+  let rotatedWidth = videoWidth;
+  let rotatedHeight = videoHeight;
+  let needsSwap = rotateAngle % 180 !== 0;
+  let scaleFactor = 1;
+  if (container) {
+    let containerWidth = container.clientWidth;
+    let containerHeight = container.clientHeight;
+    // console.log(
+    //   "pre",
+    //   rotateAngle,
+    //   containerWidth,
+    //   containerHeight,
+    //   videoWidth,
+    //   videoHeight
+    // );
+
+    let origScaleFactor = Math.min(
+      containerWidth / rotatedWidth,
+      containerHeight / rotatedHeight
+    );
+    if (needsSwap) {
+      rotatedWidth = videoHeight;
+      rotatedHeight = videoWidth;
+    }
+    scaleFactor = Math.min(
+      containerWidth / rotatedWidth,
+      containerHeight / rotatedHeight
+    );
+    // console.log(
+    //   "scale",
+    //   scaleFactor,
+    //   origScaleFactor,
+    //   containerWidth,
+    //   containerHeight,
+    //   rotatedWidth,
+    //   rotatedHeight
+    // );
+  }
+
+  video.style.transform = `rotate(${rotateAngle}deg) scale(${scaleFactor}`;
 }
 ipcRenderer.on("broadcast", (event, msg) => {
   console.log("ytp msg", msg);
@@ -22,10 +81,10 @@ ipcRenderer.on("broadcast", (event, msg) => {
         info: "Video already loaded",
       });
     } else {
-      window.location.href = `https://www.youtube.com/watch?v=${msg.foreignKey}`;
+      window.location.href = calcHref(msg);
     }
   } else if (msg.type === "cueVideo") {
-    window.location.href = `https://www.youtube.com/watch?v=${msg.foreignKey}&t=1s`;
+    window.location.href = calcHref(msg);
   } else if (msg.type === "pauseVideo") {
     video.pause();
   } else if (msg.type === "resumeVideo") {
@@ -35,6 +94,8 @@ ipcRenderer.on("broadcast", (event, msg) => {
   } else if (msg.type === "volumeChanged") {
     video.volume = msg.volume;
     video.muted = msg.muted;
+  } else if (msg.type === "rotateVideo") {
+    applyRotate(msg.rotateAngle);
   }
 });
 
@@ -54,6 +115,14 @@ function attachListener() {
   if (video === lastVideo) return;
   lastVideo = video;
   console.log("attachListener2");
+  video.addEventListener(
+    "loadedmetadata",
+    () => {
+      applyRotate(rotateAngle);
+    },
+    { once: true }
+  );
+
   if (!video.paused && !video.ended && video.readyState > 2) {
     if (cueVideo) {
       video.pause();

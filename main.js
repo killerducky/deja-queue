@@ -148,7 +148,7 @@ class YoutubePlayerProxy {
     if (msg?.source == "local") {
       this.views[this.active].webContents.loadFile(
         path.join(__dirname, "videoplayer.html"),
-        { query: { f: msg.foreignKey } }
+        { query: { f: msg.foreignKey, rotateAngle: msg.rotateAngle } }
       );
     } else {
       this.views[this.active].webContents.send("broadcast", msg);
@@ -347,7 +347,7 @@ function createAllWindows() {
     name: "youtubePlayer",
     preload: "youtube-preload.js",
   });
-  winRegister.main.object.webContents.openDevTools();
+  // winRegister.main.object.webContents.openDevTools();
   // winRegister.youtubePlayer.object.webContents.openDevTools();
 }
 function buildMenu() {

@@ -1,12 +1,9 @@
 <!doctype html>
 <html>
   <body>
-    <video
-      id="player"
-      controls
-      autoplay
-      style="width: 100%; height: 100%"
-    ></video>
+    <div class="local-video-container">
+      <video id="player" controls autoplay></video>
+    </div>
     <script>
       let params = new URLSearchParams(window.location.search);
       let file = params.get("f");

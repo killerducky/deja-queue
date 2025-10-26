@@ -56,6 +56,7 @@ async function loadEnv2() {
 loadEnv2();
 
 const fastForwardBtn = document.getElementById("fastForward");
+const rotateVideoBtn = document.getElementById("rotateVideo");
 const skipBtn = document.getElementById("skip");
 const delayBtn = document.getElementById("delay");
 const pauseBtn = document.getElementById("pause");
@@ -795,6 +796,14 @@ async function addVideoOrPlaylist(response) {
   await rerenderAll();
 }
 
+async function rotateVideo(msg) {
+  let currItem = DBDATA.queue[0];
+  let video = currItem.type == "playlist" ? currItem._children[0] : currItem;
+  video.rotateAngle = ((video.rotateAngle || 0) + 90) % 360;
+  saveVideos(video);
+  sendMessage({ type: "rotateVideo", rotateAngle: video.rotateAngle });
+}
+
 async function addLocalFiles(msg) {
   let videos = [];
   for (let file of msg.files) {
@@ -863,6 +872,9 @@ playBtn.addEventListener("click", async () => {
 });
 fastForwardBtn.addEventListener("click", async () => {
   sendMessage({ type: "fastForward" });
+});
+rotateVideoBtn.addEventListener("click", async () => {
+  rotateVideo();
 });
 
 let videoTimeout;
@@ -986,7 +998,11 @@ async function playNextVideo(offset = 1, params = {}) {
     type: params?.cueVideo ? "cueVideo" : "playVideo",
     source: nextVideoToPlay.source,
     foreignKey: nextVideoToPlay.foreignKey,
+    ...(nextVideoToPlay.rotateAngle && {
+      rotateAngle: nextVideoToPlay.rotateAngle,
+    }),
   };
+  console.log(msg);
   sendMessage(msg);
   if (offset !== 0) {
     await renderQueue();
@@ -1094,6 +1110,8 @@ window.electronAPI.onBroadcast(async (msg) => {
     cueNextVideo();
   } else if (msg.type === "importLocalDirectory") {
     addLocalFiles(msg);
+  } else if (msg.type === "rotateVideo") {
+    rotateVideo(msg);
   }
 });
 
