@@ -18,6 +18,7 @@
 - [ ] get rid of using DBDATA.queue as the DB!!
 - [ ] Use change to move to DB library instead of my own db.js
 - [ ] spotify/local
+  - [ ] Kinda working, but DB migration is manual only -- beware!
 
 ## Playlists
 
