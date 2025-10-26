@@ -812,7 +812,7 @@ async function addLocalFiles(msg) {
       uuid: db.uuidv4(),
       source: "local",
       foreignKey: file,
-      rating: 6, // TODO unhack 6.0 = 90 days
+      rating: 5.5, // TODO unhack 5.5 = 365 days
       // rating: DEFAULT_RATING,
       dateAdded: Date.now(),
       lastPlayDate: Date.now(),

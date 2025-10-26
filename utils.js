@@ -1,7 +1,7 @@
 let DEFAULT_RATING = 7.5;
 let MAX_ERRS = 5; // After this many errors treat it as bad
 
-let DIVERSITY_FACTOR = 15;
+let DIVERSITY_FACTOR = 10;
 let SHORT_DELAY_LINEAR_RATE = 0; // Skip the linear part
 let LONG_DELAY_START = 0; //
 let LONG_DELAY_BONUS = 5; // Add 5
