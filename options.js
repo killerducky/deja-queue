@@ -311,10 +311,10 @@ function thumbnailFormatter(cell) {
   const data = cell.getData();
   const item = cell.getRow().getData();
   const img = document.createElement("img");
-  const candidateUrl =
-    item.type == "playlist"
-      ? item.thumbnailUrl
-      : `https://i.ytimg.com/vi/${data.foreignKey}/default.jpg`;
+  const candidateUrl = item.thumbnailUrl;
+  if (!candidateUrl) {
+    return "";
+  }
 
   // img.src = DEFAULT_THUMB;
   img.src = candidateUrl;
@@ -377,7 +377,7 @@ function getTableColumns(tableType) {
     },
     title: {
       title: "Title",
-      field: "yt.snippet.title",
+      field: "title",
       formatter: "plaintext",
       tooltip: true,
       hozAlign: "left",
@@ -795,6 +795,28 @@ async function addVideoOrPlaylist(response) {
   await rerenderAll();
 }
 
+async function addLocalFiles(msg) {
+  let videos = [];
+  for (let file of msg.files) {
+    console.log(file);
+    let video = {
+      uuid: db.uuidv4(),
+      source: "local",
+      foreignKey: file,
+      rating: 6, // TODO unhack 6.0 = 90 days
+      // rating: DEFAULT_RATING,
+      dateAdded: Date.now(),
+      lastPlayDate: Date.now(),
+      delay: true,
+      title: file,
+    };
+    utils.addComputedFieldsVideo(video);
+    videos.push(video);
+  }
+  await saveVideos(videos);
+  DBDATA.queue.splice(1, 0, ...videos);
+}
+
 const addDialog = document.getElementById("addDialog");
 const addForm = document.getElementById("addForm");
 const addInput = document.getElementById("videoInput");
@@ -1070,6 +1092,8 @@ window.electronAPI.onBroadcast(async (msg) => {
     exportDB();
   } else if (msg.type === "videoCueNext") {
     cueNextVideo();
+  } else if (msg.type === "importLocalDirectory") {
+    addLocalFiles(msg);
   }
 });
 
@@ -1078,6 +1102,7 @@ async function exportDB() {
   const videos = await db.loadVideos();
   const log = await db.getLastNLogs(MAXLOGDUMP);
   const exportData = {
+    version: 4,
     playlists,
     videos,
     log,

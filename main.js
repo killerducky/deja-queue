@@ -148,7 +148,7 @@ class YoutubePlayerProxy {
     if (msg?.source == "local") {
       this.views[this.active].webContents.loadFile(
         path.join(__dirname, "videoplayer.html"),
-        { query: { f: msg.filename } }
+        { query: { f: msg.foreignKey } }
       );
     } else {
       this.views[this.active].webContents.send("broadcast", msg);
@@ -412,6 +412,28 @@ function buildMenu() {
           },
         },
         { type: "separator" },
+        {
+          label: "Add local files",
+          click: async () => {
+            const result = await dialog.showOpenDialog(
+              winRegister.main.object,
+              {
+                properties: ["openDirectory"],
+              }
+            );
+
+            if (!result.canceled && result.filePaths.length > 0) {
+              const dir = result.filePaths[0];
+              const files = getAllMp4Files(dir);
+              winRegister.main.object.webContents.send("broadcast", {
+                type: "importLocalDirectory",
+                path: dir,
+                files,
+              });
+            }
+          },
+        },
+        { type: "separator" },
         isMac ? { role: "close" } : { role: "quit" },
       ],
     },
@@ -522,6 +544,25 @@ function buildMenu() {
 
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
+}
+
+function getAllMp4Files(dir) {
+  let results = [];
+
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+
+    if (entry.isDirectory()) {
+      // Recursively search subdirectory
+      results = results.concat(getAllMp4Files(fullPath));
+    } else if (entry.isFile() && entry.name.toLowerCase().endsWith(".mp4")) {
+      results.push(fullPath);
+    }
+  }
+
+  return results;
 }
 
 function setDefaults() {

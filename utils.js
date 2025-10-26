@@ -303,7 +303,10 @@ function addComputedFieldsVideo(video) {
     rating: { value: video.rating ?? DEFAULT_RATING, writable: true },
     title: { value: video.title ?? video.yt.snippet.title, writable: true },
     thumbnailUrl: {
-      value: `https://i.ytimg.com/vi/${video.foreignKey}/default.jpg`,
+      value:
+        video.source == "youtube"
+          ? `https://i.ytimg.com/vi/${video.foreignKey}/default.jpg`
+          : "",
       enumerable: false,
       writable: true,
     },

@@ -13,6 +13,7 @@
       const startTime = parseFloat(params.get("t")) || 0;
       const video = document.getElementById("player");
       if (file) {
+        console.log("load file", file);
         video.src = file;
         video.currentTime = startTime;
         video.play();
