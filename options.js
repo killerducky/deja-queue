@@ -237,6 +237,7 @@ let baseTabulatorOptions = {
     hozAlign: "center",
     vertAlign: "middle",
   },
+  index: "uuid",
   // reactiveData: true,
 };
 
@@ -272,24 +273,26 @@ async function renderQueue() {
   let playlist = null;
   let playlistChildren = [];
   for (let entry of log) {
-    let video = DBDATA.queue.find((v) => v.id === entry.id);
+    let video = DBDATA.queue.find((v) => v.uuid === entry.uuid);
     if (entry.type == "playlist") {
-      if (entry.playlistId !== playlist?.id) {
+      if (entry.playlistUuid !== playlist?.uuid) {
         ({ playlist, playlistChildren } = finalizePlaylist(
           playlist,
           playlistChildren
         ));
         // Make new playlist copy
-        let origPlaylist = DBDATA.queue.find(
-          (pl) => pl.id === entry.playlistId
+        let origPlaylist = DBDATA.playlists.find(
+          (pl) => pl.uuid === entry.playlistUuid
         );
-        playlist = utils.wrapItem(origPlaylist.ref, {
+        // console.log("entry", entry);
+        // console.log("origPlaylist", origPlaylist);
+        playlist = utils.wrapItem(origPlaylist, {
           _currentTrack: -1,
-          videoIds: [],
+          videoUuids: [],
         });
         logVideoList.push(playlist);
       }
-      playlist.videoIds.push(entry.id);
+      playlist.videoUuids.push(entry.uuid);
       playlistChildren.push(
         utils.wrapItem(video, { entry, _track: entry._track })
       );
@@ -365,7 +368,7 @@ function getTableColumns(tableType) {
           //   This doesn't really work in playlist mode
           //    playNextVideo(1);
         } else {
-          moveVideoToFront(cell.getRow().getData().id);
+          moveVideoToFront(cell.getRow().getData().uuid);
           await renderQueue();
           showToast("Added to front of queue");
         }
@@ -559,12 +562,12 @@ async function table2(tabulator, htmlEl, videoList, tableType) {
     const expandedIds = [];
     tabulator.getRows().forEach((row) => {
       if (row.getData().type == "playlist" && row.isTreeExpanded()) {
-        expandedIds.push(row.getData().id);
+        expandedIds.push(row.getData().uuid);
       }
     });
     tabulator.replaceData(videoList).then(() => {
       tabulator.getRows().forEach((row) => {
-        if (expandedIds.includes(row.getData().id)) {
+        if (expandedIds.includes(row.getData().uuid)) {
           row.treeExpand();
         }
       });
@@ -632,25 +635,25 @@ async function addYoutubeInfo(video) {
   }
 }
 
-async function addPlaylistVideos(playlistId) {
+async function addPlaylistVideos(playlistForeignKey) {
   // First, fetch playlist metadata
-  let playlistUrl = `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&id=${playlistId}&key=${env.youtube_api_key}`;
+  let playlistUrl = `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&id=${playlistForeignKey}&key=${env.youtube_api_key}`;
   let playlistRes = await fetch(playlistUrl);
   let playlistData = await playlistRes.json();
   // console.log("playlists raw:", playlistData);
 
   if (!playlistData.items || playlistData.items.length === 0) {
-    console.error("Playlist not found:", playlistId);
+    console.error("Playlist not found:", playlistForeignKey);
     return;
   }
 
   let playlistInfo = playlistData.items[0];
-  let playlist = await db.getPlaylist(playlistId);
+  let playlist = await db.getPlaylist(playlistForeignKey);
   if (playlist) {
     console.log("Updating existing playlist", playlist);
-    // If it already exists, clear videoIds, and only update a few yt info fields.
+    // If it already exists, clear videoUuids, and only update a few yt info fields.
     // All other fields such as rating are kept as is
-    playlist.videoIds = [];
+    playlist.videoUuids = [];
     playlist.yt = playlistInfo;
     playlist.title = playlistInfo.snippet.title;
     playlist.channelTitle = playlistInfo.snippet.channelTitle;
@@ -658,16 +661,16 @@ async function addPlaylistVideos(playlistId) {
   } else {
     console.log("New playlist");
     playlist = {
-      id: db.uuidv4(),
+      uuid: db.uuidv4(),
       source: "youtube",
-      foreignKey: playlistId,
+      foreignKey: playlistForeignKey,
       title: playlistInfo.snippet.title,
       channelTitle: playlistInfo.snippet.channelTitle,
       thumbnailUrl: playlistInfo.snippet.thumbnails?.default?.url,
       dateAdded: Date.now(),
       rating: DEFAULT_RATING,
       yt: playlistInfo,
-      videoIds: [],
+      videoUuids: [],
     };
   }
 
@@ -679,23 +682,25 @@ async function addPlaylistVideos(playlistId) {
   do {
     let url =
       `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails` +
-      `&maxResults=50&pageToken=${nextPageToken}&playlistId=${playlistId}&key=${env.youtube_api_key}`;
+      `&maxResults=50&pageToken=${nextPageToken}&playlistId=${playlistForeignKey}&key=${env.youtube_api_key}`;
     let res = await fetch(url);
     let data = await res.json();
     // console.log("playlistItems raw: ", data);
     data = trimYoutubeFields(data);
 
     for (const yt of data.items) {
-      let id = yt.snippet.resourceId.videoId;
-      if (playlist.videoIds.includes(id)) {
+      let foreignKey = yt.snippet.resourceId.videoId;
+      let matchingVideo = DBDATA.queue.find((v) => v.foreignKey === foreignKey);
+      let uuid = matchingVideo ? matchingVideo.uuid : db.uuidv4();
+      if (playlist.videoUuids.includes(uuid)) {
         continue; // skip dups
       }
-      playlist.videoIds.push(id);
-      if (!DBDATA.queue.find((v) => v.id === id)) {
+      playlist.videoUuids.push(uuid);
+      if (!matchingVideo) {
         let video = {
-          id: db.uuidv4(),
+          uuid: db.uuidv4(),
           source: "youtube",
-          foreignKey: id,
+          foreignKey: foreignKey,
           rating: DEFAULT_RATING,
           dateAdded: Date.now(),
           yt: yt,
@@ -722,7 +727,7 @@ async function addPlaylistVideos(playlistId) {
   await saveVideos(newVideos);
   // console.log("addPlaylistVideos: newVideos ", newVideos);
   console.log(playlist);
-  playlist.videoCount = playlist.videoIds.length;
+  playlist.videoCount = playlist.videoUuids.length;
   utils.addComputedFieldsPL(playlist, DBDATA.queue);
   console.log(playlist);
   console.log(
@@ -733,8 +738,11 @@ async function addPlaylistVideos(playlistId) {
   );
 
   // Replace or add in DBDATA.playlists
-  let idx = DBDATA.playlists.findIndex((p) => p.id === playlist.id);
+  let idx = DBDATA.playlists.findIndex(
+    (p) => p.foreignKey === playlist.foreignKey
+  );
   if (idx !== -1) {
+    playlist.uuid = DBDATA.playlists[idx].uuid; // Reuse same uuid
     DBDATA.playlists[idx] = playlist;
   } else {
     DBDATA.playlists.push(playlist);
@@ -744,28 +752,29 @@ async function addPlaylistVideos(playlistId) {
   // Replace or add in DBDATA.queue
   let copy = utils.wrapItem(playlist);
   copy = utils.addComputedFieldsPL(copy, DBDATA.queue);
-  idx = DBDATA.queue.findIndex((p) => p.id === playlist.id);
+  idx = DBDATA.queue.findIndex((p) => p.uuid === playlist.uuid);
   if (idx !== -1) {
     DBDATA.queue[idx] = playlist;
   } else {
     DBDATA.queue.push(playlist);
   }
   // Use this instead of unshift because it's not so simple
-  await moveVideoToFront(copy.id);
+  await moveVideoToFront(copy.uuid);
 
   await rerenderAll();
 }
 
 async function addVideoOrPlaylist(response) {
   if (response.type == "video") {
-    if (DBDATA.queue.find((v) => v.foreignKey === response.id)) {
+    let video = DBDATA.queue.find((v) => v.foreignKey === response.foreignKey);
+    if (video) {
       showToast("Video already in DB");
-      await moveVideoToFront(response.id);
+      await moveVideoToFront(video.uuid);
     } else {
       let video = {
-        id: db.uuidv4(),
+        uuid: db.uuidv4(),
         source: "youtube",
-        foreignKey: response.id,
+        foreignKey: response.foreignKey,
         rating: DEFAULT_RATING,
         dateAdded: Date.now(),
       };
@@ -778,7 +787,7 @@ async function addVideoOrPlaylist(response) {
       DBDATA.queue.splice(1, 0, video);
     }
   } else if (response.type == "playlist") {
-    await addPlaylistVideos(response.id);
+    await addPlaylistVideos(response.foreignKey);
   } else {
     showToast("Error: could not parse input");
     return;
@@ -803,7 +812,7 @@ addDialog.addEventListener("click", (e) => {
 addForm.addEventListener("submit", async (e) => {
   const url = addInput.value.trim();
   const response = getVideoIdFromInput(url);
-  if (response.id) {
+  if (response.foreignKey) {
     addVideoOrPlaylist(response);
   }
 });
@@ -922,7 +931,7 @@ async function cueNextVideo(offset = 1, params = {}) {
   let msg = {
     type: "backgroundCueVideo",
     source: nextVideoToPlay.source,
-    id: nextVideoToPlay.foreignKey,
+    foreignKey: nextVideoToPlay.foreignKey,
   };
   sendMessage(msg);
 }
@@ -940,10 +949,10 @@ async function playNextVideo(offset = 1, params = {}) {
 
   if (videoTimeout) clearTimeout(videoTimeout);
   videoTimeout = setTimeout(() => {
-    console.log("Error:", nextVideoToPlay.id, nextVideoToPlay.title);
+    console.log("Error:", nextVideoToPlay.uuid, nextVideoToPlay.title);
     sendMessage({
       type: "error",
-      info: `timeout ${nextVideoToPlay.id} ${nextVideoToPlay.title}`,
+      info: `timeout ${nextVideoToPlay.uuid} ${nextVideoToPlay.title}`,
     });
     showToast("Video timeout");
     nextVideoToPlay.errCnt = (nextVideoToPlay.errCnt || 0) + 1;
@@ -953,8 +962,8 @@ async function playNextVideo(offset = 1, params = {}) {
   }, 150000000); // 15s -- see if this works
   let msg = {
     type: params?.cueVideo ? "cueVideo" : "playVideo",
-    soruce: nextVideoToPlay.source,
-    id: nextVideoToPlay.foreignKey,
+    source: nextVideoToPlay.source,
+    foreignKey: nextVideoToPlay.foreignKey,
   };
   sendMessage(msg);
   if (offset !== 0) {
@@ -967,20 +976,20 @@ function getVideoIdFromInput(input) {
     const url = new URL(input);
     if (url.hostname === "youtu.be") {
       const videoId = url.pathname.slice(1); // remove leading "/"
-      return { type: "video", id: videoId };
+      return { type: "video", foreignKey: videoId };
     }
     const params = new URL(input).searchParams;
     const listId = params.get("list");
     const videoId = params.get("v");
     // prioritize single video.
     if (videoId) {
-      return { type: "video", id: videoId };
+      return { type: "video", foreignKey: videoId };
     } else {
-      return { type: "playlist", id: listId };
+      return { type: "playlist", foreignKey: listId };
     }
   } else {
-    // assume raw video id
-    return { type: "video", id: input };
+    // assume raw video foreignKey
+    return { type: "video", foreignKey: input };
   }
 }
 
@@ -998,13 +1007,13 @@ async function logEvent(item, event) {
   await saveVideos([video]);
   const logEntry = {
     type: item.type,
-    id: video.id,
+    uuid: video.uuid,
     source: video.source,
     foreignKey: video.foreignKey,
     timestamp: now,
     event: event,
     ...(item.type == "playlist" && {
-      playlistId: item.id,
+      playlistUuid: item.uuid,
       _track: video._track,
     }),
   };
@@ -1017,20 +1026,22 @@ window.electronAPI.onBroadcast(async (msg) => {
   let currItem = DBDATA.queue[0];
   let currVideo =
     currItem?.type == "playlist" ? currItem._children[0] : currItem;
-  let videoId = null;
+  let videoForeignKey = null;
+  let videoUuid = null;
   // TODO: We don't always have msg.url?
   // e.g. main.js could be sending the message.
   // But it could add msg.url I suppose
   if (msg.url) {
-    videoId = getVideoIdFromInput(msg.url).id;
+    videoForeignKey = getVideoIdFromInput(msg.url).foreignKey;
+    videoUuid = DBDATA.queue.find((v) => v.foreignKey == videoForeignKey);
   }
-  console.log("options.js received message:", msg?.type, videoId);
+  console.log("options.js received message:", msg?.type, videoUuid);
   if (msg?.type === "videoPlaying") {
     clearTimeout(videoTimeout);
     if (
-      videoId &&
+      videoUuid &&
       currVideo &&
-      videoId === currVideo.id &&
+      videoUuid === currVideo.uuid &&
       !currVideo.yt?.contentDetails?.duration &&
       !currVideo.scrapedDuration &&
       msg.duration
@@ -1039,18 +1050,18 @@ window.electronAPI.onBroadcast(async (msg) => {
       await saveVideos([currVideo]);
     }
   } else if (msg?.type === "videoEnded") {
-    if (lastEndedVideoId === videoId) {
+    if (lastEndedVideoId === videoUuid) {
       return;
     }
-    lastEndedVideoId = videoId;
-    if (videoId && currVideo && videoId === currVideo.id) {
+    lastEndedVideoId = videoUuid;
+    if (videoUuid && currVideo && videoUuid === currVideo.uuid) {
       await logEvent(currItem, "play");
     }
     playNextVideo();
   } else if (msg.type === "queue:addVideo") {
-    addVideoOrPlaylist({ type: "video", id: msg.id });
+    addVideoOrPlaylist({ type: "video", foreignKey: msg.foreignKey });
   } else if (msg.type === "queue:addPlaylist") {
-    addVideoOrPlaylist({ type: "playlist", id: msg.id });
+    await addVideoOrPlaylist({ type: "playlist", foreignKey: msg.foreignKey });
   } else if (msg.type === "deleteDatabaseRequest") {
     deleteDB();
   } else if (msg.type === "importDatabase") {
@@ -1093,6 +1104,30 @@ async function importDB(file) {
   const text = await window.electronAPI.readFile(file);
   const data = JSON.parse(text);
   await db.deleteDB();
+  if (data?.version !== 4) {
+    const videoMap = new Map();
+    for (let v of data.videos) {
+      // rename id to foreignKey
+      v.foreignKey = v.id;
+      delete v.id;
+      v.uuid = db.uuidv4();
+      v.source = "youtube";
+
+      videoMap.set(v.foreignKey, v.uuid);
+    }
+    for (let p of data.playlists) {
+      // rename id to foreignKey
+      p.foreignKey = p.id;
+      delete p.id;
+      p.uuid = db.uuidv4();
+      p.source = "youtube";
+
+      // remap videoIds to video UUIDs
+      p.videoUuids = p.videoIds.map((fk) => videoMap.get(fk)).filter(Boolean);
+      delete p.videoIds;
+    }
+    data.log = [];
+  }
   await saveVideos(data.videos); // only replaces each id with new content
   await savePlaylists(data.playlists); // only replaces each id with new content
   await db.saveLog(data.log);
@@ -1297,7 +1332,7 @@ async function renderPlaylists() {
       },
       cellClick: async function (e, cell) {
         const item = cell.getRow().getData();
-        moveVideoToFront(item.id);
+        moveVideoToFront(item.uuid);
         await renderQueue();
         showToast("Added to front of queue");
       },
@@ -1330,17 +1365,19 @@ async function renderPlaylists() {
         let data = cell.getRow().getData();
         if (data.type == "playlist") {
           if (confirm(`Delete this playlist? ${data.title}`)) {
-            await db.deletePlaylist(data.id);
+            await db.deletePlaylist(data.uuid);
             cell.getRow().delete();
           }
         } else {
           const playlist = cell.getRow().getTreeParent().getData();
-          const count = playlist.videoIds.filter((id) => id === data.id).length;
+          const count = playlist.videoUuids.filter(
+            (uuid) => uuid === data.uuid
+          ).length;
           if (count > 1) {
             if (confirm(`Remove dups of this video? ${data.title}`)) {
               let seen = false;
-              playlist.videoIds = playlist.videoIds.filter((id) => {
-                if (id !== data.id) return true; // keep other IDs
+              playlist.videoUuids = playlist.videoUuids.filter((uuid) => {
+                if (uuid !== data.uuid) return true; // keep other IDs
                 if (!seen) {
                   seen = true; // keep the first occurrence
                   return true;
@@ -1353,7 +1390,7 @@ async function renderPlaylists() {
                 .getTreeParent()
                 .getTreeChildren()) {
                 let rowData = siblingRow.getData();
-                if (rowData.id !== data.id) continue;
+                if (rowData.uuid !== data.uuid) continue;
                 if (!seen) {
                   seen = true;
                   continue;
@@ -1364,8 +1401,8 @@ async function renderPlaylists() {
             }
           } else {
             if (confirm(`Remove this video from playlist? ${data.title}`)) {
-              playlist.videoIds = playlist.videoIds.filter(
-                (vid) => vid !== data.id
+              playlist.videoUuids = playlist.videoUuids.filter(
+                (vuuid) => vuuid !== data.uuid
               );
               cell.getRow().delete();
               await savePlaylists(playlist);
@@ -1380,14 +1417,14 @@ async function renderPlaylists() {
   if (playlistsTabulator) {
     const expandedIds = [];
     playlistsTabulator.getData().forEach((data) => {
-      const row = playlistsTabulator.getRow(data.id);
+      const row = playlistsTabulator.getRow(data.uuid);
       if (row && row.isTreeExpanded()) {
-        expandedIds.push(data.id);
+        expandedIds.push(data.uuid);
       }
     });
     playlistsTabulator.replaceData(DBDATA.playlists).then(() => {
-      expandedIds.forEach((id) => {
-        const row = playlistsTabulator.getRow(id);
+      expandedIds.forEach((uuid) => {
+        const row = playlistsTabulator.getRow(uuid);
         if (row) row.treeExpand();
       });
     });
@@ -1409,10 +1446,10 @@ async function renderPlaylists() {
   });
 }
 
-async function moveVideoToFront(id) {
-  const idx = DBDATA.queue.findIndex((v) => v.id === id);
+async function moveVideoToFront(uuid) {
+  const idx = DBDATA.queue.findIndex((v) => v.uuid === uuid);
   if (idx === -1) {
-    console.log("Error could not find ", id);
+    console.log("Error could not find ", uuid);
     return;
   }
   if (idx == 0 || idx == 1) {
@@ -1495,7 +1532,7 @@ async function updateTabulator(tabulator, items) {
   function walk(rows) {
     for (const row of rows) {
       let data = row.getData();
-      let item = items.find((item) => item.id == data.id);
+      let item = items.find((item) => item.uuid == data.uuid);
       if (item) {
         row.reformat();
       }

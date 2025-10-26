@@ -225,7 +225,7 @@ async function addContextMenu(playerWindow) {
       template.push({
         label: "Add Video to Queue",
         click: () => {
-          const msg = { type: "queue:addVideo", id: videoId };
+          const msg = { type: "queue:addVideo", foreignKey: videoId };
           console.log("Broadcasting", JSON.stringify(msg));
           BrowserWindow.getAllWindows().forEach((win) => {
             if (win !== playerWindow) {
@@ -239,7 +239,7 @@ async function addContextMenu(playerWindow) {
       template.push({
         label: "Add Playlist to Queue",
         click: () => {
-          const msg = { type: "queue:addPlaylist", id: listId };
+          const msg = { type: "queue:addPlaylist", foreignKey: listId };
           console.log("Broadcasting", JSON.stringify(msg));
           BrowserWindow.getAllWindows().forEach((win) => {
             if (win !== playerWindow) {
@@ -347,7 +347,7 @@ function createAllWindows() {
     name: "youtubePlayer",
     preload: "youtube-preload.js",
   });
-  // winRegister.main.object.webContents.openDevTools();
+  winRegister.main.object.webContents.openDevTools();
   // winRegister.youtubePlayer.object.webContents.openDevTools();
 }
 function buildMenu() {

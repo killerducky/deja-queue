@@ -15,17 +15,17 @@ ipcRenderer.on("broadcast", (event, msg) => {
   //   if (!video) return;
 
   if (msg.type === "playVideo") {
-    if (getVideoId(window.location.href) == msg.id) {
+    if (getVideoId(window.location.href) == msg.foreignKey) {
       video.play();
       sendBroadcast({
         type: "videoPlaying",
         info: "Video already loaded",
       });
     } else {
-      window.location.href = `https://www.youtube.com/watch?v=${msg.id}`;
+      window.location.href = `https://www.youtube.com/watch?v=${msg.foreignKey}`;
     }
   } else if (msg.type === "cueVideo") {
-    window.location.href = `https://www.youtube.com/watch?v=${msg.id}&t=1s`;
+    window.location.href = `https://www.youtube.com/watch?v=${msg.foreignKey}&t=1s`;
   } else if (msg.type === "pauseVideo") {
     video.pause();
   } else if (msg.type === "resumeVideo") {

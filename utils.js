@@ -138,7 +138,7 @@ export function calcDaysSince(video) {
     return null;
   }
   let now = Date.now();
-  let salt = `${video.id}${video.lastPlayDate}`;
+  let salt = `${video.uuid}${video.lastPlayDate}`;
   let daysSince = (now - video.lastPlayDate) / (24 * 3600 * 1000);
   if (video.delay) {
     // if e.g. a big playlist is added, user clicks "delay" and they will be randomized into the backlog uniformly
@@ -150,7 +150,7 @@ export function calcDaysSince(video) {
 export function scoreItem(video, noise = true) {
   if (video.errCnt && video.errCnt >= MAX_ERRS) return ERR_SCORE; // too many errors, don't play
   if (video.dup) return DUP_SCORE; // Ignore dups
-  let salt = `${video.id}${video.lastPlayDate}`;
+  let salt = `${video.uuid}${video.lastPlayDate}`;
   if (!video.rating) video.rating = DEFAULT_RATING;
   let daysSince = calcDaysSince(video);
   let score = scoreHelper(daysSince, video.rating, noise, salt);
@@ -239,10 +239,8 @@ function addComputedFieldsPL(playlist, queue) {
     return playlist.map((p) => addComputedFieldsPL(p, queue));
   }
   let allChildren = [];
-  for (const [idx, id] of playlist.videoIds.entries()) {
-    let origVideo = queue.find(
-      (v) => v.source == "youtube" && v.foreignKey === id
-    );
+  for (const [idx, uuid] of playlist.videoUuids.entries()) {
+    let origVideo = queue.find((v) => v.source == "youtube" && v.uuid === uuid);
     let video = wrapItem(origVideo, { _track: idx, playlist });
     allChildren.push(video);
   }
@@ -261,7 +259,7 @@ function addComputedFieldsPL(playlist, queue) {
       enumerable: false,
     },
     _track: {
-      value: playlist.videoIds.length,
+      value: playlist.videoUuids.length,
       enumerable: false,
       writable: true,
     },
@@ -285,9 +283,9 @@ function addComputedFieldsPL(playlist, queue) {
       enumerable: false,
     },
     duration: {
-      value: playlist.videoIds
-        .map((id) => {
-          const video = queue.find((v) => v.id === id);
+      value: playlist.videoUuids
+        .map((uuid) => {
+          const video = queue.find((v) => v.uuid === uuid);
           return video?.duration || DEFAULT_VID_LENGTH;
         })
         .reduce((sum, dur) => sum + dur, 0),
@@ -305,7 +303,7 @@ function addComputedFieldsVideo(video) {
     rating: { value: video.rating ?? DEFAULT_RATING, writable: true },
     title: { value: video.title ?? video.yt.snippet.title, writable: true },
     thumbnailUrl: {
-      value: `https://i.ytimg.com/vi/${video.id}/default.jpg`,
+      value: `https://i.ytimg.com/vi/${video.foreignKey}/default.jpg`,
       enumerable: false,
       writable: true,
     },
@@ -350,6 +348,7 @@ function addComputedFieldsVideo(video) {
 function wrapItem(video, extras = {}) {
   if (!video) {
     console.log("ERROR: undefined input");
+    console.trace();
   }
   if (video.ref) {
     console.log("ERROR: Already wrapped?");
