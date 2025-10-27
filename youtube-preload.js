@@ -5,6 +5,9 @@ const params = new URL(window.location.href).searchParams;
 // Workaround: use t=1s to signal this is the very first video.
 let cueVideo = params.get("t") === "1s";
 let rotateAngle = params.get("rotateAngle") || 0;
+let needThumb = params.get("needThumb");
+let foreignKey = params.get("v");
+let uuid = params.get("uuid");
 
 function getVideoId(url) {
   const params = new URL(url).searchParams;
@@ -116,6 +119,11 @@ function attachListener() {
   if (video === lastVideo) return;
   lastVideo = video;
   console.log("attachListener2");
+
+  if (needThumb) {
+    waitAndCapture(video, 10);
+  }
+
   video.addEventListener(
     "loadedmetadata",
     () => {
@@ -198,3 +206,65 @@ window.addEventListener("DOMContentLoaded", () => {
   observer.observe(document.body, { childList: true, subtree: true });
   attachListener(); // check immediately
 });
+
+function waitAndCapture(video, captureTime) {
+  const handler = () => {
+    if (video.currentTime >= captureTime) {
+      video.removeEventListener("timeupdate", handler);
+      captureThumbnail(video);
+    }
+  };
+  video.addEventListener("timeupdate", handler);
+}
+
+async function captureThumbnail(video) {
+  try {
+    const maxWidth = 120;
+    const maxHeight = 90;
+    const canvas = document.getElementById("thumbCanvas");
+
+    // calculate scaled dimensions while keeping aspect ratio
+    const aspectRatio = video.videoWidth / video.videoHeight;
+    let width = maxWidth;
+    let height = maxHeight;
+
+    if (width / height > aspectRatio) {
+      width = height * aspectRatio;
+    } else {
+      height = width / aspectRatio;
+    }
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+
+    // give a tiny delay to ensure the current frame is rendered
+    await new Promise((r) => setTimeout(r, 50));
+    ctx.drawImage(video, 0, 0, width, height);
+
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) return console.error("Failed to create thumbnail blob");
+        const url = URL.createObjectURL(blob);
+        const reader = new FileReader();
+        reader.onload = () => {
+          ipcRenderer.send("save-thumbnail", {
+            buffer: Buffer.from(reader.result),
+            foreignKey,
+            uuid,
+          });
+        };
+        reader.readAsArrayBuffer(blob);
+      },
+      "image/jpeg",
+      0.85
+    );
+  } catch (err) {
+    console.error("Thumbnail capture failed:", err);
+  }
+}
+
+function sendBroadcast(msg) {
+  msg.url = window.location.href;
+  console.log("sendBroadcast", msg);
+  ipcRenderer.send("broadcast", msg);
+}

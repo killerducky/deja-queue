@@ -1009,9 +1009,13 @@ async function playNextVideo(offset = 1, params = {}) {
     logEvent(nextVideoToPlay, "error");
     playNextVideo();
   }, 150000000); // 15s -- see if this works
+  let needThumb =
+    nextVideoToPlay.source == "local" && !nextVideoToPlay.thumbnailUrl;
   let msg = {
     type: params?.cueVideo ? "cueVideo" : "playVideo",
     source: nextVideoToPlay.source,
+    uuid: nextVideoToPlay.uuid,
+    needThumb: needThumb,
     foreignKey: nextVideoToPlay.foreignKey,
     ...(nextVideoToPlay.rotateAngle && {
       rotateAngle: nextVideoToPlay.rotateAngle,
@@ -1135,6 +1139,14 @@ window.electronAPI.onBroadcast(async (msg) => {
     rotateVideo(msg);
   } else if (msg.type === "queueModeChanged") {
     queueMode = msg.mode;
+  } else if (msg.type === "thumbnail-saved") {
+    let video = DBDATA.queue.find((v) => v.uuid === msg.uuid);
+    if (!video || video.source !== "local") {
+      console.log("Error", video);
+    } else {
+      video.localThumbnailPath = msg.filePath;
+      await db.saveVideos(video);
+    }
   }
 });
 

@@ -306,12 +306,17 @@ function addComputedFieldsVideo(video) {
     rating: { value: video.rating ?? DEFAULT_RATING, writable: true },
     title: { value: video.title ?? video.yt.snippet.title, writable: true },
     thumbnailUrl: {
-      value:
-        video.source == "youtube"
-          ? `https://i.ytimg.com/vi/${video.foreignKey}/default.jpg`
-          : "",
+      get() {
+        if (this.source === "youtube") {
+          return `https://i.ytimg.com/vi/${this.foreignKey}/default.jpg`;
+        } else if (this.source === "local") {
+          // Could store a thumbnail path on disk or derive it from the file
+          return this.localThumbnailPath || "";
+        }
+        return "";
+      },
+      set() {},
       enumerable: false,
-      writable: true,
     },
     channelTitle: {
       value: video.yt?.snippet?.videoOwnerChannelTitle || "—",

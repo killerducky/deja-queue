@@ -152,6 +152,7 @@ class YoutubePlayerProxy {
         {
           query: {
             v: msg.foreignKey,
+            uuid: msg.uuid,
             rotateAngle: msg.rotateAngle,
             ...(msg.type === "cueVideo" && { cueVideo: "1" }),
             ...(msg.needThumb && { needThumb: "1" }),
@@ -345,6 +346,28 @@ ipcMain.on("broadcast", async (event, msg) => {
       }
     });
   }
+});
+
+ipcMain.on("save-thumbnail", (event, msg) => {
+  console.log("save-thumbnail", msg.uuid);
+  let thumbsDir = path.join(app.getPath("userData"), "thumbnails");
+  if (!fs.existsSync(thumbsDir)) {
+    fs.mkdirSync(thumbsDir, { recursive: true });
+  }
+  let filePath = path.join(thumbsDir, `${msg.uuid}.jpg`);
+
+  fs.writeFile(filePath, msg.buffer, (err) => {
+    if (err) {
+      console.error("Failed to save thmbnail:", err);
+    } else {
+      console.log("Thumbnail saved to", filePath);
+      winRegister.main.object.webContents.send("broadcast", {
+        type: "thumbnail-saved",
+        uuid: msg.uuid,
+        filePath: filePath,
+      });
+    }
+  });
 });
 
 function createAllWindows() {
