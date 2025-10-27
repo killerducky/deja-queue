@@ -726,7 +726,8 @@ async function addPlaylistVideos(playlistForeignKey) {
   } while (nextPageToken);
 
   await saveVideos(newVideos);
-  // console.log("addPlaylistVideos: newVideos ", newVideos);
+  DBDATA.queue.push(...newVideos);
+  console.log("addPlaylistVideos: newVideos ", newVideos);
   console.log(playlist);
   playlist.videoCount = playlist.videoUuids.length;
   utils.addComputedFieldsPL(playlist, DBDATA.queue);

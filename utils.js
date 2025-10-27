@@ -241,6 +241,9 @@ function addComputedFieldsPL(playlist, queue) {
   let allChildren = [];
   for (const [idx, uuid] of playlist.videoUuids.entries()) {
     let origVideo = queue.find((v) => v.source == "youtube" && v.uuid === uuid);
+    if (!origVideo) {
+      console.log("error", idx, uuid);
+    }
     let video = wrapItem(origVideo, { _track: idx, playlist });
     allChildren.push(video);
   }
