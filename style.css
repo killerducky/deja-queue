@@ -437,8 +437,7 @@ dialog menu button[value="ok"] {
     background-color: hsla(204, 50%, 35%, 1);
     color: #dddddd;
   }
-  .rotate-icon rect,
-  .rotate-icon path {
-    stroke: white;
+  #rotateVideo {
+    --fg-color: white;
   }
 }
