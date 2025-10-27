@@ -153,7 +153,8 @@ class YoutubePlayerProxy {
           query: {
             v: msg.foreignKey,
             rotateAngle: msg.rotateAngle,
-            ...(msg.type === "cueVideo" && { cueVideo: "" }),
+            ...(msg.type === "cueVideo" && { cueVideo: "1" }),
+            ...(msg.needThumb && { needThumb: "1" }),
           },
         }
       );
