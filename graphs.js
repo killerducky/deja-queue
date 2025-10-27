@@ -346,6 +346,10 @@ function calcStringSimilarity(queue) {
   DBDATA.queue.sort((a, b) => b.score - a.score);
   DBDATA.playlists = await db.loadPlaylists();
   DBDATA.playlists = utils.addComputedFieldsPL(DBDATA.playlists, DBDATA.queue);
+  DBDATA.queue.map((item) => (item.rating = Math.round(item.rating * 2) / 2));
+  DBDATA.playlists.map(
+    (item) => (item.rating = Math.round(item.rating * 2) / 2)
+  );
   DBDATA.filtered = DBDATA.queue.filter((v) => (v.errCnt ?? 0) < 5 && !v.dup);
   plotRatings("videos", DBDATA.filtered);
   plotScores("videos", DBDATA.filtered);
