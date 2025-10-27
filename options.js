@@ -659,7 +659,10 @@ async function addPlaylistVideos(playlistForeignKey) {
   }
 
   let playlistInfo = playlistData.items[0];
-  let playlist = await db.getPlaylist(playlistForeignKey);
+  let playlist = await db.getPlaylistBySourceAndForeignKey(
+    "youtube",
+    playlistForeignKey
+  );
   if (playlist) {
     console.log("Updating existing playlist", playlist);
     // If it already exists, clear videoUuids, and only update a few yt info fields.
@@ -702,14 +705,14 @@ async function addPlaylistVideos(playlistForeignKey) {
     for (const yt of data.items) {
       let foreignKey = yt.snippet.resourceId.videoId;
       let matchingVideo = DBDATA.queue.find((v) => v.foreignKey === foreignKey);
-      let uuid = matchingVideo ? matchingVideo.uuid : db.uuidv4();
-      if (playlist.videoUuids.includes(uuid)) {
+      let videoUuid = matchingVideo ? matchingVideo.uuid : db.uuidv4();
+      if (playlist.videoUuids.includes(videoUuid)) {
         continue; // skip dups
       }
-      playlist.videoUuids.push(uuid);
+      playlist.videoUuids.push(videoUuid);
       if (!matchingVideo) {
         let video = {
-          uuid: db.uuidv4(),
+          uuid: videoUuid,
           source: "youtube",
           foreignKey: foreignKey,
           rating: DEFAULT_RATING,

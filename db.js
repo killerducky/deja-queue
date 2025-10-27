@@ -177,23 +177,39 @@ export async function loadPlaylists() {
   });
 }
 
-export async function getPlaylist(id) {
+export async function getPlaylist(uuid) {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction("playlists", "readonly");
     const store = tx.objectStore("playlists");
-    const req = store.get(id);
+    const req = store.get(uuid);
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
   });
 }
+export async function getPlaylistBySourceAndForeignKey(source, foreignKey) {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("playlists", "readonly");
+    const store = tx.objectStore("playlists");
+    const req = store.getAll();
 
-export async function deletePlaylist(id) {
+    req.onsuccess = () => {
+      const result = req.result.find(
+        (p) => p.source === source && p.foreignKey === foreignKey
+      );
+      resolve(result || null);
+    };
+
+    req.onerror = () => reject(req.error);
+  });
+}
+export async function deletePlaylist(uuid) {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction("playlists", "readwrite");
     const store = tx.objectStore("playlists");
-    const req = store.delete(id);
+    const req = store.delete(uuid);
     req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error);
   });
