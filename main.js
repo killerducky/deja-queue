@@ -644,9 +644,10 @@ function getAllMp4Files(dir) {
 }
 
 function setDefaults() {
-  // nativeTheme.themeSource = "light";
   nativeTheme.themeSource = store.get("theme") || "dark";
+  store.set("profile", profile);
 }
+
 function setTheme(theme) {
   nativeTheme.themeSource = theme;
   store.set("theme", theme);

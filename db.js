@@ -3,6 +3,8 @@
 let dbPromise; // promise while opening
 let dbInstance; // actual IDBDatabase
 
+export let VERSION = 4;
+
 export function uuidv4() {
   return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
     (
@@ -15,7 +17,7 @@ export function uuidv4() {
 async function openDB() {
   if (!dbPromise) {
     dbPromise = new Promise((resolve, reject) => {
-      const request = indexedDB.open("YouTubeDJ", 4);
+      const request = indexedDB.open("YouTubeDJ", VERSION);
 
       request.onupgradeneeded = (event) => {
         const db = event.target.result;

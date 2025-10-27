@@ -341,7 +341,9 @@ function calcStringSimilarity(queue) {
 
 // Initial load
 (async () => {
+  let start = Date.now();
   DBDATA.queue = await db.loadVideos();
+  console.log("Num videos:", DBDATA.queue.length);
   DBDATA.queue = utils.addComputedFieldsVideo(DBDATA.queue);
   DBDATA.queue.sort((a, b) => b.score - a.score);
   DBDATA.playlists = await db.loadPlaylists();
@@ -351,6 +353,7 @@ function calcStringSimilarity(queue) {
     (item) => (item.rating = Math.round(item.rating * 2) / 2)
   );
   DBDATA.filtered = DBDATA.queue.filter((v) => (v.errCnt ?? 0) < 5 && !v.dup);
+  console.log(`Time: ${((Date.now() - start) / 1000).toFixed(1)}s`);
   plotRatings("videos", DBDATA.filtered);
   plotScores("videos", DBDATA.filtered);
   plotDues("videos", true, DBDATA.filtered);
@@ -362,6 +365,7 @@ function calcStringSimilarity(queue) {
   plotCooldownFactor(false);
   plotCooldownFactor(true);
   db.closeDB();
+  console.log(`Time: ${((Date.now() - start) / 1000).toFixed(1)}s`);
   // calcStringSimilarity(DBDATA.queue);
   // renderQueue();
 })();

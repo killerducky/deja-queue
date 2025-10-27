@@ -65,6 +65,8 @@ const queueEl = document.getElementById("queue");
 const logEl = document.getElementById("log");
 
 let queueMode = window.electronAPI.get("queueMode") || "Video";
+let profile = window.electronAPI.get("profile");
+
 console.log("init mode", queueMode);
 
 function handleDivider(divEl, vert) {
@@ -813,10 +815,13 @@ async function rotateVideo(msg) {
   sendMessage({ type: "rotateVideo", rotateAngle: video.rotateAngle });
 }
 
-async function addLocalFiles(msg) {
+async function importLocalFiles(msg) {
   let videos = [];
   for (let file of msg.files) {
-    console.log(file);
+    if (DBDATA.queue.find((v) => v.foreignKey == file)) {
+      console.log("dup", file);
+      continue;
+    }
     let video = {
       uuid: db.uuidv4(),
       source: "local",
@@ -1122,7 +1127,7 @@ window.electronAPI.onBroadcast(async (msg) => {
   } else if (msg.type === "videoCueNext") {
     cueNextVideo();
   } else if (msg.type === "importLocalDirectory") {
-    addLocalFiles(msg);
+    importLocalFiles(msg);
   } else if (msg.type === "rotateVideo") {
     rotateVideo(msg);
   } else if (msg.type === "queueModeChanged") {
@@ -1135,7 +1140,7 @@ async function exportDB() {
   const videos = await db.loadVideos();
   const log = await db.getLastNLogs(MAXLOGDUMP);
   const exportData = {
-    version: 4,
+    version: db.VERSION,
     playlists,
     videos,
     log,
@@ -1149,7 +1154,7 @@ async function exportDB() {
   const a = document.createElement("a");
   a.href = url;
   const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-  a.download = `videos_export_${timestamp}.json`;
+  a.download = `deja-queue-export-${profile}-${timestamp}.json`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

@@ -110,6 +110,9 @@ hr {
 .right button {
   display: block;
 }
+.top button svg {
+  display: block;
+}
 .top {
   grid-area: top;
 }
