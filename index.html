@@ -36,15 +36,11 @@
             <option value="video">Video</option>
             <option value="playlist">Playlist</option>
           </select>
-          <span class="tabs">
-            <button class="tab-button" data-target="playlists">
-              Playlists
-            </button>
-            <button class="tab-button" data-target="database">Database</button>
-            <button class="tab-button active" data-target="youtube-full">
-              Youtube
-            </button>
-          </span>
+          <select id="tab-selector" class="tab-selector">
+            <option value="playlists">Playlists</option>
+            <option value="database">Database</option>
+            <option value="youtube-full" selected>Youtube</option>
+          </select>
         </div>
       </div>
       <div id="playlists" class="bot tab-content">

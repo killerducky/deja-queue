@@ -1511,25 +1511,25 @@ async function moveVideoToFront(uuid) {
 }
 
 function handleTabs() {
-  const buttons = document.querySelectorAll(".tab-button");
+  const selector = document.querySelector("#tab-selector");
   const contents = document.querySelectorAll(".tab-content");
 
-  buttons.forEach((btn) => {
-    btn.addEventListener("click", () => {
-      buttons.forEach((b) => b.classList.remove("active"));
-      contents.forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-      const targetId = btn.dataset.target;
-      const target = document.querySelector(`#${targetId}`);
-      target.classList.add("active");
-      if (targetId !== "youtube-full") {
-        document.querySelector("#youtube").classList.add("active");
-      }
-      sendMessage({ type: "tab-button", targetId });
-    });
+  function activateTab(targetId) {
+    contents.forEach((c) => c.classList.remove("active"));
+    const target = document.querySelector(`#${targetId}`);
+    if (target) target.classList.add("active");
+
+    if (targetId !== "youtube-full") {
+      document.querySelector("#youtube").classList.add("active");
+    }
+    sendMessage({ type: "tab-button", targetId });
+  }
+
+  selector.addEventListener("change", (e) => {
+    activateTab(e.target.value);
   });
-  const btn = document.querySelector(`[data-target="youtube-full"]`);
-  btn.click();
+
+  activateTab(selector.value);
 }
 handleTabs();
 

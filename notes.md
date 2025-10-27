@@ -1,11 +1,11 @@
 ## VIP user
 
 - [x] Adding new playlist is broken!!!
-- [ ] Smaller window size support
 - [x] TV high res is screwing the restore bounds command
 - [x] use electron-window-state library -- see if VIP user issue fixed
 - [x] chatgpt modify electron-window-state
 - [x] recreated and verified on my own machine, but still weird
+- [ ] Smaller window size support
 - [ ] add playlist - should add to queue as PL, not individual songs
 - [ ] click on single song inside a playlist should skip to that song
 - [ ] filter playlists and only queue those playlists
@@ -25,9 +25,9 @@
 ## Playlists
 
 - [x] general improvement of playlists in queue/log
-- [ ] Playlist should not pop single songs out into the queue
 - [x] log doesn't show track number
 - [x] log doesn't show playlists
+- [ ] Playlist should not pop single songs out into the queue
 - [ ] Skip playlist does not always(?) reset the current track number
 - [ ] Make title, etc editable
 - [ ] Adding the same playlist should not overwrite fields
