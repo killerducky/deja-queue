@@ -61,15 +61,11 @@ const skipBtn = document.getElementById("skip");
 const delayBtn = document.getElementById("delay");
 const pauseBtn = document.getElementById("pause");
 const playBtn = document.getElementById("play");
-const currentEl = document.getElementById("current");
 const queueEl = document.getElementById("queue");
 const logEl = document.getElementById("log");
-const queueModeEl = document.getElementById("queueMode");
 
-queueModeEl.value = window.electronAPI.get("queueMode") || "Video";
-queueModeEl.addEventListener("change", () => {
-  window.electronAPI.set("queueMode", queueModeEl.value);
-});
+let queueMode = window.electronAPI.get("queueMode") || "Video";
+console.log("init mode", queueMode);
 
 function handleDivider(divEl, vert) {
   let isDragging = false;
@@ -1074,7 +1070,7 @@ window.electronAPI.onBroadcast(async (msg) => {
     videoForeignKey = getVideoIdFromInput(msg.url).foreignKey;
     videoUuid = DBDATA.queue.find((v) => v.foreignKey == videoForeignKey);
   }
-  console.log("options.js received message:", msg?.type, videoUuid);
+  console.log("options.js received message:", msg);
   if (msg?.type === "videoPlaying") {
     clearTimeout(videoTimeout);
     if (
@@ -1113,6 +1109,8 @@ window.electronAPI.onBroadcast(async (msg) => {
     addLocalFiles(msg);
   } else if (msg.type === "rotateVideo") {
     rotateVideo(msg);
+  } else if (msg.type === "queueModeChanged") {
+    queueMode = msg.mode;
   }
 });
 
@@ -1635,7 +1633,7 @@ async function savePlaylists(playlists) {
     // copy.playlistRef = item;
     return utils.addComputedFieldsPL(copy, DBDATA.queue);
   });
-  if (queueModeEl.value == "playlist") {
+  if (queueMode == "playlist") {
     DBDATA.queue.unshift(...playlistCopies);
   } else {
     DBDATA.queue.push(...playlistCopies);

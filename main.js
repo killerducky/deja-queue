@@ -23,6 +23,7 @@ let store;
 const winRegister = {};
 let winMain = null;
 let winYoutubeProxy = null;
+let queueMode;
 
 const args = process.argv.slice(2); // skip .exe and path
 
@@ -351,9 +352,19 @@ function createAllWindows() {
   winRegister.main.object.webContents.openDevTools();
   // winRegister.youtubePlayer.object.webContents.openDevTools();
 }
+function setQueueMode(mode) {
+  queueMode = mode;
+  store.set("queueMode", mode);
+  console.log("setQueueMode", mode);
+  winRegister.main.object.webContents.send("broadcast", {
+    type: "queueModeChanged",
+    mode,
+  });
+}
 function buildMenu() {
   let graphsWin;
   let spotifyWin;
+  queueMode = store.get("queueMode") || "video";
   const isMac = process.platform === "darwin";
   const template = [
     ...(isMac
@@ -561,6 +572,28 @@ function buildMenu() {
               // );
             }
           },
+        },
+      ],
+    },
+    {
+      label: "Settings",
+      submenu: [
+        {
+          label: "Queue Mode",
+          submenu: [
+            {
+              label: "Video",
+              type: "radio",
+              checked: queueMode === "Video",
+              click: () => setQueueMode("video"),
+            },
+            {
+              label: "Playlist",
+              type: "radio",
+              checked: queueMode === "Playlist",
+              click: () => setQueueMode("playlist"),
+            },
+          ],
         },
       ],
     },
