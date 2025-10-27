@@ -469,9 +469,11 @@ function getTableColumns(tableType) {
         let item = cell.getRow().getData();
         let origRating = item.rating;
         if (e.target.classList.contains("step-down")) {
-          item.rating = Math.max(1, item.rating - 0.5);
+          // Round to nearest 0.5, then change 0.5
+          item.rating = Math.max(1, Math.round(item.rating * 2) / 2 - 0.5);
         } else if (e.target.classList.contains("step-up")) {
-          item.rating = Math.min(10, item.rating + 0.5);
+          // Round to nearest 0.5, then change by 0.5
+          item.rating = Math.min(10, Math.round(item.rating * 2) / 2 + 0.5);
         }
         if (origRating != item.rating) {
           if (item.type == "playlist") {
@@ -809,7 +811,7 @@ async function addLocalFiles(msg) {
       uuid: db.uuidv4(),
       source: "local",
       foreignKey: file,
-      rating: 5.5, // TODO unhack 5.5 = 365 days
+      rating: 5.6, // TODO unhack 5.5 = 365 days
       // rating: DEFAULT_RATING,
       dateAdded: Date.now(),
       lastPlayDate: Date.now(),

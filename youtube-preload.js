@@ -20,6 +20,7 @@ function calcHref(msg) {
   }
   return href;
 }
+
 function applyRotate(rotateAngle) {
   let container = document.querySelector(".local-video-container");
   // console.log("container", container);
@@ -119,6 +120,11 @@ function attachListener() {
     "loadedmetadata",
     () => {
       applyRotate(rotateAngle);
+      const target = document.querySelector(".local-video-container");
+      const resizeObserver = new ResizeObserver((entries) => {
+        applyRotate(rotateAngle);
+      });
+      resizeObserver.observe(target);
     },
     { once: true }
   );
