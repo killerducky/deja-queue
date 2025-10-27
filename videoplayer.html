@@ -6,7 +6,8 @@
     </div>
     <script>
       let params = new URLSearchParams(window.location.search);
-      let file = params.get("f");
+      let file = params.get("v");
+      let cueVideo = params.has("cueVideo");
       console.log("load file", file);
       let startTime = parseFloat(params.get("t")) || 0;
       let video = document.getElementById("player");
@@ -18,7 +19,11 @@
           .join("/"); // join with /
       video.src = file;
       video.currentTime = startTime;
-      video.play();
+      if (!cueVideo) {
+        video.play();
+      } else {
+        video.pause();
+      }
     </script>
   </body>
   <link rel="stylesheet" href="style.css" />

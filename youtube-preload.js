@@ -91,7 +91,7 @@ ipcRenderer.on("broadcast", (event, msg) => {
   } else if (msg.type === "resumeVideo") {
     video.play();
   } else if (msg.type === "fastForward") {
-    video.currentTime += 30;
+    video.currentTime += 15;
   } else if (msg.type === "volumeChanged") {
     video.volume = msg.volume;
     video.muted = msg.muted;

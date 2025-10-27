@@ -149,7 +149,13 @@ class YoutubePlayerProxy {
     if (msg?.source == "local") {
       this.views[this.active].webContents.loadFile(
         path.join(__dirname, "videoplayer.html"),
-        { query: { f: msg.foreignKey, rotateAngle: msg.rotateAngle } }
+        {
+          query: {
+            v: msg.foreignKey,
+            rotateAngle: msg.rotateAngle,
+            ...(msg.type === "cueVideo" && { cueVideo: "" }),
+          },
+        }
       );
     } else {
       this.views[this.active].webContents.send("broadcast", msg);
@@ -328,6 +334,8 @@ ipcMain.on("broadcast", async (event, msg) => {
   } else if (msg.type === "volumeChanged") {
     winYoutubeProxy.volumeChanged(msg);
   } else if (msg.type === "playVideo") {
+    winYoutubeProxy.playVideo(msg);
+  } else if (msg.type === "cueVideo" && msg.source === "local") {
     winYoutubeProxy.playVideo(msg);
   } else {
     Object.values(winRegister).forEach((win) => {

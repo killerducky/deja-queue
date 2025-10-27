@@ -525,6 +525,16 @@ function getTableColumns(tableType) {
       editor: "input",
       cellEdited: tabulatorCellEdited,
     },
+    source: {
+      title: "Source",
+      field: "source",
+    },
+    foreignKey: {
+      title: "Native Key",
+      field: "foreignKey",
+      hozAlign: "left",
+      width: TITLE_WIDTH,
+    },
     channel: {
       title: "Channel",
       field: "videoOwnerChannelTitle",
@@ -818,6 +828,7 @@ async function addLocalFiles(msg) {
       delay: true,
       title: file,
     };
+    trimLocalFields(video);
     utils.addComputedFieldsVideo(video);
     videos.push(video);
   }
@@ -956,10 +967,7 @@ async function pickNextVideoToPlay(offset, params = {}) {
 
 async function cueNextVideo(offset = 1, params = {}) {
   params.cueVideo = true;
-  console.log("ct:", DBDATA.queue[0]._currentTrack);
   let nextVideoToPlay = await pickNextVideoToPlay(offset, params);
-  console.log("ct:", DBDATA.queue[0]._currentTrack);
-  console.log("cnv", nextVideoToPlay);
 
   let msg = {
     type: "backgroundCueVideo",
@@ -1009,7 +1017,7 @@ async function playNextVideo(offset = 1, params = {}) {
 }
 
 function getVideoIdFromInput(input) {
-  if (input.startsWith("http")) {
+  if (input.startsWith("http") || input.startsWith("file")) {
     const url = new URL(input);
     if (url.hostname === "youtu.be") {
       const videoId = url.pathname.slice(1); // remove leading "/"
@@ -1057,7 +1065,7 @@ async function logEvent(item, event) {
   await db.saveLog([logEntry]);
 }
 
-let lastEndedVideoId = null;
+let lastEndedVideoUuid = null;
 
 window.electronAPI.onBroadcast(async (msg) => {
   let currItem = DBDATA.queue[0];
@@ -1068,7 +1076,11 @@ window.electronAPI.onBroadcast(async (msg) => {
   // TODO: We don't always have msg.url?
   // e.g. main.js could be sending the message.
   // But it could add msg.url I suppose
-  if (msg.url) {
+  if (msg?.url?.startsWith("file")) {
+    // Local player can't really go off on it's own, so just assume we are playing the correct video.
+    videoForeignKey = currVideo.foreignKey;
+    videoUuid = currVideo.uuid;
+  } else if (msg.url) {
     videoForeignKey = getVideoIdFromInput(msg.url).foreignKey;
     videoUuid = DBDATA.queue.find((v) => v.foreignKey == videoForeignKey);
   }
@@ -1087,11 +1099,13 @@ window.electronAPI.onBroadcast(async (msg) => {
       await saveVideos([currVideo]);
     }
   } else if (msg?.type === "videoEnded") {
-    if (lastEndedVideoId === videoUuid) {
+    console.log("end", currVideo, videoUuid);
+    if (lastEndedVideoUuid === videoUuid) {
       return;
     }
-    lastEndedVideoId = videoUuid;
+    lastEndedVideoUuid = videoUuid;
     if (videoUuid && currVideo && videoUuid === currVideo.uuid) {
+      console.log("log");
       await logEvent(currItem, "play");
     }
     playNextVideo();
@@ -1238,6 +1252,8 @@ async function renderDB(queue) {
     tableColumns.errCnt,
     tableColumns.dup,
     tableColumns.channel,
+    tableColumns.foreignKey,
+    tableColumns.source,
   ];
 
   columns.map((c) => {
@@ -1556,6 +1572,16 @@ function trimYoutubeFields(obj) {
   return obj;
 }
 
+function trimLocalFields(obj) {
+  if (Array.isArray(obj)) {
+    obj.forEach(trimLocalFields);
+  } else {
+    if (obj.source == "local") {
+      obj.title = obj.title.split(/[/\\]/).pop();
+    }
+  }
+}
+
 function dbCheck() {
   let error = false;
   DBDATA.queue.forEach((v) => {
@@ -1624,8 +1650,9 @@ async function savePlaylists(playlists) {
   DBDATA.queue = await db.loadVideos();
   DBDATA.playlists = await db.loadPlaylists();
   dbCheck();
-  DBDATA.queue = trimYoutubeFields(DBDATA.queue);
-  DBDATA.playlists = trimYoutubeFields(DBDATA.playlists);
+  // DBDATA.queue = trimYoutubeFields(DBDATA.queue);
+  // trimLocalFields(DBDATA.queue); // This one mutates, and the other one doesn't? ugh
+  // DBDATA.playlists = trimYoutubeFields(DBDATA.playlists);
   DBDATA.queue = utils.addComputedFieldsVideo(DBDATA.queue);
   DBDATA.queue.sort((a, b) => b.score - a.score);
   DBDATA.playlists = utils.addComputedFieldsPL(DBDATA.playlists, DBDATA.queue);
