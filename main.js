@@ -584,13 +584,13 @@ function buildMenu() {
             {
               label: "Video",
               type: "radio",
-              checked: queueMode === "Video",
+              checked: queueMode === "video",
               click: () => setQueueMode("video"),
             },
             {
               label: "Playlist",
               type: "radio",
-              checked: queueMode === "Playlist",
+              checked: queueMode === "playlist",
               click: () => setQueueMode("playlist"),
             },
           ],
