@@ -65,20 +65,14 @@ function plotRatings(type, items) {
   // Count how many videos for each rating
   const counts = {};
   const durations = {};
-  ratings.forEach((r) => {
-    durations[r] = items.reduce(
-      (sum, item) =>
-        sum +
-        (item.rating === r
-          ? isNaN(item.duration)
-            ? 60 * 3
-            : item.duration
-          : 0),
-      0
-    );
-    r = parseFloat(r.toFixed(1)); // normalize e.g. 7 → 7.0
+
+  for (const item of items) {
+    const r = Number(item.rating?.toFixed(1));
+    const dur = isNaN(item.duration) ? 180 : item.duration;
+
     counts[r] = (counts[r] || 0) + 1;
-  });
+    durations[r] = (durations[r] || 0) + dur;
+  }
 
   // Extract sorted rating values
   const xs = Object.keys(counts)
@@ -355,9 +349,13 @@ function calcStringSimilarity(queue) {
   DBDATA.filtered = DBDATA.queue.filter((v) => (v.errCnt ?? 0) < 5 && !v.dup);
   console.log(`Time: ${((Date.now() - start) / 1000).toFixed(1)}s`);
   plotRatings("videos", DBDATA.filtered);
+  console.log(`Time: ${((Date.now() - start) / 1000).toFixed(1)}s`);
   plotScores("videos", DBDATA.filtered);
+  console.log(`Time: ${((Date.now() - start) / 1000).toFixed(1)}s`);
   plotDues("videos", true, DBDATA.filtered);
+  console.log(`Time: ${((Date.now() - start) / 1000).toFixed(1)}s`);
   plotDues("videos", false, DBDATA.filtered);
+  console.log(`Time: ${((Date.now() - start) / 1000).toFixed(1)}s`);
   plotRatings("playlists", DBDATA.playlists);
   plotScores("playlists", DBDATA.playlists);
   plotDues("playlists", true, DBDATA.playlists);

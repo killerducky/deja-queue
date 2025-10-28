@@ -6,7 +6,7 @@
 - [x] chatgpt modify electron-window-state
 - [x] recreated and verified on my own machine, but still weird
 - [x] Smaller window size support (much better now. further improvements TBD)
-- [ ] Even smaller window size support
+- [ ] Even smaller window size support -- especially vertical
 - [ ] add playlist - should add to queue as PL, not individual songs
 - [ ] click on single song inside a playlist should skip to that song
 - [ ] filter playlists and only queue those playlists
