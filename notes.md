@@ -41,6 +41,7 @@
 
 ## UI
 
+- [x] thumbnails for local
 - [ ] skip/defer in queue/database
 - [ ] multi row select
 - [ ] shift-click to insta play

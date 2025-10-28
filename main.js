@@ -120,15 +120,15 @@ class YoutubePlayerProxy {
   }
 
   playVideo(msg) {
-    let ids = this.views.map((view) => {
+    let foreignKeys = this.views.map((view) => {
       let url = view.webContents.getURL();
-      let id = new URL(url).searchParams.get("v");
-      return id;
+      let foreignKey = new URL(url).searchParams.get("v");
+      return foreignKey;
     });
     if (
       this.enable &&
-      ids[this.inactive()] == msg.id &&
-      ids[this.active] != msg.id
+      foreignKeys[this.inactive()] == msg.foreignKey &&
+      foreignKeys[this.active] != msg.foreignKey
     ) {
       // If enabled and the non-active view has it loaded, and the current doesn't, switch
       let bounds = this.views[this.active].getBounds();
@@ -381,7 +381,7 @@ function createAllWindows() {
     preload: "youtube-preload.js",
   });
 
-  winRegister.main.object.webContents.openDevTools();
+  // winRegister.main.object.webContents.openDevTools();
   // winRegister.youtubePlayer.object.webContents.openDevTools();
 }
 function setQueueMode(mode) {

@@ -1094,7 +1094,8 @@ window.electronAPI.onBroadcast(async (msg) => {
     videoUuid = currVideo.uuid;
   } else if (msg.url) {
     videoForeignKey = getVideoIdFromInput(msg.url).foreignKey;
-    videoUuid = DBDATA.queue.find((v) => v.foreignKey == videoForeignKey);
+    videoUuid = DBDATA.queue.find((v) => v.foreignKey == videoForeignKey).uuid;
+    console.log("from url:", videoForeignKey, videoUuid);
   }
   console.log("options.js received message:", msg);
   if (msg?.type === "videoPlaying") {
@@ -1111,15 +1112,17 @@ window.electronAPI.onBroadcast(async (msg) => {
       await saveVideos([currVideo]);
     }
   } else if (msg?.type === "videoEnded") {
-    console.log("end", currVideo, videoUuid);
+    console.log("end", currVideo, videoUuid, lastEndedVideoUuid);
     if (lastEndedVideoUuid === videoUuid) {
       return;
     }
+    console.log("update lastEnded");
     lastEndedVideoUuid = videoUuid;
     if (videoUuid && currVideo && videoUuid === currVideo.uuid) {
       console.log("log");
       await logEvent(currItem, "play");
     }
+    console.log("playNextVideo");
     playNextVideo();
   } else if (msg.type === "queue:addVideo") {
     addVideoOrPlaylist({ type: "video", foreignKey: msg.foreignKey });
