@@ -86,6 +86,11 @@ class YoutubePlayerProxy {
   inactive() {
     return (this.active + 1) % 2;
   }
+  rotateVideo() {
+    this.views[this.active].webContents.send("broadcast", {
+      type: "rotateVideo",
+    });
+  }
   inactiveBounds(bounds = {}) {
     if (this.debug) {
       return {
@@ -321,6 +326,15 @@ ipcMain.on("store-set-sync", (e, key, value) => {
   e.returnValue = true;
 });
 
+function sendBroadcast(msg, windows) {
+  if (windows == "all") {
+    windows = [winRegister.main.object, winRegister.youtubePlayer.object];
+  }
+  for (let win of windows) {
+    win.webContents.send("broadcast", msg);
+  }
+}
+
 ipcMain.on("broadcast", async (event, msg) => {
   if (msg.type != "div-resize") {
     console.log("msg:", JSON.stringify(msg));
@@ -508,15 +522,6 @@ function buildMenu() {
     {
       label: "View",
       submenu: [
-        { role: "reload" },
-        { role: "toggleDevTools" },
-        { type: "separator" },
-        { role: "resetZoom" },
-        { role: "zoomIn" },
-        { role: "zoomOut" },
-        { type: "separator" },
-        { role: "togglefullscreen" },
-        { type: "separator" },
         {
           label: "Theme",
           submenu: [
@@ -534,6 +539,19 @@ function buildMenu() {
             },
           ],
         },
+        {
+          label: "Rotate Video",
+          click: () => sendBroadcast({ type: "rotateVideo" }, "all"),
+        },
+        { type: "separator" },
+        { role: "reload" },
+        { role: "toggleDevTools" },
+        { type: "separator" },
+        { role: "resetZoom" },
+        { role: "zoomIn" },
+        { role: "zoomOut" },
+        { type: "separator" },
+        { role: "togglefullscreen" },
       ],
     },
     {

@@ -99,7 +99,8 @@ ipcRenderer.on("broadcast", (event, msg) => {
     video.volume = msg.volume;
     video.muted = msg.muted;
   } else if (msg.type === "rotateVideo") {
-    applyRotate(msg.rotateAngle);
+    rotateAngle = ((rotateAngle || 0) + 90) % 360;
+    applyRotate(rotateAngle);
   }
 });
 

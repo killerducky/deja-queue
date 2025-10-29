@@ -56,7 +56,6 @@ async function loadEnv2() {
 loadEnv2();
 
 const fastForwardBtn = document.getElementById("fastForward");
-const rotateVideoBtn = document.getElementById("rotateVideo");
 const skipBtn = document.getElementById("skip");
 const delayBtn = document.getElementById("delay");
 const pauseBtn = document.getElementById("pause");
@@ -178,28 +177,6 @@ updateTheme();
 window
   .matchMedia("(prefers-color-scheme: dark)")
   .addEventListener("change", updateTheme);
-
-function addToc() {
-  const toc = document.getElementById("toc");
-  const headings = document.querySelectorAll("h2");
-  const ul = document.createElement("ul");
-  ul.className = "toc-horizontal";
-
-  headings.forEach((h2) => {
-    // Make sure each heading has an ID
-    if (!h2.id) {
-      h2.id = h2.textContent.toLowerCase().replace(/\s+/g, "-");
-    }
-    const li = document.createElement("li");
-    const a = document.createElement("a");
-    a.href = `#${h2.id}`;
-    a.textContent = h2.textContent;
-    li.appendChild(a);
-    ul.appendChild(li);
-  });
-  toc.appendChild(ul);
-}
-// addToc();
 
 function date2String(d) {
   let yy = `${String(d.getFullYear()).padStart(4, "0")}`;
@@ -810,12 +787,12 @@ async function addVideoOrPlaylist(response) {
   await rerenderAll();
 }
 
-async function rotateVideo(msg) {
+async function rotateVideo() {
   let currItem = DBDATA.queue[0];
   let video = currItem.type == "playlist" ? currItem._children[0] : currItem;
   video.rotateAngle = ((video.rotateAngle || 0) + 90) % 360;
+  console.log("rotateVideo new angle:", video.rotateAngle);
   saveVideos(video);
-  sendMessage({ type: "rotateVideo", rotateAngle: video.rotateAngle });
 }
 
 async function importLocalFiles(msg) {
@@ -890,9 +867,6 @@ playBtn.addEventListener("click", async () => {
 });
 fastForwardBtn.addEventListener("click", async () => {
   sendMessage({ type: "fastForward" });
-});
-rotateVideoBtn.addEventListener("click", async () => {
-  rotateVideo();
 });
 
 let videoTimeout;
@@ -1150,6 +1124,8 @@ window.electronAPI.onBroadcast(async (msg) => {
       video.localThumbnailPath = msg.filePath;
       await db.saveVideos(video);
     }
+  } else if (msg.type === "videoRotated") {
+    rotateVideo();
   }
 });
 
