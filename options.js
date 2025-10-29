@@ -1126,6 +1126,8 @@ window.electronAPI.onBroadcast(async (msg) => {
     }
   } else if (msg.type === "videoRotated") {
     rotateVideo();
+  } else if (msg.type === "menuRadio" && msg.subtype === "Layout") {
+    activateTab(msg.value);
   }
 });
 
@@ -1525,28 +1527,22 @@ async function moveVideoToFront(uuid) {
   DBDATA.queue.splice(insertIdx, 0, video);
 }
 
-function handleTabs() {
-  const selector = document.querySelector("#tab-selector");
-  const contents = document.querySelectorAll(".tab-content");
-
-  function activateTab(targetId) {
-    contents.forEach((c) => c.classList.remove("active"));
-    const target = document.querySelector(`#${targetId}`);
-    if (target) target.classList.add("active");
-
-    if (targetId !== "youtube-full") {
-      document.querySelector("#youtube").classList.add("active");
-    }
-    sendMessage({ type: "tab-button", targetId });
+function activateTab(targetId) {
+  if (targetId == "Video") {
+    targetId = "youtube-full";
   }
+  const contents = document.querySelectorAll(".tab-content");
+  contents.forEach((c) => c.classList.remove("active"));
+  const target = document.querySelector(`#${targetId}`);
+  if (target) target.classList.add("active");
 
-  selector.addEventListener("change", (e) => {
-    activateTab(e.target.value);
-  });
-
-  activateTab(selector.value);
+  if (targetId !== "youtube-full") {
+    document.querySelector("#youtube").classList.add("active");
+  }
+  sendMessage({ type: "tab-button", targetId });
 }
-handleTabs();
+
+activateTab(window.electronAPI.get("Layout"));
 
 function trimYoutubeFields(obj) {
   if (Array.isArray(obj)) {

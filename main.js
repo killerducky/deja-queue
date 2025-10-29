@@ -1,3 +1,5 @@
+"use strict";
+
 const {
   app,
   BrowserWindow,
@@ -407,10 +409,50 @@ function setQueueMode(mode) {
     mode,
   });
 }
+function menuHelper(mainitem) {
+  let verboseLayout = {
+    label: mainitem.label,
+    submenu: [],
+  };
+  for (let subitem of mainitem.submenu) {
+    verboseLayout.submenu.push({
+      label: subitem.label,
+      type: "radio",
+      checked: store.get(mainitem.label) == subitem.label,
+      click: () => {
+        store.set(mainitem.label, subitem.label);
+        console.log("click", mainitem.label, subitem.label);
+        winRegister.main.object.send("broadcast", {
+          type: "menuRadio",
+          subtype: mainitem.label,
+          value: subitem.label,
+        });
+      },
+    });
+  }
+  // console.log(verboseLayout);
+  return verboseLayout;
+}
 function buildMenu() {
   let graphsWin;
   let spotifyWin;
+
   queueMode = store.get("queueMode") || "video";
+  if (!store.get("Layout")) {
+    store.set("Layout", "Video");
+  }
+
+  let radioOpts = {
+    layout: {
+      label: "Layout",
+      submenu: [
+        { label: "Video" },
+        { label: "Database" },
+        { label: "Playlists" },
+      ],
+    },
+  };
+
   const isMac = process.platform === "darwin";
   const template = [
     ...(isMac
@@ -522,6 +564,11 @@ function buildMenu() {
     {
       label: "View",
       submenu: [
+        menuHelper(radioOpts.layout),
+        {
+          label: "Rotate Video",
+          click: () => sendBroadcast({ type: "rotateVideo" }, "all"),
+        },
         {
           label: "Theme",
           submenu: [
@@ -538,10 +585,6 @@ function buildMenu() {
               click: () => setTheme("dark"),
             },
           ],
-        },
-        {
-          label: "Rotate Video",
-          click: () => sendBroadcast({ type: "rotateVideo" }, "all"),
         },
         { type: "separator" },
         { role: "reload" },
