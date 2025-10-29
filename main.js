@@ -631,41 +631,41 @@ function buildMenu() {
             }
           },
         },
-        {
-          label: "Open Spotify",
-          click: () => {
-            if (spotifyWin && !spotifyWin.isDestroyed()) {
-              if (!spotifyWin.isVisible()) {
-                spotifyWin.show();
-              }
-              spotifyWin.focus();
-              spotifyWin.moveTop();
-            } else {
-              spotifyWin = new BrowserWindow({
-                width: 1000,
-                height: 700,
-                // webPreferences: {
-                //   plugins: true,
-                //   webSecurity: true,
-                // },
-              });
-              spotifyWin.maximize();
-              // spotifyWin.webContents.setUserAgent(
-              //   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
-              // );
-              spotifyWin.webContents.loadURL("https://open.spotify.com");
-              // const filePath = path.join(__dirname, "spotify-embed.html");
-              // spotifyWin.loadURL("file://" + filePath);
-              // spotifyWin.loadFile("spotify-embed.html");
-              // spotifyWin.webContents.loadURL(
-              //   "http://localhost/spotify-embed.html"
-              // );
-              // spotifyWin.webContents.loadURL(
-              //   "https://open.spotify.com/track/3LII8A23VIs7pzudea2VSo?si=b1c4b0c019084459"
-              // );
-            }
-          },
-        },
+        // {
+        //   label: "Open Spotify",
+        //   click: () => {
+        //     if (spotifyWin && !spotifyWin.isDestroyed()) {
+        //       if (!spotifyWin.isVisible()) {
+        //         spotifyWin.show();
+        //       }
+        //       spotifyWin.focus();
+        //       spotifyWin.moveTop();
+        //     } else {
+        //       spotifyWin = new BrowserWindow({
+        //         width: 1000,
+        //         height: 700,
+        //         // webPreferences: {
+        //         //   plugins: true,
+        //         //   webSecurity: true,
+        //         // },
+        //       });
+        //       spotifyWin.maximize();
+        //       // spotifyWin.webContents.setUserAgent(
+        //       //   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+        //       // );
+        //       spotifyWin.webContents.loadURL("https://open.spotify.com");
+        //       // const filePath = path.join(__dirname, "spotify-embed.html");
+        //       // spotifyWin.loadURL("file://" + filePath);
+        //       // spotifyWin.loadFile("spotify-embed.html");
+        //       // spotifyWin.webContents.loadURL(
+        //       //   "http://localhost/spotify-embed.html"
+        //       // );
+        //       // spotifyWin.webContents.loadURL(
+        //       //   "https://open.spotify.com/track/3LII8A23VIs7pzudea2VSo?si=b1c4b0c019084459"
+        //       // );
+        //     }
+        //   },
+        // },
       ],
     },
     {
