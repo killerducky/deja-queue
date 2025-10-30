@@ -80,10 +80,6 @@ ipcRenderer.on("broadcast", (event, msg) => {
   if (msg.type === "playVideo") {
     if (getVideoId(window.location.href) == msg.foreignKey) {
       video.play();
-      sendBroadcast({
-        type: "videoPlaying",
-        info: "Video already loaded",
-      });
     } else {
       window.location.href = calcHref(msg);
     }
@@ -138,43 +134,25 @@ function attachListener() {
     { once: true }
   );
 
+  const handlePlay = (info = "") => {
+    if (cueVideo) {
+      video.pause();
+      video.currentTime = 0;
+      cueVideo = false;
+    }
+    sendBroadcast({
+      type: "videoPlaying",
+      duration: video.duration,
+      info,
+    });
+  };
+
   if (!video.paused && !video.ended && video.readyState > 2) {
-    if (cueVideo) {
-      video.pause();
-      video.currentTime = 0;
-      cueVideo = false;
-    }
-    sendBroadcast({
-      type: "videoPlaying",
-      duration: video.duration,
-      info: "Video already playing on attach",
-    });
+    handlePlay("already playing on attach");
   }
-  video.onplay = () => {
-    if (cueVideo) {
-      video.pause();
-      video.currentTime = 0;
-      cueVideo = false;
-    }
-    sendBroadcast({
-      type: "videoPlaying",
-      duration: video.duration,
-    });
-  };
-  video.onplaying = () => {
-    if (cueVideo) {
-      video.pause();
-      video.currentTime = 0;
-      cueVideo = false;
-    }
-    sendBroadcast({
-      type: "videoPlaying",
-      duration: video.duration,
-    });
-  };
-  video.onended = () => {
-    sendBroadcast({ type: "videoEnded" });
-  };
+  // video.onplay = () => handlePlay("onplay");
+  video.onplaying = () => handlePlay("onplaying");
+  video.onended = () => sendBroadcast({ type: "videoEnded" });
   video.onpause = () => {
     // Treat pause as "ended" if the video is at the end
     if (Math.abs(video.duration - video.currentTime) < 0.5) {

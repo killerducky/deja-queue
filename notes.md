@@ -31,6 +31,7 @@
 
 ## UI
 
+- [x] double buffer YT broke deleted video timeout detection
 - [ ] skip/defer in queue/database
 - [ ] multi row select
 - [ ] shift-click to insta play

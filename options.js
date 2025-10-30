@@ -991,7 +991,7 @@ async function playNextVideo(offset = 1, params = {}) {
     saveVideos([nextVideoToPlay]);
     logEvent(nextVideoToPlay, "error");
     playNextVideo();
-  }, 150000000); // 15s -- see if this works
+  }, 15000); // 15s -- see if this works
   let needThumb =
     nextVideoToPlay.source == "local" && !nextVideoToPlay.thumbnailUrl;
   let msg = {
