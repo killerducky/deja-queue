@@ -1,11 +1,5 @@
 ## VIP user
 
-- [x] Adding new playlist is broken!!!
-- [x] TV high res is screwing the restore bounds command
-- [x] use electron-window-state library -- see if VIP user issue fixed
-- [x] chatgpt modify electron-window-state
-- [x] recreated and verified on my own machine, but still weird
-- [x] Smaller window size support (much better now. further improvements TBD)
 - [ ] Even smaller window size support -- especially vertical
 - [ ] add playlist - should add to queue as PL, not individual songs
 - [ ] click on single song inside a playlist should skip to that song
@@ -21,14 +15,10 @@
 - [ ] get rid of using DBDATA.queue as the DB!!
 - [ ] Use change to move to DB library instead of my own db.js
 - [ ] spotify/local
-  - [x] local Kinda working, but DB migration is manual only -- beware!
   - [ ] trimYoutube, trimLocal, not very safe right now!
 
 ## Playlists
 
-- [x] general improvement of playlists in queue/log
-- [x] log doesn't show track number
-- [x] log doesn't show playlists
 - [ ] Playlist should not pop single songs out into the queue
 - [ ] Skip playlist does not always(?) reset the current track number
 - [ ] Make title, etc editable
@@ -41,7 +31,6 @@
 
 ## UI
 
-- [x] thumbnails for local
 - [ ] skip/defer in queue/database
 - [ ] multi row select
 - [ ] shift-click to insta play
@@ -67,6 +56,20 @@
 “Mixes that feel familiar.”
 “Because good songs deserve déjà vu.”
 “DejaQueue — play it again.”
+
+## Done 2025-10-29
+
+- [x] Adding new playlist is broken!!!
+- [x] TV high res is screwing the restore bounds command
+- [x] use electron-window-state library -- see if VIP user issue fixed
+- [x] chatgpt modify electron-window-state
+- [x] recreated and verified on my own machine, but still weird
+- [x] Smaller window size support (much better now. further improvements TBD)
+- [x] local Kinda working, but DB migration is manual only -- beware!
+- [x] thumbnails for local
+- [x] general improvement of playlists in queue/log
+- [x] log doesn't show track number
+- [x] log doesn't show playlists
 
 ## Done 2025-10-20 v0.0.3
 
