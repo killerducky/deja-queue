@@ -34,7 +34,7 @@ dialog b,
   grid-template-columns: var(--main-divider-size) auto minmax(300px, 1fr);
   grid-template-rows: auto 400px minmax(300px, 1fr);
   grid-template-areas:
-    "left divider top"
+    "left divider bot"
     "left divider bot"
     "left divider bot";
   gap: 10px;
@@ -61,6 +61,9 @@ dialog b,
 }
 .left #youtube.active {
   flex: 0 0 var(--left-youtube-divider-size); /* height */
+}
+.controls {
+  margin-top: 10px;
 }
 #main-divider {
   grid-area: divider;
@@ -109,12 +112,6 @@ hr {
 .left button,
 .right button {
   display: block;
-}
-.top button svg {
-  display: block;
-}
-.top {
-  grid-area: top;
 }
 .right {
   grid-area: right;
@@ -196,7 +193,7 @@ label,
 select,
 button,
 input {
-  font-size: 1.2em;
+  /* font-size: 1.2em; */
   padding: 5px;
   border-radius: 5px;
 }

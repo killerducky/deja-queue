@@ -319,8 +319,8 @@ ipcMain.handle("read-file", async (event, filePath) => {
   }
 });
 
-ipcMain.on("store-get-sync", (e, key) => {
-  e.returnValue = store.get(key);
+ipcMain.on("store-get-sync", (e, { key, defaultValue }) => {
+  e.returnValue = store.get(key, defaultValue);
 });
 
 ipcMain.on("store-set-sync", (e, key, value) => {
@@ -437,7 +437,7 @@ function buildMenu() {
   let graphsWin;
   let spotifyWin;
 
-  queueMode = store.get("queueMode") || "video";
+  queueMode = store.get("queueMode", "video");
   if (!store.get("Layout")) {
     store.set("Layout", "Video");
   }

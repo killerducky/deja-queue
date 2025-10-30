@@ -63,7 +63,7 @@ const playBtn = document.getElementById("play");
 const queueEl = document.getElementById("queue");
 const logEl = document.getElementById("log");
 
-let queueMode = window.electronAPI.get("queueMode") || "Video";
+let queueMode = window.electronAPI.get("queueMode", "Video");
 let profile = window.electronAPI.get("profile");
 
 console.log("init mode", queueMode);
@@ -1542,7 +1542,7 @@ function activateTab(targetId) {
   sendMessage({ type: "tab-button", targetId });
 }
 
-activateTab(window.electronAPI.get("Layout"));
+activateTab(window.electronAPI.get("Layout", "Video"));
 
 function trimYoutubeFields(obj) {
   if (Array.isArray(obj)) {
