@@ -849,6 +849,8 @@ addForm.addEventListener("submit", async (e) => {
   const response = getVideoIdFromInput(url);
   if (response.foreignKey) {
     addVideoOrPlaylist(response);
+  } else {
+    console.log("Error: Could not find ID:", url);
   }
 });
 
@@ -1010,7 +1012,6 @@ async function playNextVideo(offset = 1, params = {}) {
     await renderQueue();
   }
 }
-
 function getVideoIdFromInput(input) {
   if (input.startsWith("http") || input.startsWith("file")) {
     const url = new URL(input);
@@ -1021,6 +1022,11 @@ function getVideoIdFromInput(input) {
     const params = new URL(input).searchParams;
     const listId = params.get("list");
     const videoId = params.get("v");
+    // shorts: /shorts/<id>
+    if (url.pathname.startsWith("/shorts/")) {
+      const id = url.pathname.split("/shorts/")[1].split(/[?&]/)[0];
+      return { type: "video", foreignKey: id };
+    }
     // prioritize single video.
     if (videoId) {
       return { type: "video", foreignKey: videoId };

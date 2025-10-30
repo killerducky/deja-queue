@@ -27,6 +27,7 @@ function calcHref(msg) {
 function applyRotate(rotateAngle) {
   let container = document.querySelector(".local-video-container");
   // console.log("container", container);
+  console.log("applyRotate", rotateAngle);
   let video = document.querySelector("video");
   let videoWidth = video.videoWidth;
   let videoHeight = video.videoHeight;
@@ -38,19 +39,10 @@ function applyRotate(rotateAngle) {
   if (container) {
     let containerWidth = container.clientWidth;
     let containerHeight = container.clientHeight;
-    // console.log(
-    //   "pre",
-    //   rotateAngle,
-    //   containerWidth,
-    //   containerHeight,
-    //   videoWidth,
-    //   videoHeight
+    // let origScaleFactor = Math.min(
+    //   containerWidth / rotatedWidth,
+    //   containerHeight / rotatedHeight
     // );
-
-    let origScaleFactor = Math.min(
-      containerWidth / rotatedWidth,
-      containerHeight / rotatedHeight
-    );
     if (needsSwap) {
       rotatedWidth = videoHeight;
       rotatedHeight = videoWidth;
@@ -59,15 +51,6 @@ function applyRotate(rotateAngle) {
       containerWidth / rotatedWidth,
       containerHeight / rotatedHeight
     );
-    // console.log(
-    //   "scale",
-    //   scaleFactor,
-    //   origScaleFactor,
-    //   containerWidth,
-    //   containerHeight,
-    //   rotatedWidth,
-    //   rotatedHeight
-    // );
   }
 
   video.style.transform = `rotate(${rotateAngle}deg) scale(${scaleFactor}`;

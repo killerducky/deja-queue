@@ -231,10 +231,14 @@ async function addContextMenu(playerWindow) {
   playerWindow.webContents.on("context-menu", (event, params) => {
     let url =
       params.linkURL || params.srcURL || playerWindow.webContents.getURL();
+    url = new URL(url);
 
-    const urlParams = new URL(url).searchParams;
-    const videoId = urlParams.get("v");
+    const urlParams = url.searchParams;
+    let videoId = urlParams.get("v");
     const listId = urlParams.get("list");
+    if (url.pathname.startsWith("/shorts/")) {
+      videoId = url.pathname.split("/shorts/")[1].split(/[?&]/)[0];
+    }
 
     const template = [];
     if (videoId) {
