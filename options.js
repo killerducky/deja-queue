@@ -66,11 +66,15 @@ const logEl = document.getElementById("log");
 let queueMode = window.electronAPI.get("queueMode", "Video");
 let profile = window.electronAPI.get("profile");
 
-console.log("init mode", queueMode);
-
 function handleDivider(divEl, vert) {
   let isDragging = false;
   const container = divEl.parentElement;
+  const divSizeKey = `${divEl.id}-size`;
+  const savedSize = window.electronAPI.get(divSizeKey);
+
+  if (savedSize) {
+    container.style.setProperty(`--${divSizeKey}`, `${savedSize}px`);
+  }
 
   divEl.addEventListener("mousedown", (e) => {
     isDragging = true;
@@ -87,13 +91,18 @@ function handleDivider(divEl, vert) {
     const minSize = 250;
     const maxSize = 1000;
     newSize = Math.min(Math.max(newSize, minSize), maxSize);
-    container.style.setProperty(`--${divEl.id}-size`, `${newSize}px`);
+    container.style.setProperty(`--${divSizeKey}`, `${newSize}px`);
   });
 
   window.addEventListener("mouseup", () => {
     if (isDragging) {
       isDragging = false;
       document.body.style.cursor = "default";
+
+      const currentSize = parseFloat(
+        container.style.getPropertyValue(`--${divSizeKey}`)
+      );
+      window.electronAPI.set(divSizeKey, currentSize);
     }
   });
 }
