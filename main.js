@@ -441,7 +441,7 @@ function clickMenuRadio(key, value) {
 }
 function radioItem(optionName, optionValue, extras) {
   let menuItem = {
-    label: optionName,
+    label: optionValue,
     type: "radio",
     checked: store.get(optionName) == optionValue,
     click: () => clickMenuRadio(optionName, optionValue),
