@@ -989,10 +989,10 @@ async function playNextVideo(offset = 1, params = {}) {
       info: `timeout ${nextVideoToPlay.uuid} ${nextVideoToPlay.title}`,
     });
     showToast("Video timeout");
-    nextVideoToPlay.errCnt = (nextVideoToPlay.errCnt || 0) + 1;
-    saveVideos([nextVideoToPlay]);
-    logEvent(nextVideoToPlay, "error");
-    playNextVideo();
+    // nextVideoToPlay.errCnt = (nextVideoToPlay.errCnt || 0) + 1;
+    // saveVideos([nextVideoToPlay]);
+    // logEvent(nextVideoToPlay, "error");
+    // playNextVideo();
   }, 15000); // 15s -- see if this works
   let needThumb =
     nextVideoToPlay.source == "local" && !nextVideoToPlay.thumbnailUrl;

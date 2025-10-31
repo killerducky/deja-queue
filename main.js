@@ -172,6 +172,23 @@ class YoutubePlayerProxy {
   }
 }
 
+const savedMsgs = new Map();
+
+ipcMain.on("saveMsg", (event, msg) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) return;
+  savedMsgs.set(win.id, msg);
+  console.log(`Saved message for window ${win.id}:`, msg.type);
+});
+
+ipcMain.handle("getSavedMsg", (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) return null;
+  const msg = savedMsgs.get(win.id) || null;
+  console.log(`Retrieved message for window ${win.id}:`, msg.type);
+  return msg;
+});
+
 function youtubeExplorerOpenHandler(details) {
   const { url } = details;
   const childWin = new BrowserWindow({
@@ -542,35 +559,36 @@ function buildMenu() {
         isMac ? { role: "close" } : { role: "quit" },
       ],
     },
-    {
-      label: "Edit",
-      submenu: [
-        { role: "undo" },
-        { role: "redo" },
-        { type: "separator" },
-        { role: "cut" },
-        { role: "copy" },
-        { role: "paste" },
-        ...(isMac
-          ? [
-              { role: "pasteAndMatchStyle" },
-              { role: "delete" },
-              { role: "selectAll" },
-              { type: "separator" },
-              {
-                label: "Speech",
-                submenu: [{ role: "startSpeaking" }, { role: "stopSpeaking" }],
-              },
-            ]
-          : [{ role: "delete" }, { type: "separator" }, { role: "selectAll" }]),
-      ],
-    },
+    // {
+    //   label: "Edit",
+    //   submenu: [
+    //     { role: "undo" },
+    //     { role: "redo" },
+    //     { type: "separator" },
+    //     { role: "cut" },
+    //     { role: "copy" },
+    //     { role: "paste" },
+    //     ...(isMac
+    //       ? [
+    //           { role: "pasteAndMatchStyle" },
+    //           { role: "delete" },
+    //           { role: "selectAll" },
+    //           { type: "separator" },
+    //           {
+    //             label: "Speech",
+    //             submenu: [{ role: "startSpeaking" }, { role: "stopSpeaking" }],
+    //           },
+    //         ]
+    //       : [{ role: "delete" }, { type: "separator" }, { role: "selectAll" }]),
+    //   ],
+    // },
     {
       label: "View",
       submenu: [
         menuHelper(radioOpts.layout),
         {
           label: "Rotate Video",
+          accelerator: "CmdOrCtrl+Shift+R",
           click: () => sendBroadcast({ type: "rotateVideo" }, "all"),
         },
         {

@@ -9,6 +9,8 @@ let needThumb = params.get("needThumb");
 let foreignKey = params.get("v");
 let uuid = params.get("uuid");
 
+let savedMsg;
+
 function getVideoId(url) {
   const params = new URL(url).searchParams;
   return params.get("v");
@@ -24,7 +26,17 @@ function calcHref(msg) {
   return href;
 }
 
-function applyRotate(rotateAngle) {
+function changeHref(msg) {
+  if (msg.source === "youtube") {
+    let href = `https://www.youtube.com/watch?v=${msg.foreignKey}`;
+    ipcRenderer.send("saveMsg", msg);
+    window.location.href = href;
+  } else {
+    console.log("Error?");
+  }
+}
+
+function applyRotateOld(rotateAngle) {
   let container = document.querySelector(".local-video-container");
   // console.log("container", container);
   console.log("applyRotate", rotateAngle);
@@ -55,6 +67,34 @@ function applyRotate(rotateAngle) {
 
   video.style.transform = `rotate(${rotateAngle}deg) scale(${scaleFactor}`;
 }
+let style;
+function applyRotate(rotateAngle) {
+  if (window.location.href.startsWith("file")) {
+    applyRotateOld(rotateAngle);
+    return;
+  }
+  let video = document.querySelector("video");
+  let container = video.parentNode.parentNode;
+  console.log(video);
+  console.log(container);
+  console.log(container.clientWidth, container.clientHeight);
+  let transform = `rotate(${rotateAngle}deg)`;
+
+  if (rotateAngle == 90 || rotateAngle == 270) {
+    let is_vertical_video = video.videoHeight > video.videoWidth;
+    let scale =
+      (is_vertical_video ? container.clientWidth : container.clientHeight) /
+      (is_vertical_video ? container.clientHeight : container.clientWidth);
+    transform += ` scale(${scale})`;
+  }
+
+  if (!style) {
+    style = document.createElement("style");
+    document.body.appendChild(style);
+  }
+  style.textContent = `video { transform: ${transform} }`;
+}
+
 ipcRenderer.on("broadcast", (event, msg) => {
   console.log("ytp msg", msg);
   const video = document.querySelector("video");
@@ -64,10 +104,10 @@ ipcRenderer.on("broadcast", (event, msg) => {
     if (getVideoId(window.location.href) == msg.foreignKey) {
       video.play();
     } else {
-      window.location.href = calcHref(msg);
+      changeHref(msg);
     }
   } else if (msg.type === "cueVideo") {
-    window.location.href = calcHref(msg);
+    changeHref(msg);
   } else if (msg.type === "pauseVideo") {
     video.pause();
   } else if (msg.type === "resumeVideo") {
@@ -163,7 +203,13 @@ function attachListener() {
   };
 }
 
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", async () => {
+  if (window.location.href.startsWith("https://youtube")) {
+    savedMsg = await ipcRenderer.invoke("getSavedMsg");
+    cueVideo = savedMsg.cueVideo;
+    rotateAngle = savedMsg.rotateAngle;
+    console.log("load", savedMsg);
+  }
   const observer = new MutationObserver(attachListener);
   observer.observe(document.body, { childList: true, subtree: true });
   attachListener(); // check immediately
