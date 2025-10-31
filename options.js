@@ -990,10 +990,10 @@ async function playNextVideo(offset = 1, params = {}) {
         info: `timeout ${nextVideoToPlay.uuid} ${nextVideoToPlay.title}`,
       });
       showToast("Video timeout");
-      // nextVideoToPlay.errCnt = (nextVideoToPlay.errCnt || 0) + 1;
-      // saveVideos([nextVideoToPlay]);
-      // logEvent(nextVideoToPlay, "error");
-      // playNextVideo();
+      nextVideoToPlay.errCnt = (nextVideoToPlay.errCnt || 0) + 1;
+      saveVideos([nextVideoToPlay]);
+      logEvent(nextVideoToPlay, "error");
+      playNextVideo();
     }, 15000); // 15s -- see if this works
   }
   let needThumb =
@@ -1430,6 +1430,7 @@ async function renderPlaylists() {
     table2StyleColumns.rating,
     table2StyleColumns.interval,
     table2StyleColumns.score,
+    table2StyleColumns.errCnt,
     // TODO: Add back ability to show the actual ID.
     // { title: "ID", field: "id_fake", hozAlign: "left", width: 20 },
     {
@@ -1533,15 +1534,8 @@ async function moveVideoToFront(uuid) {
   if (idx == 0 || idx == 1) {
     return; // Already playing or next in line
   }
-  let insertIdx = 1;
-  if (
-    DBDATA.queue[insertIdx].type == "playlist" &&
-    DBDATA.queue[insertIdx]._currentTrack !== -1
-  ) {
-    insertIdx = 2;
-  }
-  const [video] = DBDATA.queue.splice(idx, 1);
-  DBDATA.queue.splice(insertIdx, 0, video);
+  const [video] = DBDATA.queue.splice(idx, 1); // cut the 1 video from idx
+  DBDATA.queue.splice(1, 0, video); // insert just behind current
 }
 
 function activateTab(targetId) {
