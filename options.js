@@ -971,6 +971,7 @@ async function cueNextVideo(offset = 1, params = {}) {
 }
 
 async function playNextVideo(offset = 1, params = {}) {
+  console.log("pnv", params);
   if (DBDATA.queue.length == 0) {
     console.log("Queue empty", offset);
     return;
@@ -982,18 +983,21 @@ async function playNextVideo(offset = 1, params = {}) {
   // console.log("ct:", DBDATA.queue[0]._currentTrack);
 
   if (videoTimeout) clearTimeout(videoTimeout);
-  videoTimeout = setTimeout(() => {
-    console.log("Error:", nextVideoToPlay.uuid, nextVideoToPlay.title);
-    sendMessage({
-      type: "error",
-      info: `timeout ${nextVideoToPlay.uuid} ${nextVideoToPlay.title}`,
-    });
-    showToast("Video timeout");
-    nextVideoToPlay.errCnt = (nextVideoToPlay.errCnt || 0) + 1;
-    saveVideos([nextVideoToPlay]);
-    logEvent(nextVideoToPlay, "error");
-    playNextVideo();
-  }, 15000); // 15s -- see if this works
+  if (!params.cueVideo) {
+    videoTimeout = setTimeout(() => {
+      console.log("Error:", nextVideoToPlay.uuid, nextVideoToPlay.title);
+      sendMessage({
+        type: "error",
+        info: `timeout ${nextVideoToPlay.uuid} ${nextVideoToPlay.title}`,
+      });
+      showToast("Video timeout");
+      sendMessage({ type: "Error Video timeout, disabled for now" });
+      nextVideoToPlay.errCnt = (nextVideoToPlay.errCnt || 0) + 1;
+      saveVideos([nextVideoToPlay]);
+      logEvent(nextVideoToPlay, "error");
+      playNextVideo();
+    }, 15000); // 15s -- see if this works
+  }
   let needThumb =
     nextVideoToPlay.source == "local" && !nextVideoToPlay.thumbnailUrl;
   let msg = {

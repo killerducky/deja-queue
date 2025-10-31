@@ -154,6 +154,12 @@ class YoutubePlayerProxy {
     }
 
     if (msg?.source == "local") {
+      msg.path = path.join(__dirname, "videoplayer.html");
+      let win = BrowserWindow.fromWebContents(
+        this.views[this.active].webContents
+      );
+      savedMsgs.set(win.id, msg);
+      console.log(`Saved message for window ${win.id}:`, msg);
       this.views[this.active].webContents.loadFile(
         path.join(__dirname, "videoplayer.html"),
         {
@@ -171,6 +177,23 @@ class YoutubePlayerProxy {
     }
   }
 }
+
+const savedMsgs = new Map();
+
+ipcMain.on("saveMsg", (event, msg) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) return;
+  savedMsgs.set(win.id, msg);
+  console.log(`Saved message for window ${win.id}:`, msg.type);
+});
+
+ipcMain.handle("getSavedMsg", (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) return null;
+  const msg = savedMsgs.get(win.id) || null;
+  console.log(`Retrieved message for window ${win.id}:`, msg.type);
+  return msg;
+});
 
 function youtubeExplorerOpenHandler(details) {
   const { url } = details;

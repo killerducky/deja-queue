@@ -1,27 +1,23 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 console.log("youtube-preload loaded", window.location.href);
-const params = new URL(window.location.href).searchParams;
-// Workaround: use t=1s to signal this is the very first video.
-let cueVideo = params.get("t") === "1s";
-let rotateAngle = params.get("rotateAngle") || 0;
-let needThumb = params.get("needThumb");
-let foreignKey = params.get("v");
-let uuid = params.get("uuid");
+
+let savedMsg;
 
 function getVideoId(url) {
   const params = new URL(url).searchParams;
   return params.get("v");
 }
-function calcHref(msg) {
-  let href = `https://www.youtube.com/watch?v=${msg.foreignKey}`;
-  if (msg.rotateAngle) {
-    href += `&rotateAngle=${msg.rotateAngle}`;
+
+function changeHref(msg) {
+  if (msg.source === "youtube") {
+    let href = `https://www.youtube.com/watch?v=${msg.foreignKey}`;
+    ipcRenderer.send("saveMsg", msg);
+    window.location.href = href;
+  } else {
+    let href = `${msg.path}`;
+    savedMsg = msg;
   }
-  if (msg.type == "cueVideo") {
-    href += "&t=1s";
-  }
-  return href;
 }
 
 function applyRotate(rotateAngle) {
@@ -64,10 +60,10 @@ ipcRenderer.on("broadcast", (event, msg) => {
     if (getVideoId(window.location.href) == msg.foreignKey) {
       video.play();
     } else {
-      window.location.href = calcHref(msg);
+      changeHref(msg);
     }
   } else if (msg.type === "cueVideo") {
-    window.location.href = calcHref(msg);
+    changeHref(msg);
   } else if (msg.type === "pauseVideo") {
     video.pause();
   } else if (msg.type === "resumeVideo") {
@@ -78,8 +74,8 @@ ipcRenderer.on("broadcast", (event, msg) => {
     video.volume = msg.volume;
     video.muted = msg.muted;
   } else if (msg.type === "rotateVideo") {
-    rotateAngle = ((rotateAngle || 0) + 90) % 360;
-    applyRotate(rotateAngle);
+    savedMsg.rotateAngle = ((savedMsg.rotateAngle || 0) + 90) % 360;
+    applyRotate(savedMsg.rotateAngle);
   }
 });
 
@@ -94,23 +90,25 @@ let video = null;
 const CUE_THRESHOLD = 10; // seconds remaining before end
 let hasCuedNext = false;
 function attachListener() {
+  console.log("attachListener1");
   video = document.querySelector("video");
+  console.log("attachListener1");
   if (!video) return;
   if (video === lastVideo) return;
   lastVideo = video;
   console.log("attachListener2");
 
-  if (needThumb) {
+  if (savedMsg.needThumb) {
     waitAndCapture(video, 10);
   }
 
   video.addEventListener(
     "loadedmetadata",
     () => {
-      applyRotate(rotateAngle);
+      applyRotate(savedMsg.rotateAngle);
       const target = document.querySelector(".local-video-container");
       const resizeObserver = new ResizeObserver((entries) => {
-        applyRotate(rotateAngle);
+        applyRotate(savedMsg.rotateAngle);
       });
       resizeObserver.observe(target);
     },
@@ -118,16 +116,17 @@ function attachListener() {
   );
 
   const handlePlay = (info = "") => {
-    if (cueVideo) {
+    if (savedMsg.cueVideo) {
       video.pause();
       video.currentTime = 0;
-      cueVideo = false;
+      savedMsg.cueVideo = false;
+    } else {
+      sendBroadcast({
+        type: "videoPlaying",
+        duration: video.duration,
+        info,
+      });
     }
-    sendBroadcast({
-      type: "videoPlaying",
-      duration: video.duration,
-      info,
-    });
   };
 
   if (!video.paused && !video.ended && video.readyState > 2) {
@@ -146,7 +145,8 @@ function attachListener() {
     if (!video.duration || hasCuedNext) return;
 
     const remaining = video.duration - video.currentTime;
-    if (remaining <= CUE_THRESHOLD) {
+    // Cue near end, but also don't cue for super short videos, which will do weird things.
+    if (remaining <= CUE_THRESHOLD && video.duration > CUE_THRESHOLD + 1) {
       hasCuedNext = true; // ensure it only triggers once
       sendBroadcast({
         type: "videoCueNext",
@@ -163,7 +163,13 @@ function attachListener() {
   };
 }
 
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", async () => {
+  console.log("DOMContentLoaded");
+  savedMsg = await ipcRenderer.invoke("getSavedMsg");
+  savedMsg.cueVideo = savedMsg?.type == "cueVideo";
+  if (savedMsg) {
+    console.log("Restored message:", savedMsg);
+  }
   const observer = new MutationObserver(attachListener);
   observer.observe(document.body, { childList: true, subtree: true });
   attachListener(); // check immediately
@@ -211,8 +217,8 @@ async function captureThumbnail(video) {
         reader.onload = () => {
           ipcRenderer.send("save-thumbnail", {
             buffer: Buffer.from(reader.result),
-            foreignKey,
-            uuid,
+            foreignKey: savedMsg.foreignKey,
+            uuid: savedMsg.uuid,
           });
         };
         reader.readAsArrayBuffer(blob);

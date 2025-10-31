@@ -36,6 +36,7 @@
 - [ ] multi row select
 - [ ] shift-click to insta play
 - [ ] Pasting into Add to Queue -- popup for video/playlist
+- [ ] Cue for short videos -- disabled for now cuz it was doing weird stuff
 - [ ] 404 thumbs
 - [ ] Q mode dropdown is rounded weirdly
 - [ ] visual bar graph or star system for ratings
