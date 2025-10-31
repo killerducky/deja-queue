@@ -430,29 +430,24 @@ function setQueueMode(mode) {
     mode,
   });
 }
-function menuHelper(mainitem) {
-  let verboseLayout = {
-    label: mainitem.label,
-    submenu: [],
+function clickMenuRadio(key, value) {
+  store.set(key, value);
+  console.log("click", key, value);
+  winRegister.main.object.send("broadcast", {
+    type: "menuRadio",
+    subtype: key,
+    value: value,
+  });
+}
+function radioItem(optionName, optionValue, extras) {
+  let menuItem = {
+    label: optionName,
+    type: "radio",
+    checked: store.get(optionName) == optionValue,
+    click: () => clickMenuRadio(optionName, optionValue),
+    ...(extras || {}),
   };
-  for (let subitem of mainitem.submenu) {
-    verboseLayout.submenu.push({
-      label: subitem.label,
-      type: "radio",
-      checked: store.get(mainitem.label) == subitem.label,
-      click: () => {
-        store.set(mainitem.label, subitem.label);
-        console.log("click", mainitem.label, subitem.label);
-        winRegister.main.object.send("broadcast", {
-          type: "menuRadio",
-          subtype: mainitem.label,
-          value: subitem.label,
-        });
-      },
-    });
-  }
-  // console.log(verboseLayout);
-  return verboseLayout;
+  return menuItem;
 }
 function buildMenu() {
   let graphsWin;
@@ -462,17 +457,6 @@ function buildMenu() {
   if (!store.get("Layout")) {
     store.set("Layout", "Video");
   }
-
-  let radioOpts = {
-    layout: {
-      label: "Layout",
-      submenu: [
-        { label: "Video" },
-        { label: "Database" },
-        { label: "Playlists" },
-      ],
-    },
-  };
 
   const isMac = process.platform === "darwin";
   const template = [
@@ -585,7 +569,14 @@ function buildMenu() {
     {
       label: "View",
       submenu: [
-        menuHelper(radioOpts.layout),
+        {
+          label: "Layout",
+          submenu: [
+            radioItem("Layout", "Video", { accelerator: "CmdOrCtrl+1" }),
+            radioItem("Layout", "Database", { accelerator: "CmdOrCtrl+2" }),
+            radioItem("Layout", "Playlists", { accelerator: "CmdOrCtrl+3" }),
+          ],
+        },
         {
           label: "Rotate Video",
           accelerator: "CmdOrCtrl+Shift+R",
