@@ -39,7 +39,7 @@ function changeHref(msg) {
 function applyRotateOld(rotateAngle) {
   let container = document.querySelector(".local-video-container");
   // console.log("container", container);
-  console.log("applyRotate", rotateAngle);
+  console.log("applyRotate Old", rotateAngle);
   let video = document.querySelector("video");
   let videoWidth = video.videoWidth;
   let videoHeight = video.videoHeight;
@@ -69,10 +69,12 @@ function applyRotateOld(rotateAngle) {
 }
 let style;
 function applyRotate(rotateAngle) {
-  if (window.location.href.startsWith("file")) {
+  const url = new URL(window.location.href);
+  if (url.protocol === "file:") {
     applyRotateOld(rotateAngle);
     return;
   }
+  console.log("applyRotate yt", rotateAngle);
   let video = document.querySelector("video");
   let container = video.parentNode.parentNode;
   console.log(video);
@@ -147,7 +149,9 @@ function attachListener() {
   video.addEventListener(
     "loadedmetadata",
     () => {
-      applyRotate(rotateAngle);
+      if (rotateAngle) {
+        applyRotate(rotateAngle);
+      }
       const target = document.querySelector(".local-video-container");
       const resizeObserver = new ResizeObserver((entries) => {
         applyRotate(rotateAngle);
@@ -186,7 +190,8 @@ function attachListener() {
     if (!video.duration || hasCuedNext) return;
 
     const remaining = video.duration - video.currentTime;
-    if (remaining <= CUE_THRESHOLD) {
+    // Cue next video when close, but not if the video is very short
+    if (remaining <= CUE_THRESHOLD && video.currentTime > CUE_THRESHOLD + 1) {
       hasCuedNext = true; // ensure it only triggers once
       sendBroadcast({
         type: "videoCueNext",
@@ -204,7 +209,8 @@ function attachListener() {
 }
 
 window.addEventListener("DOMContentLoaded", async () => {
-  if (window.location.href.startsWith("https://youtube")) {
+  const url = new URL(window.location.href);
+  if (url.hostname.includes("youtube.com") || url.hostname === "youtu.be") {
     savedMsg = await ipcRenderer.invoke("getSavedMsg");
     cueVideo = savedMsg.cueVideo;
     rotateAngle = savedMsg.rotateAngle;

@@ -185,7 +185,7 @@ ipcMain.handle("getSavedMsg", (event) => {
   const win = BrowserWindow.fromWebContents(event.sender);
   if (!win) return null;
   const msg = savedMsgs.get(win.id) || null;
-  console.log(`Retrieved message for window ${win.id}:`, msg.type);
+  console.log(`Retrieved message for window ${win.id}:`, msg?.type);
   return msg;
 });
 
