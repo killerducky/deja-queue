@@ -349,9 +349,8 @@ function getTableColumns(tableType) {
         const row1 = cell.getTable().getRows()[1];
         if (tableType == "queue" && row == row0) {
           playNextVideo(0);
-          // } else if (tableType == "queue" && row == row1) {
-          //   This doesn't really work in playlist mode
-          //    playNextVideo(1);
+        } else if (tableType == "queue" && row == row1) {
+          logAndPlayNext("skip", { skipWholeList: true });
         } else {
           moveVideoToFront(cell.getRow().getData().uuid);
           await renderQueue();
@@ -853,22 +852,13 @@ addForm.addEventListener("submit", async (e) => {
     console.log("Error: Could not find ID:", url);
   }
 });
-
 skipBtn.addEventListener("click", async (e) => {
-  await logEvent(DBDATA.queue[0], "skip");
-  if (e.shiftKey) {
-    playNextVideo(1, { skipWholeList: true });
-  } else {
-    playNextVideo();
-  }
+  let params = e.shiftKey ? { skipWholeList: true } : {};
+  logAndPlayNext("skip", params);
 });
 delayBtn.addEventListener("click", async (e) => {
-  await logEvent(DBDATA.queue[0], "delay");
-  if (e.shiftKey) {
-    playNextVideo(1, { delayWholeList: true });
-  } else {
-    playNextVideo();
-  }
+  let params = e.shiftKey ? { delayWholeList: true } : {};
+  logAndPlayNext("delay", params);
 });
 pauseBtn.addEventListener("click", async () => {
   sendMessage({ type: "pauseVideo" });
@@ -969,7 +959,10 @@ async function cueNextVideo(offset = 1, params = {}) {
   };
   sendMessage(msg);
 }
-
+async function logAndPlayNext(type, params) {
+  await logEvent(DBDATA.queue[0], type);
+  playNextVideo(1, params);
+}
 async function playNextVideo(offset = 1, params = {}) {
   if (DBDATA.queue.length == 0) {
     console.log("Queue empty", offset);
@@ -1524,20 +1517,22 @@ async function renderPlaylists() {
     headerMenu(event, playlistsTabulator);
   });
 }
-
 async function moveVideoToFront(uuid) {
   const idx = DBDATA.queue.findIndex((v) => v.uuid === uuid);
   if (idx === -1) {
     console.log("Error could not find ", uuid);
     return;
   }
-  if (idx == 0 || idx == 1) {
-    return; // Already playing or next in line
+  if (idx == 0) {
+    // sendMessage({ type: "resumeVideo" });
+    return;
+  }
+  if (idx == 1) {
+    logAndPlayNext("skip", { skipWholeList: true });
   }
   const [video] = DBDATA.queue.splice(idx, 1); // cut the 1 video from idx
   DBDATA.queue.splice(1, 0, video); // insert just behind current
 }
-
 function activateTab(targetId) {
   if (targetId == "Video") {
     targetId = "youtube-full";

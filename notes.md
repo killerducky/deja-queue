@@ -32,6 +32,7 @@
 ## UI
 
 - [x] double buffer YT broke deleted video timeout detection
+- [x] rotate youtube videos
 - [ ] skip/defer in queue/database
 - [ ] multi row select
 - [ ] shift-click to insta play
