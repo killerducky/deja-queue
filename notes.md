@@ -38,6 +38,7 @@
 - [ ] skip/defer in queue/database
 - [ ] multi row select
 - [ ] shift-click to insta play
+- [ ] If you re-queue a song, the videoEnded logic can break -- minor just have to click next.
 - [ ] Pasting into Add to Queue -- popup for video/playlist
 - [ ] 404 thumbs
 - [ ] Q mode dropdown is rounded weirdly

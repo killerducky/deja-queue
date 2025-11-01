@@ -348,7 +348,8 @@ function getTableColumns(tableType) {
         const data = row.getData();
         const row0 = cell.getTable().getRows()[0];
         const row1 = cell.getTable().getRows()[1];
-        const parent = row.getTreeParent();
+        const dataTree = cell.getTable().options?.dataTree;
+        const parent = dataTree && row.getTreeParent();
         if (parent && tableType == "queue" && parent == row0) {
           console.log("current playlist video uuid:", data.uuid);
           // WIP
@@ -942,6 +943,7 @@ async function pickNextVideoToPlay(offset, params = {}) {
   if (currItem.type == "playlist" && !params.cueVideo) {
     // console.log("playlist update");
     currItem.lastPlayDate = Date.now();
+    currItem.score = utils.scoreItem(currItem);
     currItem.delay = !!params.delayWholeList;
     if (!skip) {
       currItem.playCnt = (currItem.playCnt ?? 0) + 1;
@@ -1058,6 +1060,7 @@ async function logEvent(item, event) {
   let now = Date.now();
   let video = item.type == "playlist" ? item._children[0] : item;
   video.lastPlayDate = now; // includes errors and skips
+  video.score = utils.scoreItem(video);
   video.delay = event === "delay";
   if (event == "play") {
     video.playCnt = (video.playCnt ?? 0) + 1;
@@ -1116,7 +1119,7 @@ window.electronAPI.onBroadcast(async (msg) => {
       await saveVideos([currVideo]);
     }
   } else if (msg?.type === "videoEnded") {
-    console.log("end", currVideo, videoUuid, lastEndedVideoUuid);
+    console.log(`end uuid:${videoUuid} lastEnded:${lastEndedVideoUuid}`);
     if (lastEndedVideoUuid === videoUuid) {
       return;
     }
