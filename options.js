@@ -361,7 +361,7 @@ function getTableColumns(tableType) {
             DBDATA.queue[0]._children.length > 0 &&
             DBDATA.queue[0]._children[0].uuid != data.uuid
           ) {
-            console.log("skip:", DBDATA.queue[0]._children[0].uuid);
+            // console.log("skip:", DBDATA.queue[0]._children[0].uuid);
             await logEvent(DBDATA.queue[0], "skip");
             DBDATA.queue[0]._currentTrack += 1;
           }
@@ -998,7 +998,7 @@ async function playNextVideo(offset = 1, params = {}) {
 
   if (videoTimeout) clearTimeout(videoTimeout);
   if (!params.cueVideo) {
-    videoTimeout = setTimeout(() => {
+    videoTimeout = setTimeout(async () => {
       console.log("Error:", nextVideoToPlay.uuid, nextVideoToPlay.title);
       sendMessage({
         type: "error",
@@ -1006,8 +1006,8 @@ async function playNextVideo(offset = 1, params = {}) {
       });
       showToast("Video timeout");
       nextVideoToPlay.errCnt = (nextVideoToPlay.errCnt || 0) + 1;
-      saveVideos([nextVideoToPlay]);
-      logEvent(nextVideoToPlay, "error");
+      await saveVideos([nextVideoToPlay]);
+      await logEvent(nextVideoToPlay, "error");
       playNextVideo();
     }, 15000); // 15s -- see if this works
   }
@@ -1099,7 +1099,7 @@ window.electronAPI.onBroadcast(async (msg) => {
   } else if (msg.url) {
     videoForeignKey = getVideoIdFromInput(msg.url).foreignKey;
     videoUuid = DBDATA.queue.find((v) => v.foreignKey == videoForeignKey).uuid;
-    console.log("from url:", videoForeignKey, videoUuid);
+    // console.log("from url:", videoForeignKey, videoUuid);
   }
   console.log("options.js received message:", msg);
   if (msg?.type === "videoPlaying") {
@@ -1690,9 +1690,9 @@ async function savePlaylists(playlists) {
   } else {
     DBDATA.queue.push(...playlistCopies);
   }
-  renderDB(DBDATA.queue);
-  renderPlaylists();
-  renderQueue();
+  await renderDB(DBDATA.queue);
+  await renderPlaylists();
+  await renderQueue();
   const navType = performance.getEntriesByType("navigation")[0]?.type;
   if (navType !== "reload") {
     playNextVideo(0, { cueVideo: true });
