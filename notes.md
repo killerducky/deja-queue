@@ -1,8 +1,9 @@
 ## VIP user
 
 - [ ] Even smaller window size support -- especially vertical
-- [ ] add playlist - should add to queue as PL, not individual songs
-- [ ] click on single song inside a playlist should skip to that song
+- [x] add playlist - should add to queue as PL, not individual songs
+- [x] click on single song inside _current_ playlist should skip to that song
+- [x] click on single song inside _not-current_ playlist should bring playlist up
 - [ ] filter playlists and only queue those playlists
 - [ ] full screen playlist/database
 - [ ] thumb with weird aspect ratio -- tabulator doing something?
@@ -19,11 +20,11 @@
 
 ## Playlists
 
-- [ ] Playlist should not pop single songs out into the queue
+- [x] Playlist should not pop single songs out into the queue
 - [ ] Skip playlist does not always(?) reset the current track number
 - [ ] Make title, etc editable
-- [ ] Adding the same playlist should not overwrite fields
-  - [ ] Rating(!), DateAdded
+- [x] Adding the same playlist should not overwrite fields
+  - [x] Rating(!), DateAdded
 - [ ] Deleted songs in playlist should not be added
 - [ ] Remove videoCnt field, replace with computed field
 - [ ] refresh should not change current playing song / playlist
@@ -33,6 +34,7 @@
 
 - [x] double buffer YT broke deleted video timeout detection
 - [x] rotate youtube videos
+- [x] hotkeys: ctrl 1/2/3 = view and ctrl+shift+R = rotate
 - [ ] skip/defer in queue/database
 - [ ] multi row select
 - [ ] shift-click to insta play

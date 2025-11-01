@@ -345,9 +345,31 @@ function getTableColumns(tableType) {
       width: COMPACT_THUMB_WIDTH,
       cellClick: async (e, cell) => {
         const row = cell.getRow();
+        const data = row.getData();
         const row0 = cell.getTable().getRows()[0];
         const row1 = cell.getTable().getRows()[1];
-        if (tableType == "queue" && row == row0) {
+        const parent = row.getTreeParent();
+        if (parent && tableType == "queue" && parent == row0) {
+          console.log("current playlist video uuid:", data.uuid);
+          // WIP
+          // First deal with -1 case nonsense
+          if (DBDATA.queue[0]._currentTrack == -1) {
+            DBDATA.queue[0]._currentTrack = 0;
+          }
+          // Skip until we find the clicked video
+          while (
+            DBDATA.queue[0]._children.length > 0 &&
+            DBDATA.queue[0]._children[0].uuid != data.uuid
+          ) {
+            console.log("skip:", DBDATA.queue[0]._children[0].uuid);
+            await logEvent(DBDATA.queue[0], "skip");
+            DBDATA.queue[0]._currentTrack += 1;
+          }
+          playNextVideo(0);
+        } else if (parent && tableType == "queue" && parent != row0) {
+          moveVideoToFront(parent.getData().uuid);
+          await renderQueue();
+        } else if (tableType == "queue" && row == row0) {
           playNextVideo(0);
         } else if (tableType == "queue" && row == row1) {
           logAndPlayNext("skip", { skipWholeList: true });
@@ -1003,9 +1025,7 @@ async function playNextVideo(offset = 1, params = {}) {
   };
   console.log(msg);
   sendMessage(msg);
-  if (offset !== 0) {
-    await renderQueue();
-  }
+  await renderQueue();
 }
 function getVideoIdFromInput(input) {
   if (input.startsWith("http") || input.startsWith("file")) {
@@ -1523,13 +1543,15 @@ async function moveVideoToFront(uuid) {
     console.log("Error could not find ", uuid);
     return;
   }
+  // If already idx0, do nothing
   if (idx == 0) {
-    // sendMessage({ type: "resumeVideo" });
     return;
   }
+  // If idx1, skip idx0 and play this
   if (idx == 1) {
     logAndPlayNext("skip", { skipWholeList: true });
   }
+  // Otherwise, make new idx1
   const [video] = DBDATA.queue.splice(idx, 1); // cut the 1 video from idx
   DBDATA.queue.splice(1, 0, video); // insert just behind current
 }
