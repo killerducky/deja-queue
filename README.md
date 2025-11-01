@@ -2,35 +2,35 @@
 
 Your YouTube queue, reimagined.
 
-DejaQueue makes it easy to manage videos and playlists, automatically picking what to play next so you can focus on watching—not searching.
+DejaQueue simplifies managing videos and playlists by automatically choosing the next video to play, letting you focus on watching—not searching.
 
-## Why use DejaQueue?
+## Why DejaQueue?
 
-- Automatically plays the next video based on your ratings and play history
-- Build and manage queues from videos or entire playlists
-- Quick search, tagging, and playback controls—all in one app
+- Auto-plays next video based on ratings/play history
+- Create and manage queues from videos or playlists
+- Quick search, tagging, and playback controls in one app
 
 ## Quick Start (Windows)
 
 1. Download the latest [release](https://github.com/killerducky/deja-queue/releases)
-1. Unzip and run deja-queue.exe.
-1. Enter a YouTube API Key (see below).
+1. Unzip and run `deja-queue.exe`
+1. Enter a YouTube API key (see below)
 
-## Getting a Google API Key
+## Get a Google API Key
 
-1. Go to the [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
-1. Click Create credentials → API key.
-1. Keep defaults, click Create, and copy your key.
+1. Visit [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
+2. Click **Create credentials** → **API key**
+3. Use default settings, then copy your key
 
-## Using DejaQueue
+## How to Use
 
-- Right-click videos in the YouTube player → Add to Queue
-- Or click Add URL and paste a video/playlist link
-- Playback automatically picks the next video based on your ratings & history
+- Right-click YouTube videos → **Add to Queue**
+- Or paste video/playlist links using "Add URL"
+- Playback auto-selects next video based on your preferences
 
-## Build from Source
+## Development
 
-```
+```bash
 git clone https://github.com/killerducky/deja-queue
 npm install
 npm start

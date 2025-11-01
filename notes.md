@@ -26,7 +26,7 @@
 - [x] Adding the same playlist should not overwrite fields
   - [x] Rating(!), DateAdded
 - [ ] Deleted songs in playlist should not be added
-- [ ] Remove videoCnt field, replace with computed field
+- [?] Remove videoCnt field (use track instead)
 - [ ] refresh should not change current playing song / playlist
 - [ ] Go backwards in playlist / reset playlist
 

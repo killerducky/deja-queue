@@ -750,14 +750,13 @@ async function addPlaylistVideos(playlistForeignKey) {
   DBDATA.queue.push(...newVideos);
   console.log("addPlaylistVideos: newVideos ", newVideos);
   console.log(playlist);
-  playlist.videoCount = playlist.videoUuids.length;
   utils.addComputedFieldsPL(playlist, DBDATA.queue);
   console.log(playlist);
   console.log(
-    `Add playlist of ${playlist.videoCount} videos (${newVideos.length} new)`
+    `Add playlist of ${playlist.videoUuids.length} videos (${newVideos.length} new)`
   );
   showToast(
-    `Add playlist of ${playlist.videoCount} videos (${newVideos.length} new)`
+    `Add playlist of ${playlist.videoUuids.length} videos (${newVideos.length} new)`
   );
 
   // Replace or add in DBDATA.playlists
