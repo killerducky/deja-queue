@@ -175,8 +175,8 @@ const themeLink = document.getElementById("tabulator-theme");
 function updateTheme() {
   const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
   themeLink.href = isDark
-    ? "../node_modules/tabulator-tables/dist/css/tabulator_site_dark.min.css"
-    : "../node_modules/tabulator-tables/dist/css/tabulator_site.min.css";
+    ? "assets/tabulator_site_dark.min.css"
+    : "assets/tabulator_site.min.css";
 }
 
 // Run on load
