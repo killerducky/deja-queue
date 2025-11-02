@@ -43,7 +43,6 @@ if (profileIndex !== -1 && args[profileIndex + 1]) {
     "deja-queue/profiles",
     profile
   );
-  console.log(userDataPath);
   app.setPath("userData", userDataPath);
 }
 
@@ -193,7 +192,7 @@ function youtubeExplorerOpenHandler(details) {
   const childWin = new BrowserWindow({
     width: 1366,
     height: 768,
-    icon: path.join(mainDir, "favicon.ico"),
+    icon: path.join(mainDir, "../../public/favicon.ico"),
   });
   childWin.webContents.loadURL(url);
   addContextMenu(childWin);
@@ -216,7 +215,7 @@ function createWindow(winInfo) {
     y: winInfo.winState.y,
     width: winInfo.winState.width,
     height: winInfo.winState.height,
-    icon: path.join(mainDir, "favicon.ico"),
+    icon: path.join(mainDir, "../../public/favicon.ico"),
     webPreferences: {
       // show: false,
       preload: path.join(mainDir, winInfo.preload),
