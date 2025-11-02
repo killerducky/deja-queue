@@ -1,6 +1,6 @@
 {
   "name": "deja-queue",
-  "version": "1.0.0",
+  "version": "0.0.4",
   "description": "A smart YouTube video queue manager for continuous playback.",
   "main": "main.js",
   "scripts": {
