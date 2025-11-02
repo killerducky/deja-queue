@@ -3,3 +3,4 @@ tmp
 .env.json
 node_modules
 out/
+dist/
