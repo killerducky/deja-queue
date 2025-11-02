@@ -30,6 +30,23 @@ module.exports = {
       name: "@electron-forge/plugin-auto-unpack-natives",
       config: {},
     },
+    {
+      name: "@electron-forge/plugin-webpack",
+      config: {
+        // These files will need to be created in your project root
+        mainConfig: "./webpack.main.config.js",
+        renderer: {
+          config: "./webpack.renderer.config.js",
+          entryPoints: [
+            {
+              html: "./src/index.html", // Your main HTML file
+              js: "./src/options.js", // Your renderer JS entry point
+              name: "main_window",
+            },
+          ],
+        },
+      },
+    },
     // Fuses are used to enable/disable various Electron functionality
     // at package time, before code signing the application
     new FusesPlugin({
