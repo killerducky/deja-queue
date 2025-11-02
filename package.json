@@ -25,6 +25,8 @@
   "dependencies": {
     "electron-squirrel-startup": "^1.0.1",
     "electron-store": "^11.0.2",
+    "jsonfile": "^6.2.0",
+    "mkdirp": "^3.0.1",
     "plotly.js-dist": "^3.1.1",
     "tabulator-tables": "^6.3.1"
   }
