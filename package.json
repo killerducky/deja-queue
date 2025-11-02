@@ -2,7 +2,7 @@
   "name": "deja-queue",
   "version": "0.0.4",
   "description": "A smart YouTube video queue manager for continuous playback.",
-  "main": "main.js",
+  "main": "src/main.js",
   "scripts": {
     "start": "electron-forge start",
     "test": "echo \"Error: no test specified\" && exit 1",

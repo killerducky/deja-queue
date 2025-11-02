@@ -223,9 +223,9 @@ function createWindow(winInfo) {
   });
   winInfo.winState.manage(win);
   if (winInfo.target.startsWith("http")) {
-    win.loadURL(winInfo.target);
+    win.loadURL(path.join(__dirname, winInfo.target));
   } else {
-    win.loadFile(winInfo.target);
+    win.loadFile(path.join(__dirname, winInfo.target));
   }
   win.on("closed", () => {
     win = null;
@@ -637,10 +637,9 @@ function buildMenu() {
               graphsWin = new BrowserWindow({
                 width: 1000,
                 height: 700,
-                // webPreferences: { preload: path.join(__dirname, "preload.js") },
               });
               graphsWin.maximize();
-              graphsWin.loadFile("graphs.html");
+              graphsWin.loadFile("src/graphs.html");
             }
           },
         },
