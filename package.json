@@ -20,7 +20,8 @@
     "@electron-forge/plugin-auto-unpack-natives": "^7.9.0",
     "@electron-forge/plugin-fuses": "^7.9.0",
     "@electron/fuses": "^1.8.0",
-    "electron": "^38.2.1"
+    "electron": "^38.2.1",
+    "electron-vite": "^4.0.1"
   },
   "dependencies": {
     "electron-squirrel-startup": "^1.0.1",
