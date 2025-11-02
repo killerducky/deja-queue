@@ -627,15 +627,14 @@ function formatLastPlayDate(video) {
   }
   let daysSince =
     (Date.now() - new Date(video.lastPlayDate)) / (24 * 3600 * 1000);
-  return `${daysSince.toFixed(1)} days ago`;
+  return `${daysSince.toFixed(1)}d`;
 }
 function formatDue(due) {
   if (due === null) {
     return "—";
   }
   let color = due < -5 ? "#d11" : due < 0 ? "#e77" : "#6b6";
-  let text = due < 0 ? "days ago" : "days from now";
-  return `<span style="color:${color}">${Math.abs(due).toFixed(1)} ${text}</span>`;
+  return `<span style="color:${color}">${due.toFixed(1)}d</span>`;
 }
 
 async function addYoutubeInfo(video) {
