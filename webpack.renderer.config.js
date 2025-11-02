@@ -1,4 +1,4 @@
-const rules = require("./webpack.rules");
+import rules from "./webpack.rules.js";
 
 /**
  * You can include an empty array or the standard rule for CSS here.
@@ -16,7 +16,7 @@ rules.push({
   ],
 });
 
-module.exports = {
+export default {
   // Renderer process is targeting the web environment
   target: "web",
 

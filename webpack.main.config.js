@@ -1,4 +1,6 @@
-module.exports = {
+import rules from "./webpack.rules.js"; // add .js for ESM
+
+export default {
   /**
    * Main process needs to be compiled to run in a Node environment.
    */
@@ -14,7 +16,7 @@ module.exports = {
    * Put your main process modules and loaders here (if needed).
    */
   module: {
-    rules: require("./webpack.rules"),
+    rules,
   },
 
   // Add more configurations as needed (e.g., resolve aliases)

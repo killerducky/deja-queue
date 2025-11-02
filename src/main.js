@@ -1,6 +1,6 @@
 "use strict";
 
-const {
+import {
   app,
   BrowserWindow,
   WebContentsView,
@@ -11,12 +11,16 @@ const {
   shell,
   nativeTheme,
   dialog,
-} = require("electron");
-const path = require("path");
-const fs = require("fs");
-const windowStateKeeper = require("./electron-window-state");
+} from "electron";
+import { fileURLToPath } from "url";
+import path from "path";
+import fs from "fs";
+import windowStateKeeper from "./electron-window-state.js";
 
 let store;
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // youtubePlayer: WebContentsView  winRegister.youtubePlayer.object
 // youtubeExplore: BrowserWindow

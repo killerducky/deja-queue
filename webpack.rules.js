@@ -1,4 +1,4 @@
-module.exports = [
+export default [
   // Add support for simple .js files
   {
     test: /\.js$/,

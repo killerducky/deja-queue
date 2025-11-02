@@ -15,20 +15,13 @@ function getVideoId(url) {
   const params = new URL(url).searchParams;
   return params.get("v");
 }
-function calcHref(msg) {
-  let href = `https://www.youtube.com/watch?v=${msg.foreignKey}`;
-  if (msg.rotateAngle) {
-    href += `&rotateAngle=${msg.rotateAngle}`;
-  }
-  if (msg.type == "cueVideo") {
-    href += "&t=1s";
-  }
-  return href;
-}
 
 function changeHref(msg) {
   if (msg.source === "youtube") {
     let href = `https://www.youtube.com/watch?v=${msg.foreignKey}`;
+    if (msg.type == "cueVideo") {
+      href += "&t=1s";
+    }
     ipcRenderer.send("saveMsg", msg);
     window.location.href = href;
   } else {
@@ -177,7 +170,11 @@ function attachListener() {
   if (!video.paused && !video.ended && video.readyState > 2) {
     handlePlay("already playing on attach");
   }
-  // video.onplay = () => handlePlay("onplay");
+  video.onready = () => {
+    if (cueVideo) {
+      video.pause();
+    }
+  };
   video.onplaying = () => handlePlay("onplaying");
   video.onended = () => sendBroadcast({ type: "videoEnded" });
   video.onpause = () => {
