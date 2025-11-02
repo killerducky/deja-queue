@@ -13,6 +13,11 @@ import {
 import path from "path";
 import fs from "fs";
 import windowStateKeeper from "./electron-window-state.js";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
+
+const mainFile = fileURLToPath(import.meta.url);
+const mainDir = dirname(mainFile);
 
 let store;
 
@@ -52,7 +57,7 @@ class YoutubePlayerProxy {
     this.visible = true;
     this.winInfo = winInfo;
     let webPreferences = {};
-    webPreferences.preload = path.join(__dirname, winInfo.preload);
+    webPreferences.preload = path.join(mainDir, winInfo.preload);
     webPreferences.title = "YoutubePlayer";
     for (let i = 0; i < 2; i += 1) {
       const playerWindow = new WebContentsView({ webPreferences });
@@ -187,7 +192,7 @@ function youtubeExplorerOpenHandler(details) {
   const childWin = new BrowserWindow({
     width: 1366,
     height: 768,
-    icon: path.join(__dirname, "favicon.ico"),
+    icon: path.join(mainDir, "favicon.ico"),
   });
   childWin.webContents.loadURL(url);
   addContextMenu(childWin);
@@ -208,15 +213,15 @@ function createWindow(winInfo) {
     y: winInfo.winState.y,
     width: winInfo.winState.width,
     height: winInfo.winState.height,
-    icon: path.join(__dirname, "favicon.ico"),
+    icon: path.join(mainDir, "favicon.ico"),
     webPreferences: {
       // show: false,
-      preload: path.join(__dirname, winInfo.preload),
+      preload: path.join(mainDir, winInfo.preload),
     },
   });
   winInfo.winState.manage(win);
   if (winInfo.target.startsWith("http")) {
-    win.loadURL(path.join(__dirname, winInfo.target));
+    win.loadURL(path.join(mainDir, winInfo.target));
   } else {
     loadView(win, winInfo.target);
   }
@@ -408,7 +413,7 @@ function loadView(target, file, query = {}) {
     target.webContents.loadURL(url);
   } else {
     // In production, use loadFile with query object
-    target.webContents.loadFile(join(__dirname, `../renderer/${file}`), {
+    target.webContents.loadFile(join(mainDir, `../renderer/${file}`), {
       query,
     });
   }
@@ -673,7 +678,7 @@ function buildMenu() {
         //       //   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36"
         //       // );
         //       spotifyWin.webContents.loadURL("https://open.spotify.com");
-        //       // const filePath = path.join(__dirname, "spotify-embed.html");
+        //       // const filePath = path.join(mainDir, "spotify-embed.html");
         //       // spotifyWin.loadURL("file://" + filePath);
         //       // spotifyWin.loadFile("spotify-embed.html");
         //       // spotifyWin.webContents.loadURL(
