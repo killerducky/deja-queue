@@ -1,5 +1,10 @@
-import * as db from "./db.js";
-import * as utils from "./utils.js";
+import "./db.js";
+import "./utils.js";
+import Tabulator from "tabulator-tables";
+import darkTheme from "tabulator-tables/dist/css/tabulator_site_dark.min.css?url";
+import lightTheme from "tabulator-tables/dist/css/tabulator_site.min.css?url";
+import "./style.css"; // your own styles
+import "./graphs.js"; // your own module
 
 let DBDATA = { queue: [], filtered: [] };
 let LISTLEN = 30;
@@ -174,9 +179,7 @@ const themeLink = document.getElementById("tabulator-theme");
 
 function updateTheme() {
   const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-  themeLink.href = isDark
-    ? "assets/tabulator_site_dark.min.css"
-    : "assets/tabulator_site.min.css";
+  themeLink.href = isDark ? darkTheme : lightTheme;
 }
 
 // Run on load

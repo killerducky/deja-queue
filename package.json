@@ -2,12 +2,12 @@
   "name": "deja-queue",
   "version": "0.0.5",
   "description": "A smart YouTube video queue manager for continuous playback.",
-  "main": "src/main.js",
+  "main": "src/main/main.js",
+  "type": "module",
   "scripts": {
-    "start": "electron-forge start",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "package": "electron-forge package",
-    "make": "electron-forge make"
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview"
   },
   "author": "Andy Olsen",
   "license": "MIT",

@@ -1,20 +1,18 @@
 "use strict";
 
-const {
+import {
   app,
   BrowserWindow,
   WebContentsView,
   ipcMain,
   Menu,
-  globalShortcut,
-  clipboard,
   shell,
   nativeTheme,
   dialog,
-} = require("electron");
-const path = require("path");
-const fs = require("fs");
-const windowStateKeeper = require("./electron-window-state");
+} from "electron";
+import path from "path";
+import fs from "fs";
+import windowStateKeeper from "./electron-window-state.js";
 
 let store;
 
@@ -154,18 +152,13 @@ class YoutubePlayerProxy {
     }
 
     if (msg?.source == "local") {
-      this.views[this.active].webContents.loadFile(
-        path.join(__dirname, "videoplayer.html"),
-        {
-          query: {
-            v: msg.foreignKey,
-            uuid: msg.uuid,
-            rotateAngle: msg.rotateAngle,
-            ...(msg.type === "cueVideo" && { cueVideo: "1" }),
-            ...(msg.needThumb && { needThumb: "1" }),
-          },
-        }
-      );
+      loadView(this.views[this.active], "videoplayer.html", {
+        v: msg.foreignKey,
+        uuid: msg.uuid,
+        rotateAngle: msg.rotateAngle,
+        ...(msg.type === "cueVideo" && { cueVideo: "1" }),
+        ...(msg.needThumb && { needThumb: "1" }),
+      });
     } else {
       this.views[this.active].webContents.send("broadcast", msg);
     }
@@ -225,7 +218,7 @@ function createWindow(winInfo) {
   if (winInfo.target.startsWith("http")) {
     win.loadURL(path.join(__dirname, winInfo.target));
   } else {
-    win.loadFile(path.join(__dirname, winInfo.target));
+    loadView(win, winInfo.target);
   }
   win.on("closed", () => {
     win = null;
@@ -406,6 +399,20 @@ ipcMain.on("save-thumbnail", (event, msg) => {
     }
   });
 });
+
+function loadView(target, file, query = {}) {
+  if (process.env.NODE_ENV !== "production") {
+    // Build query string manually
+    const params = new URLSearchParams(query).toString();
+    const url = `http://localhost:5173/${file}${params ? `?${params}` : ""}`;
+    target.webContents.loadURL(url);
+  } else {
+    // In production, use loadFile with query object
+    target.webContents.loadFile(join(__dirname, `../renderer/${file}`), {
+      query,
+    });
+  }
+}
 
 function createAllWindows() {
   winMain = createWindow({
@@ -639,7 +646,7 @@ function buildMenu() {
                 height: 700,
               });
               graphsWin.maximize();
-              graphsWin.loadFile("src/graphs.html");
+              loadView(graphsWin, "graphs.html");
             }
           },
         },
