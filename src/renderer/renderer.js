@@ -1,10 +1,9 @@
-import "./db.js";
-import "./utils.js";
-import Tabulator from "tabulator-tables";
+import * as db from "./db.js";
+import * as utils from "./utils.js";
+import { TabulatorFull as Tabulator } from "tabulator-tables";
 import darkTheme from "tabulator-tables/dist/css/tabulator_site_dark.min.css?url";
 import lightTheme from "tabulator-tables/dist/css/tabulator_site.min.css?url";
-import "./style.css"; // your own styles
-import "./graphs.js"; // your own module
+import "./style.css";
 
 let DBDATA = { queue: [], filtered: [] };
 let LISTLEN = 30;

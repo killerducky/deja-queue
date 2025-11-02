@@ -18,6 +18,7 @@ import { dirname, join } from "path";
 
 const mainFile = fileURLToPath(import.meta.url);
 const mainDir = dirname(mainFile);
+const isDev = process.env.NODE_ENV !== "production";
 
 let store;
 
@@ -208,6 +209,8 @@ function createWindow(winInfo) {
     defaultHeight: 768,
     file: `${winInfo.name}.json`,
   });
+  console.log("winInfo.preload", winInfo.preload);
+
   let win = new BrowserWindow({
     x: winInfo.winState.x,
     y: winInfo.winState.y,
@@ -220,10 +223,11 @@ function createWindow(winInfo) {
     },
   });
   winInfo.winState.manage(win);
-  if (winInfo.target.startsWith("http")) {
-    win.loadURL(path.join(mainDir, winInfo.target));
+  console.log("win.loadURL", winInfo.target);
+  if (isDev) {
+    win.loadURL(`http://localhost:5173/${winInfo.target}`);
   } else {
-    loadView(win, winInfo.target);
+    win.loadURL(path.join(mainDir, winInfo.target));
   }
   win.on("closed", () => {
     win = null;
@@ -406,14 +410,14 @@ ipcMain.on("save-thumbnail", (event, msg) => {
 });
 
 function loadView(target, file, query = {}) {
-  if (process.env.NODE_ENV !== "production") {
-    // Build query string manually
+  if (isDev) {
     const params = new URLSearchParams(query).toString();
     const url = `http://localhost:5173/${file}${params ? `?${params}` : ""}`;
+    console.log("dev load url:", url);
     target.webContents.loadURL(url);
   } else {
-    // In production, use loadFile with query object
-    target.webContents.loadFile(join(mainDir, `../renderer/${file}`), {
+    console.log("prod load file:", file);
+    target.webContents.loadFile(join(mainDir, `${file}`), {
       query,
     });
   }
@@ -422,12 +426,12 @@ function loadView(target, file, query = {}) {
 function createAllWindows() {
   winMain = createWindow({
     name: "main",
-    target: "index.html",
-    preload: "preload.js",
+    target: "../renderer/index.html",
+    preload: "../preload/preload.js",
   });
   winYoutubeProxy = new YoutubePlayerProxy(winMain, {
     name: "youtubePlayer",
-    preload: "youtube-preload.js",
+    preload: "../preload/youtube-preload.js",
   });
 
   // winRegister.main.object.webContents.openDevTools();
@@ -651,7 +655,7 @@ function buildMenu() {
                 height: 700,
               });
               graphsWin.maximize();
-              loadView(graphsWin, "graphs.html");
+              loadView(graphsWin, "renderer/graphs.html");
             }
           },
         },
