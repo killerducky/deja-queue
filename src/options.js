@@ -1153,9 +1153,12 @@ window.electronAPI.onBroadcast(async (msg) => {
     let video = DBDATA.queue.find((v) => v.uuid === msg.uuid);
     if (!video || video.source !== "local") {
       console.log("Error", video);
+      showToast("Cannot save thumbnail");
     } else {
       video.localThumbnailPath = msg.filePath;
+      showToast("Thumbnail captured");
       await db.saveVideos(video);
+      await rerenderAll(video);
     }
   } else if (msg.type === "videoRotated") {
     rotateVideo();

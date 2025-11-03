@@ -114,6 +114,8 @@ ipcRenderer.on("broadcast", (event, msg) => {
   } else if (msg.type === "rotateVideo") {
     rotateAngle = ((rotateAngle || 0) + 90) % 360;
     applyRotate(rotateAngle);
+  } else if (msg.type === "captureThumb") {
+    captureThumbnail(video);
   }
 });
 
