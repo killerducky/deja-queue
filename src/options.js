@@ -1,6 +1,7 @@
 import * as db from "./db.js";
 import * as utils from "./utils.js";
 import { TabulatorFull as Tabulator } from "tabulator-tables";
+import "tabulator-tables/dist/css/tabulator.min.css";
 
 let DBDATA = { queue: [], filtered: [] };
 let LISTLEN = 30;

@@ -1,32 +1,33 @@
-import rules from "./webpack.rules.js";
-
-/**
- * You can include an empty array or the standard rule for CSS here.
- * This is crucial for bundling Tabulator's CSS files.
- */
-rules.push({
-  test: /\.css$/,
-  use: [
-    {
-      loader: "style-loader",
-    },
-    {
-      loader: "css-loader",
-    },
-  ],
-});
+// webpack.renderer.config.js
 
 export default {
-  // Renderer process is targeting the web environment
-  target: "web",
-
-  // Entry point is already defined in forge.config.js
+  target: "web", // Renderer runs in a browser-like environment
   module: {
-    rules: rules,
-  },
+    rules: [
+      // Handle CSS (Tabulator, other libraries)
+      {
+        test: /\.css$/i,
+        use: ["style-loader", "css-loader"],
+      },
 
+      // Handle native .node modules (if any)
+      {
+        test: /\.node$/i,
+        use: "node-loader",
+      },
+
+      // Optional: handle images/fonts if needed
+      {
+        test: /\.(png|jpe?g|gif|svg|woff2?|ttf|eot)$/i,
+        type: "asset/resource",
+      },
+    ],
+  },
   resolve: {
-    // Allows importing files with these extensions without specifying them (e.g., 'src/options' instead of 'src/options.js')
-    extensions: [".js", ".jsx", ".ts", ".tsx", ".json"],
+    alias: {
+      // Ensure imports of tabulator-tables point to ESM version
+      "tabulator-tables": "tabulator-tables/dist/js/tabulator_esm.js",
+    },
+    extensions: [".js", ".css"],
   },
 };
