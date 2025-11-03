@@ -540,6 +540,15 @@ function buildMenu() {
           },
         },
         { type: "separator" },
+        {
+          label: "Apply Filter to Queue",
+          click: async () => {
+            winRegister.main.object.webContents.send("broadcast", {
+              type: "applyFilter",
+            });
+          },
+        },
+        { type: "separator" },
         isMac ? { role: "close" } : { role: "quit" },
       ],
     },

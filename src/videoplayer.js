@@ -2,7 +2,7 @@ let params = new URLSearchParams(window.location.search);
 let file = params.get("v");
 let cueVideo = params.get("cueVideo");
 let startTime = parseFloat(params.get("t")) || 0;
-console.log("load file", file);
+console.log("videoplayer load file", file);
 let video = document.getElementById("player");
 let canvas = document.getElementById("player");
 
