@@ -563,6 +563,15 @@ function buildMenu() {
           },
         },
         { type: "separator" },
+        {
+          label: "Apply Filter to Queue",
+          click: async () => {
+            winRegister.main.object.webContents.send("broadcast", {
+              type: "applyFilter",
+            });
+          },
+        },
+        { type: "separator" },
         isMac ? { role: "close" } : { role: "quit" },
       ],
     },
@@ -601,11 +610,6 @@ function buildMenu() {
           ],
         },
         {
-          label: "Rotate Video",
-          accelerator: "CmdOrCtrl+Shift+R",
-          click: () => sendBroadcast({ type: "rotateVideo" }, "all"),
-        },
-        {
           label: "Theme",
           submenu: [
             {
@@ -622,31 +626,25 @@ function buildMenu() {
             },
           ],
         },
+        {
+          label: "Rotate Video",
+          accelerator: "CmdOrCtrl+Shift+R",
+          click: () => sendBroadcast({ type: "rotateVideo" }, "all"),
+        },
+        {
+          label: "Capture Thumbnail",
+          accelerator: "CmdOrCtrl+Shift+T",
+          click: () => sendBroadcast({ type: "captureThumb" }, "all"),
+        },
         { type: "separator" },
         { role: "reload" },
         { role: "toggleDevTools" },
-        { type: "separator" },
-        { role: "resetZoom" },
-        { role: "zoomIn" },
-        { role: "zoomOut" },
-        { type: "separator" },
         { role: "togglefullscreen" },
       ],
     },
     {
       label: "Window",
       submenu: [
-        { role: "minimize" },
-        { role: "zoom" },
-        ...(isMac
-          ? [
-              { type: "separator" },
-              { role: "front" },
-              { type: "separator" },
-              { role: "window" },
-            ]
-          : [{ role: "close" }]),
-        { type: "separator" },
         {
           label: "Open Graphs",
           click: () => {

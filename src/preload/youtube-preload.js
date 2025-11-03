@@ -15,21 +15,13 @@ function getVideoId(url) {
   const params = new URL(url).searchParams;
   return params.get("v");
 }
-function calcHref(msg) {
-  let href = `https://www.youtube.com/watch?v=${msg.foreignKey}`;
-  if (msg.rotateAngle) {
-    href += `&rotateAngle=${msg.rotateAngle}`;
-  }
-  if (msg.type == "cueVideo") {
-    href += "&t=1s";
-  }
-  return href;
-}
-
 function changeHref(msg) {
   if (msg.source === "youtube") {
     let href = `https://www.youtube.com/watch?v=${msg.foreignKey}`;
     ipcRenderer.send("saveMsg", msg);
+    if (msg.type == "cueVideo") {
+      href += "&t=1s";
+    }
     window.location.href = href;
   } else {
     console.log("Error?");
@@ -122,6 +114,8 @@ ipcRenderer.on("broadcast", (event, msg) => {
   } else if (msg.type === "rotateVideo") {
     rotateAngle = ((rotateAngle || 0) + 90) % 360;
     applyRotate(rotateAngle);
+  } else if (msg.type === "captureThumb") {
+    captureThumbnail(video);
   }
 });
 
@@ -178,6 +172,11 @@ function attachListener() {
     handlePlay("already playing on attach");
   }
   // video.onplay = () => handlePlay("onplay");
+  video.onready = () => {
+    if (cueVideo) {
+      video.pause();
+    }
+  };
   video.onplaying = () => handlePlay("onplaying");
   video.onended = () => sendBroadcast({ type: "videoEnded" });
   video.onpause = () => {

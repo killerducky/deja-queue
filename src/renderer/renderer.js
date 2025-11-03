@@ -629,15 +629,14 @@ function formatLastPlayDate(video) {
   }
   let daysSince =
     (Date.now() - new Date(video.lastPlayDate)) / (24 * 3600 * 1000);
-  return `${daysSince.toFixed(1)} days ago`;
+  return `${daysSince.toFixed(1)}d`;
 }
 function formatDue(due) {
   if (due === null) {
     return "—";
   }
   let color = due < -5 ? "#d11" : due < 0 ? "#e77" : "#6b6";
-  let text = due < 0 ? "days ago" : "days from now";
-  return `<span style="color:${color}">${Math.abs(due).toFixed(1)} ${text}</span>`;
+  return `<span style="color:${color}">${due.toFixed(1)}d</span>`;
 }
 
 async function addYoutubeInfo(video) {
@@ -1142,6 +1141,8 @@ window.electronAPI.onBroadcast(async (msg) => {
     importDB(msg.filePath);
   } else if (msg.type === "exportDatabase") {
     exportDB();
+  } else if (msg.type === "applyFilter") {
+    applyFilter();
   } else if (msg.type === "videoCueNext") {
     cueNextVideo();
   } else if (msg.type === "importLocalDirectory") {
@@ -1154,9 +1155,12 @@ window.electronAPI.onBroadcast(async (msg) => {
     let video = DBDATA.queue.find((v) => v.uuid === msg.uuid);
     if (!video || video.source !== "local") {
       console.log("Error", video);
+      showToast("Cannot save thumbnail");
     } else {
       video.localThumbnailPath = msg.filePath;
+      showToast("Thumbnail captured");
       await db.saveVideos(video);
+      await rerenderAll(video);
     }
   } else if (msg.type === "videoRotated") {
     rotateVideo();
@@ -1164,6 +1168,44 @@ window.electronAPI.onBroadcast(async (msg) => {
     activateTab(msg.value);
   }
 });
+
+async function applyFilter() {
+  let layout = window.electronAPI.get("Layout");
+  let currValue = null;
+  let table;
+  if (layout == "Database") {
+    currValue = dbFilterEl.value;
+    table = tabulatorDB;
+  } else if (layout == "Playlist") {
+    currValue = plFilterEl.value;
+    table = playlistsTabulator;
+  }
+  if (!currValue) {
+    showToast("No active filter");
+  } else {
+    showToast(`Apply filter "${currValue}" from "${layout}"`);
+    const dataTree = table.options?.dataTree;
+    // Active aka not filtered
+    let filteredRows = table.getRows("active");
+    // Only top level, so if there are playlists just get the playlist itself
+    filteredRows = filteredRows.filter(
+      (row) => !dataTree || !row.getTreeParent()
+    );
+    let filteredList = filteredRows.map((row) => row.getData().uuid);
+    let filteredSet = new Set(filteredList);
+    let match = [];
+    let nonMatch = [];
+    for (let item of DBDATA.queue) {
+      if (filteredSet.has(item.uuid)) {
+        match.push(item);
+      } else {
+        nonMatch.push(item);
+      }
+    }
+    DBDATA.queue.splice(0, DBDATA.queue.length, ...match, ...nonMatch); // New order in place.
+    await renderQueue();
+  }
+}
 
 async function exportDB() {
   const playlists = await db.loadPlaylists();
@@ -1241,7 +1283,11 @@ function getNestedValue(obj, path) {
 }
 
 let tabulatorDB = null;
+let globalSearchCurrTable = null;
+let globalSearchCurrValue = null;
 function setGlobalSearch(myTabulatorTable, value) {
+  globalSearchCurrTable = myTabulatorTable;
+  globalSearchCurrValue = value;
   const t0 = performance.now();
   let terms = value.toLowerCase().split(" ");
   let fields = myTabulatorTable
