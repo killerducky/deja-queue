@@ -1,7 +1,8 @@
 ## VIP user
 
+- [?] filter playlists and only queue those playlists
+  - [ ] Have something implemented, needs testing
 - [ ] Even smaller window size support -- especially vertical
-- [ ] filter playlists and only queue those playlists
 - [ ] full screen playlist/database
 - [ ] thumb with weird aspect ratio -- tabulator doing something?
 - [ ] filter X should be there even when not in focus
@@ -52,8 +53,9 @@
 “Because good songs deserve déjà vu.”
 “DejaQueue — play it again.”
 
-## Done 2025-11-01 - v0.0.4
+## Done 2025-11-01 - v0.0.5
 
+- [x] Distributed zip **actually** works now!
 - [x] add playlist - should add to queue as PL, not individual songs
 - [x] click on single song inside _current_ playlist should skip to that song
 - [x] click on single song inside _not-current_ playlist should bring playlist up

@@ -1198,6 +1198,7 @@ async function applyFilter() {
       }
     }
     DBDATA.queue.splice(0, DBDATA.queue.length, ...match, ...nonMatch); // New order in place.
+    await renderQueue();
   }
 }
 
