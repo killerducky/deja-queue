@@ -1,5 +1,6 @@
 import * as db from "./db.js";
 import * as utils from "./utils.js";
+import Plotly from "plotly.js-dist";
 
 // Cross-browser shim
 if (typeof browser === "undefined") {

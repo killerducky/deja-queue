@@ -26,6 +26,11 @@ export default defineConfig({
     build: {
       outDir: "dist/renderer",
       rollupOptions: {
+        input: {
+          main: path.resolve(__dirname, "src/renderer/index.html"),
+          graphs: path.resolve(__dirname, "src/renderer/graphs.html"),
+          videoplayer: path.resolve(__dirname, "src/renderer/videoplayer.html"),
+        },
         external: [],
       },
       commonjsOptions: { include: [/node_modules/] },

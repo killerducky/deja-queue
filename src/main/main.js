@@ -157,7 +157,7 @@ class YoutubePlayerProxy {
     }
 
     if (msg?.source == "local") {
-      loadView(this.views[this.active], "videoplayer.html", {
+      loadView(this.views[this.active], "renderer/videoplayer.html", {
         v: msg.foreignKey,
         uuid: msg.uuid,
         rotateAngle: msg.rotateAngle,
