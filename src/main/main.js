@@ -9,6 +9,7 @@ import {
   shell,
   nativeTheme,
   dialog,
+  clipboard,
 } from "electron";
 import path from "path";
 import fs from "fs";
@@ -312,7 +313,6 @@ async function addContextMenu(playerWindow) {
         label: "Copy URL",
         click: async () => {
           const url = playerWindow.webContents.getURL();
-          const { clipboard } = require("electron");
           clipboard.writeText(url);
         },
       },
