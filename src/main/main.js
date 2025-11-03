@@ -418,7 +418,8 @@ ipcMain.on("save-thumbnail", (event, msg) => {
 function loadView(target, file, query = {}) {
   if (isDev) {
     const params = new URLSearchParams(query).toString();
-    const url = `http://localhost:5173/${file}${params ? `?${params}` : ""}`;
+    const cleanFile = file.replace(/^renderer\//, "");
+    const url = `http://localhost:5173/${cleanFile}${params ? `?${params}` : ""}`;
     console.log("dev load url:", url);
     target.webContents.loadURL(url);
   } else {
