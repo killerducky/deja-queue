@@ -1,9 +1,6 @@
 import * as db from "./db.js";
 import * as utils from "./utils.js";
 import { TabulatorFull as Tabulator } from "tabulator-tables";
-// import { TabulatorFull as Tabulator } from "tabulator-tables/dist/js/tabulator_esm.js";
-// import TabulatorFull from "tabulator-tables";
-// import Tabulator from "tabulator-tables/dist/js/tabulator.min.js";
 import darkTheme from "tabulator-tables/dist/css/tabulator_site_dark.min.css?url";
 import lightTheme from "tabulator-tables/dist/css/tabulator_site.min.css?url";
 import "./style.css";

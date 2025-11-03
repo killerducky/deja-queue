@@ -226,7 +226,14 @@ function createWindow(winInfo) {
   if (isDev) {
     win.loadURL(`http://localhost:5173/${winInfo.target}`);
   } else {
-    win.loadURL(path.join(mainDir, winInfo.target));
+    console.log("load renderer");
+    const mainFile = fileURLToPath(import.meta.url);
+    const mainDir = dirname(mainFile);
+    console.log(mainDir);
+    console.log(winInfo.target);
+    const indexPath = path.join(mainDir, "../../dist/renderer", winInfo.target);
+    console.log(indexPath);
+    win.loadURL(indexPath);
   }
   win.on("closed", () => {
     win = null;
@@ -416,7 +423,7 @@ function loadView(target, file, query = {}) {
     target.webContents.loadURL(url);
   } else {
     console.log("prod load file:", file);
-    target.webContents.loadFile(join(mainDir, `${file}`), {
+    target.webContents.loadFile(join(mainDir, "../../dist", `${file}`), {
       query,
     });
   }
