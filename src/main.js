@@ -510,15 +510,6 @@ function buildMenu() {
         },
         { type: "separator" },
         {
-          label: "Delete Database",
-          click: async () => {
-            winRegister.main.object.webContents.send("broadcast", {
-              type: "deleteDatabaseRequest",
-            });
-          },
-        },
-        { type: "separator" },
-        {
           label: "Add local files",
           click: async () => {
             const result = await dialog.showOpenDialog(
