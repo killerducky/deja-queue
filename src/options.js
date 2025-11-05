@@ -197,14 +197,17 @@ function date2String(d) {
 }
 
 function showToast(msg) {
-  let duration = 5000;
+  let duration = getComputedStyle(document.documentElement)
+    .getPropertyValue("--toast-timer")
+    .trim();
+  console.log(duration);
   const container = document.getElementById("toast-container");
   const toast = document.createElement("div");
   toast.className = "toast";
   toast.textContent = msg;
   container.appendChild(toast);
 
-  setTimeout(() => toast.remove(), duration);
+  setTimeout(() => toast.remove(), duration * 1000);
 }
 
 let baseTabulatorOptions = {
@@ -1174,7 +1177,7 @@ async function applyFilter() {
   if (layout == "Database") {
     currValue = dbFilterEl.value;
     table = tabulatorDB;
-  } else if (layout == "Playlist") {
+  } else if (layout == "Playlists") {
     currValue = plFilterEl.value;
     table = playlistsTabulator;
   }

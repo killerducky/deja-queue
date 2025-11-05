@@ -211,12 +211,7 @@ window.addEventListener("DOMContentLoaded", async () => {
   const url = new URL(window.location.href);
   if (url.hostname.includes("youtube.com") || url.hostname === "youtu.be") {
     savedMsg = await ipcRenderer.invoke("getSavedMsg");
-    // TODO: wow.
-    cueVideo =
-      savedMsg.cueVideo ||
-      savedMsg.type == "videoCueNext" ||
-      savedMsg.type == "cueVideo" ||
-      savedMsg.type == "backgroundCueVideo";
+    cueVideo = savedMsg.cueVideo || savedMsg.type == "cueVideo";
     rotateAngle = savedMsg.rotateAngle;
     console.log("load", savedMsg);
   }

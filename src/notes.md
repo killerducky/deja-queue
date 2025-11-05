@@ -9,13 +9,6 @@
 - [ ] API Key should be "invisible"
 - [ ] manual rating change does not work
 
-## DB
-
-- [ ] get rid of using DBDATA.queue as the DB!!
-- [ ] Use change to move to DB library instead of my own db.js
-- [ ] spotify/local
-  - [ ] trimYoutube, trimLocal, not very safe right now!
-
 ## Playlists
 
 - [ ] Skip playlist does not always(?) reset the current track number
@@ -34,11 +27,16 @@
 - [ ] 404 thumbs
 - [ ] Q mode dropdown is rounded weirdly
 - [ ] visual bar graph or star system for ratings
-- [ ] When last played changes (and maybe other things?), recalculate score
-  - [ ] Score is supposed to be semi-stable so don't just always recalculate
+- [x] When last played changes (and maybe other things?), recalculate score
+  - [x] Score is supposed to be semi-stable so don't just always recalculate
 
-## Stats/Algorithm
+## Other
 
+- [ ] win.webContents.once("did-finish-load", () => {
+- [ ] get rid of using DBDATA.queue as the DB!!
+- [ ] Use change to move to DB library instead of my own db.js
+- [ ] spotify/local
+  - [ ] trimYoutube, trimLocal, not very safe right now!
 - [ ] graphs.js DRY
 - [ ] config params in .json file
   - [ ] User can live adjust params?!
