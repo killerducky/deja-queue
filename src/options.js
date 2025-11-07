@@ -14,6 +14,25 @@ let NORMAL_THUMB_WIDTH = 90;
 let TITLE_WIDTH = 120;
 const DEFAULT_THUMB = "./favicon.ico";
 
+const dialogObserver = new MutationObserver((mutations) => {
+  for (const m of mutations) {
+    console.log("mutate");
+    if (
+      m.type === "attributes" &&
+      m.attributeName === "open" &&
+      m.target.tagName === "DIALOG"
+    ) {
+      const anyOpen = !!document.querySelector("dialog[open]");
+      sendMessage({ type: anyOpen ? "hideYoutube" : "showYoutube" });
+    }
+  }
+});
+dialogObserver.observe(document, {
+  attributes: true,
+  attributeFilter: ["open"],
+  subtree: true,
+});
+
 let env = {};
 async function loadEnv2() {
   env.youtube_api_key = window.electronAPI.get("youtube_api_key");
@@ -888,25 +907,6 @@ playBtn.addEventListener("click", async () => {
 });
 fastForwardBtn.addEventListener("click", async () => {
   sendMessage({ type: "fastForward" });
-});
-
-const dialogObserver = new MutationObserver((mutations) => {
-  for (const m of mutations) {
-    console.log("mutate");
-    if (
-      m.type === "attributes" &&
-      m.attributeName === "open" &&
-      m.target.tagName === "DIALOG"
-    ) {
-      const anyOpen = !!document.querySelector("dialog[open]");
-      sendMessage({ type: anyOpen ? "hideYoutube" : "showYoutube" });
-    }
-  }
-});
-dialogObserver.observe(document, {
-  attributes: true,
-  attributeFilter: ["open"],
-  subtree: true,
 });
 
 let videoTimeout;
