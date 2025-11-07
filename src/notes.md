@@ -8,6 +8,8 @@
 - [ ] filter X should be there even when not in focus
 - [ ] API Key should be "invisible"
 - [ ] manual rating change does not work
+- [ ] add youtube should hide youtube
+- [ ] updating thumbnail doesn't quite work
 
 ## Playlists
 

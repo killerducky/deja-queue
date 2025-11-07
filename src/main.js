@@ -432,7 +432,6 @@ function setQueueMode(mode) {
 }
 function clickMenuRadio(key, value) {
   store.set(key, value);
-  console.log("click", key, value);
   winRegister.main.object.send("broadcast", {
     type: "menuRadio",
     subtype: key,
@@ -569,31 +568,27 @@ function buildMenu() {
     {
       label: "View",
       submenu: [
+        { label: "Layout", enabled: false },
+        radioItem("Layout", "Video", { accelerator: "CmdOrCtrl+1" }),
+        radioItem("Layout", "Database", { accelerator: "CmdOrCtrl+2" }),
+        radioItem("Layout", "Playlists", { accelerator: "CmdOrCtrl+3" }),
+        { type: "separator" },
+        { label: "Theme", enabled: false },
         {
-          label: "Layout",
-          submenu: [
-            radioItem("Layout", "Video", { accelerator: "CmdOrCtrl+1" }),
-            radioItem("Layout", "Database", { accelerator: "CmdOrCtrl+2" }),
-            radioItem("Layout", "Playlists", { accelerator: "CmdOrCtrl+3" }),
-          ],
+          label: "Light",
+          type: "radio",
+          checked: nativeTheme.themeSource === "light",
+          click: () => setTheme("light"),
         },
         {
-          label: "Theme",
-          submenu: [
-            {
-              label: "Light",
-              type: "radio",
-              checked: nativeTheme.themeSource === "light",
-              click: () => setTheme("light"),
-            },
-            {
-              label: "Dark",
-              type: "radio",
-              checked: nativeTheme.themeSource === "dark",
-              click: () => setTheme("dark"),
-            },
-          ],
+          label: "Dark",
+          type: "radio",
+          checked: nativeTheme.themeSource === "dark",
+          click: () => setTheme("dark"),
         },
+        { type: "separator" },
+        { label: "Actions", enabled: false },
+
         {
           label: "Rotate Video",
           accelerator: "CmdOrCtrl+Shift+R",
