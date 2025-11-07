@@ -21,7 +21,6 @@ async function loadEnv2() {
     return;
   }
 
-  sendMessage({ type: "hideYoutube" });
   document.addEventListener("click", async (e) => {
     const link = e.target.closest("a.external-link");
     if (!link) return;
@@ -41,7 +40,6 @@ async function loadEnv2() {
     dialog.addEventListener("click", (e) => {
       if (e.target === dialog) {
         dialog.close();
-        sendMessage({ type: "showYoutube" });
       }
     });
   }
@@ -50,7 +48,6 @@ async function loadEnv2() {
     if (env.youtube_api_key) {
       window.electronAPI.set("youtube_api_key", env.youtube_api_key);
     }
-    sendMessage({ type: "showYoutube" });
   });
 }
 loadEnv2();
@@ -200,7 +197,6 @@ function showToast(msg) {
   let duration = getComputedStyle(document.documentElement)
     .getPropertyValue("--toast-timer")
     .trim();
-  console.log(duration);
   const container = document.getElementById("toast-container");
   const toast = document.createElement("div");
   toast.className = "toast";
@@ -892,6 +888,25 @@ playBtn.addEventListener("click", async () => {
 });
 fastForwardBtn.addEventListener("click", async () => {
   sendMessage({ type: "fastForward" });
+});
+
+const dialogObserver = new MutationObserver((mutations) => {
+  for (const m of mutations) {
+    console.log("mutate");
+    if (
+      m.type === "attributes" &&
+      m.attributeName === "open" &&
+      m.target.tagName === "DIALOG"
+    ) {
+      const anyOpen = !!document.querySelector("dialog[open]");
+      sendMessage({ type: anyOpen ? "hideYoutube" : "showYoutube" });
+    }
+  }
+});
+dialogObserver.observe(document, {
+  attributes: true,
+  attributeFilter: ["open"],
+  subtree: true,
 });
 
 let videoTimeout;
