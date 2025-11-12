@@ -8,6 +8,9 @@ main {
   padding: 0;
   line-height: 1.5;
 }
+:root {
+  --toast-timer: 6;
+}
 /* * {
   outline: 1px solid red !important;
 } */
@@ -358,7 +361,7 @@ dialog menu button[value="ok"] {
   border-radius: 6px;
   opacity: 0.9;
   font-size: 14px;
-  animation: flyinFadeout 5s forwards;
+  animation: flyinFadeout calc(var(--toast-timer) * 1s) forwards;
 }
 @keyframes flyinFadeout {
   0% {

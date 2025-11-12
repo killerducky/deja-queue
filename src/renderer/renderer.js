@@ -18,6 +18,25 @@ let NORMAL_THUMB_WIDTH = 90;
 let TITLE_WIDTH = 120;
 const DEFAULT_THUMB = "./favicon.ico";
 
+const dialogObserver = new MutationObserver((mutations) => {
+  for (const m of mutations) {
+    console.log("mutate");
+    if (
+      m.type === "attributes" &&
+      m.attributeName === "open" &&
+      m.target.tagName === "DIALOG"
+    ) {
+      const anyOpen = !!document.querySelector("dialog[open]");
+      sendMessage({ type: anyOpen ? "hideYoutube" : "showYoutube" });
+    }
+  }
+});
+dialogObserver.observe(document, {
+  attributes: true,
+  attributeFilter: ["open"],
+  subtree: true,
+});
+
 let env = {};
 async function loadEnv2() {
   env.youtube_api_key = window.electronAPI.get("youtube_api_key");
@@ -25,7 +44,6 @@ async function loadEnv2() {
     return;
   }
 
-  sendMessage({ type: "hideYoutube" });
   document.addEventListener("click", async (e) => {
     const link = e.target.closest("a.external-link");
     if (!link) return;
@@ -45,7 +63,6 @@ async function loadEnv2() {
     dialog.addEventListener("click", (e) => {
       if (e.target === dialog) {
         dialog.close();
-        sendMessage({ type: "showYoutube" });
       }
     });
   }
@@ -54,7 +71,6 @@ async function loadEnv2() {
     if (env.youtube_api_key) {
       window.electronAPI.set("youtube_api_key", env.youtube_api_key);
     }
-    sendMessage({ type: "showYoutube" });
   });
 }
 loadEnv2();
@@ -199,14 +215,16 @@ function date2String(d) {
 }
 
 function showToast(msg) {
-  let duration = 5000;
+  let duration = getComputedStyle(document.documentElement)
+    .getPropertyValue("--toast-timer")
+    .trim();
   const container = document.getElementById("toast-container");
   const toast = document.createElement("div");
   toast.className = "toast";
   toast.textContent = msg;
   container.appendChild(toast);
 
-  setTimeout(() => toast.remove(), duration);
+  setTimeout(() => toast.remove(), duration * 1000);
 }
 
 let baseTabulatorOptions = {
@@ -1176,7 +1194,7 @@ async function applyFilter() {
   if (layout == "Database") {
     currValue = dbFilterEl.value;
     table = tabulatorDB;
-  } else if (layout == "Playlist") {
+  } else if (layout == "Playlists") {
     currValue = plFilterEl.value;
     table = playlistsTabulator;
   }
