@@ -158,13 +158,25 @@ class YoutubePlayerProxy {
     }
 
     if (msg?.source == "local") {
-      loadView(this.views[this.active], "renderer/videoplayer.html", {
-        v: msg.foreignKey,
-        uuid: msg.uuid,
-        rotateAngle: msg.rotateAngle,
-        ...(msg.type === "cueVideo" && { cueVideo: "1" }),
-        ...(msg.needThumb && { needThumb: "1" }),
-      });
+      // loadView(this.views[this.active], "renderer/videoplayer.html", {
+      //   v: msg.foreignKey,
+      //   uuid: msg.uuid,
+      //   rotateAngle: msg.rotateAngle,
+      //   ...(msg.type === "cueVideo" && { cueVideo: "1" }),
+      //   ...(msg.needThumb && { needThumb: "1" }),
+      // });
+      this.views[this.active].webContents.loadFile(
+        "src/renderer/videoplayer.html",
+        {
+          query: {
+            v: msg.foreignKey,
+            uuid: msg.uuid,
+            rotateAngle: msg.rotateAngle,
+            ...(msg.type === "cueVideo" && { cueVideo: "1" }),
+            ...(msg.needThumb && { needThumb: "1" }),
+          },
+        }
+      );
     } else {
       this.views[this.active].webContents.send("broadcast", msg);
     }
@@ -417,7 +429,9 @@ ipcMain.on("save-thumbnail", (event, msg) => {
 
 function loadView(target, file, query = {}) {
   if (isDev) {
-    const params = new URLSearchParams(query).toString();
+    const params = Object.entries(query)
+      .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
+      .join("&");
     const cleanFile = file.replace(/^renderer\//, "");
     const url = `http://localhost:5173/${cleanFile}${params ? `?${params}` : ""}`;
     console.log("dev load url:", url);
