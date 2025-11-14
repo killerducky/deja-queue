@@ -747,7 +747,6 @@ async function addPlaylistVideos(playlistForeignKey) {
         video = trimYoutubeFields(video);
         utils.addComputedFieldsVideo(video);
         newVideos.push(video);
-        DBDATA.queue.push(video);
       }
     }
     nextPageToken = data.nextPageToken;
