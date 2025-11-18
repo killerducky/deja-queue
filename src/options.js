@@ -1,5 +1,6 @@
 import * as db from "./db.js";
 import * as utils from "./utils.js";
+import { initUI } from "./ui.js";
 
 let DBDATA = { queue: [], filtered: [] };
 let LISTLEN = 30;
@@ -14,194 +15,11 @@ let NORMAL_THUMB_WIDTH = 90;
 let TITLE_WIDTH = 120;
 const DEFAULT_THUMB = "./favicon.ico";
 
-const dialogObserver = new MutationObserver((mutations) => {
-  for (const m of mutations) {
-    console.log("mutate");
-    if (
-      m.type === "attributes" &&
-      m.attributeName === "open" &&
-      m.target.tagName === "DIALOG"
-    ) {
-      const anyOpen = !!document.querySelector("dialog[open]");
-      sendMessage({ type: anyOpen ? "hideYoutube" : "showYoutube" });
-    }
-  }
-});
-dialogObserver.observe(document, {
-  attributes: true,
-  attributeFilter: ["open"],
-  subtree: true,
-});
-
-let env = {};
-async function loadEnv2() {
-  env.youtube_api_key = window.electronAPI.get("youtube_api_key");
-  if (env.youtube_api_key) {
-    return;
-  }
-
-  document.addEventListener("click", async (e) => {
-    const link = e.target.closest("a.external-link");
-    if (!link) return;
-
-    e.preventDefault();
-    await window.electronAPI.openExternal(link.href);
-  });
-
-  const dialog = document.getElementById("add-api-key-dialog");
-  const form = dialog.querySelector("form");
-  const input = form.querySelector("input");
-
-  dialog.showModal();
-  // Make it harder to skip this, but not impossible?
-  let dismissable = false;
-  if (dismissable) {
-    dialog.addEventListener("click", (e) => {
-      if (e.target === dialog) {
-        dialog.close();
-      }
-    });
-  }
-  form.addEventListener("submit", async (e) => {
-    env.youtube_api_key = input.value.trim();
-    if (env.youtube_api_key) {
-      window.electronAPI.set("youtube_api_key", env.youtube_api_key);
-    }
-  });
-}
-loadEnv2();
-
-const fastForwardBtn = document.getElementById("fastForward");
-const skipBtn = document.getElementById("skip");
-const delayBtn = document.getElementById("delay");
-const pauseBtn = document.getElementById("pause");
-const playBtn = document.getElementById("play");
 const queueEl = document.getElementById("queue");
 const logEl = document.getElementById("log");
 
 let queueMode = window.electronAPI.get("queueMode", "Video");
 let profile = window.electronAPI.get("profile");
-
-function handleDivider(divEl, vert) {
-  let isDragging = false;
-  const container = divEl.parentElement;
-  const divSizeKey = `${divEl.id}-size`;
-  const savedSize = window.electronAPI.get(divSizeKey);
-
-  if (savedSize) {
-    container.style.setProperty(`--${divSizeKey}`, `${savedSize}px`);
-  }
-
-  divEl.addEventListener("mousedown", (e) => {
-    isDragging = true;
-    document.body.style.cursor = vert ? "row-resize" : "col-resize";
-    e.preventDefault();
-  });
-
-  window.addEventListener("mousemove", (e) => {
-    if (!isDragging) return;
-    const rect = container.getBoundingClientRect();
-    let newSize = vert ? e.clientY - rect.top : e.clientX - rect.left;
-
-    // Limit resizing range
-    const minSize = 250;
-    const maxSize = 1000;
-    newSize = Math.min(Math.max(newSize, minSize), maxSize);
-    container.style.setProperty(`--${divSizeKey}`, `${newSize}px`);
-  });
-
-  window.addEventListener("mouseup", () => {
-    if (isDragging) {
-      isDragging = false;
-      document.body.style.cursor = "default";
-
-      const currentSize = parseFloat(
-        container.style.getPropertyValue(`--${divSizeKey}`)
-      );
-      window.electronAPI.set(divSizeKey, currentSize);
-    }
-  });
-}
-document.querySelectorAll(".my-divider").forEach((divEl) => {
-  const isVertical = divEl.classList.contains("vertical");
-  handleDivider(divEl, isVertical);
-});
-
-function youtubeDiv() {
-  return (
-    document.querySelector(".active#youtube-full") ||
-    document.getElementById("youtube")
-  );
-}
-
-// Track the currently active div
-let activeYoutubeDiv;
-
-// Observe changes in class attributes
-const observer = new MutationObserver((mutationsList) => {
-  for (const mutation of mutationsList) {
-    if (mutation.type !== "attributes" || mutation.attributeName !== "class") {
-      continue;
-    }
-    const target = mutation.target;
-    if (target.classList.contains("active") && target !== activeYoutubeDiv) {
-      activeYoutubeDiv = youtubeDiv();
-      // Start observing the new active div
-      startResizeObserver(activeYoutubeDiv);
-    }
-  }
-});
-
-let resizeObserver = null;
-
-function startResizeObserver(div) {
-  // Disconnect previous observer
-  if (resizeObserver) resizeObserver.disconnect();
-
-  // Create a new ResizeObserver
-  resizeObserver = new ResizeObserver((entries) => {
-    for (let entry of entries) {
-      const rect = entry.target.getBoundingClientRect();
-      const bounds = {
-        x: rect.left,
-        y: rect.top,
-        width: rect.width,
-        height: rect.height,
-      };
-
-      // Send new size to main process
-      electronAPI.sendBroadcast({
-        type: "div-resize",
-        bounds,
-      });
-    }
-  });
-
-  resizeObserver.observe(div);
-}
-
-// Observe all tab-content divs
-// TODO: Should really be the youtube divs only
-document.querySelectorAll(".tab-content").forEach((div) => {
-  observer.observe(div, { attributes: true });
-});
-
-const themeLink = document.getElementById("tabulator-theme");
-
-function updateTheme() {
-  const isDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-  themeLink.href = isDark
-    ? "assets/tabulator_site_dark.min.css"
-    : "assets/tabulator_site.min.css";
-}
-
-// Run on load
-updateTheme();
-
-// Listen for user preference changes
-window
-  .matchMedia("(prefers-color-scheme: dark)")
-  .addEventListener("change", updateTheme);
 
 function date2String(d) {
   let yy = `${String(d.getFullYear()).padStart(4, "0")}`;
@@ -244,7 +62,6 @@ let baseTabulatorOptions = {
   // reactiveData: true,
 };
 
-let tabulatorCurrent = null;
 let tabulatorQueue = null;
 let tabulatorLog = null;
 async function renderQueue() {
@@ -252,15 +69,7 @@ async function renderQueue() {
     console.log("Empty DBDATA.queue, nothing to render");
     return;
   }
-  // const firstVideo = DBDATA.queue[0];
-  // const restVideos = DBDATA.queue.slice(1, LISTLEN + 1);
   const restVideos = DBDATA.queue.slice(0, LISTLEN);
-  // tabulatorCurrent = await table2(
-  //   tabulatorCurrent,
-  //   currentEl,
-  //   [firstVideo],
-  //   "current"
-  // );
 
   function finalizePlaylist(playlist, playlistChildren) {
     if (playlist) {
@@ -657,7 +466,8 @@ function formatDue(due) {
 
 async function addYoutubeInfo(video) {
   console.log("Fetching YouTube info for", video.foreignKey);
-  const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${video.foreignKey}&key=${env.youtube_api_key}`;
+  youtube_api_key = window.electronAPI.get("youtube_api_key");
+  const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${video.foreignKey}&key=${youtube_api_key}`;
   const response = await fetch(url);
   let data = await response.json();
   // console.log(data);
@@ -673,7 +483,8 @@ async function addYoutubeInfo(video) {
 
 async function addPlaylistVideos(playlistForeignKey) {
   // First, fetch playlist metadata
-  let playlistUrl = `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&id=${playlistForeignKey}&key=${env.youtube_api_key}`;
+  youtube_api_key = window.electronAPI.get("youtube_api_key");
+  let playlistUrl = `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&id=${playlistForeignKey}&key=${youtube_api_key}`;
   let playlistRes = await fetch(playlistUrl);
   let playlistData = await playlistRes.json();
   // console.log("playlists raw:", playlistData);
@@ -721,7 +532,7 @@ async function addPlaylistVideos(playlistForeignKey) {
   do {
     let url =
       `https://www.googleapis.com/youtube/v3/playlistItems?part=snippet,contentDetails` +
-      `&maxResults=50&pageToken=${nextPageToken}&playlistId=${playlistForeignKey}&key=${env.youtube_api_key}`;
+      `&maxResults=50&pageToken=${nextPageToken}&playlistId=${playlistForeignKey}&key=${youtube_api_key}`;
     let res = await fetch(url);
     let data = await res.json();
     // console.log("playlistItems raw: ", data);
@@ -866,47 +677,6 @@ async function importLocalFiles(msg) {
   await saveVideos(videos);
   DBDATA.queue.splice(1, 0, ...videos);
 }
-
-const addDialog = document.getElementById("addDialog");
-const addForm = document.getElementById("addForm");
-const addInput = document.getElementById("videoInput");
-const addBtn = document.getElementById("add");
-
-addBtn.addEventListener("click", () => {
-  addInput.value = "";
-  addDialog.showModal();
-});
-addDialog.addEventListener("click", (e) => {
-  if (e.target === addDialog) {
-    addDialog.close();
-  }
-});
-addForm.addEventListener("submit", async (e) => {
-  const url = addInput.value.trim();
-  const response = getVideoIdFromInput(url);
-  if (response.foreignKey) {
-    addVideoOrPlaylist(response);
-  } else {
-    console.log("Error: Could not find ID:", url);
-  }
-});
-skipBtn.addEventListener("click", async (e) => {
-  let params = e.shiftKey ? { skipWholeList: true } : {};
-  logAndPlayNext("skip", params);
-});
-delayBtn.addEventListener("click", async (e) => {
-  let params = e.shiftKey ? { delayWholeList: true } : {};
-  logAndPlayNext("delay", params);
-});
-pauseBtn.addEventListener("click", async () => {
-  sendMessage({ type: "pauseVideo" });
-});
-playBtn.addEventListener("click", async () => {
-  sendMessage({ type: "resumeVideo" });
-});
-fastForwardBtn.addEventListener("click", async () => {
-  sendMessage({ type: "fastForward" });
-});
 
 let videoTimeout;
 
@@ -1179,8 +949,6 @@ window.electronAPI.onBroadcast(async (msg) => {
     }
   } else if (msg.type === "videoRotated") {
     rotateVideo();
-  } else if (msg.type === "menuRadio" && msg.subtype === "Layout") {
-    activateTab(msg.value);
   }
 });
 
@@ -1197,29 +965,29 @@ async function applyFilter() {
   }
   if (!currValue) {
     showToast("No active filter");
-  } else {
-    showToast(`Apply filter "${currValue}" from "${layout}"`);
-    const dataTree = table.options?.dataTree;
-    // Active aka not filtered
-    let filteredRows = table.getRows("active");
-    // Only top level, so if there are playlists just get the playlist itself
-    filteredRows = filteredRows.filter(
-      (row) => !dataTree || !row.getTreeParent()
-    );
-    let filteredList = filteredRows.map((row) => row.getData().uuid);
-    let filteredSet = new Set(filteredList);
-    let match = [];
-    let nonMatch = [];
-    for (let item of DBDATA.queue) {
-      if (filteredSet.has(item.uuid)) {
-        match.push(item);
-      } else {
-        nonMatch.push(item);
-      }
-    }
-    DBDATA.queue.splice(0, DBDATA.queue.length, ...match, ...nonMatch); // New order in place.
-    await renderQueue();
+    return;
   }
+  showToast(`Apply filter "${currValue}" from "${layout}"`);
+  const dataTree = table.options?.dataTree;
+  // Active aka not filtered
+  let filteredRows = table.getRows("active");
+  // Only top level, so if there are playlists just get the playlist itself
+  filteredRows = filteredRows.filter(
+    (row) => !dataTree || !row.getTreeParent()
+  );
+  let filteredList = filteredRows.map((row) => row.getData().uuid);
+  let filteredSet = new Set(filteredList);
+  let match = [];
+  let nonMatch = [];
+  for (let item of DBDATA.queue) {
+    if (filteredSet.has(item.uuid)) {
+      match.push(item);
+    } else {
+      nonMatch.push(item);
+    }
+  }
+  DBDATA.queue.splice(0, DBDATA.queue.length, ...match, ...nonMatch); // New order in place.
+  await renderQueue();
 }
 
 async function exportDB() {
@@ -1298,11 +1066,7 @@ function getNestedValue(obj, path) {
 }
 
 let tabulatorDB = null;
-let globalSearchCurrTable = null;
-let globalSearchCurrValue = null;
 function setGlobalSearch(myTabulatorTable, value) {
-  globalSearchCurrTable = myTabulatorTable;
-  globalSearchCurrValue = value;
   const t0 = performance.now();
   let terms = value.toLowerCase().split(" ");
   let fields = myTabulatorTable
@@ -1620,22 +1384,6 @@ async function moveVideoToFront(uuid) {
   const [video] = DBDATA.queue.splice(idx, 1); // cut the 1 video from idx
   DBDATA.queue.splice(1, 0, video); // insert just behind current
 }
-function activateTab(targetId) {
-  if (targetId == "Video") {
-    targetId = "youtube-full";
-  }
-  const contents = document.querySelectorAll(".tab-content");
-  contents.forEach((c) => c.classList.remove("active"));
-  const target = document.querySelector(`#${targetId}`);
-  if (target) target.classList.add("active");
-
-  if (targetId !== "youtube-full") {
-    document.querySelector("#youtube").classList.add("active");
-  }
-  sendMessage({ type: "tab-button", targetId });
-}
-
-activateTab(window.electronAPI.get("Layout", "Video"));
 
 function trimYoutubeFields(obj) {
   if (Array.isArray(obj)) {
@@ -1665,6 +1413,7 @@ function trimLocalFields(obj) {
     obj.forEach(trimLocalFields);
   } else {
     if (obj.source == "local") {
+      // For local files, just keep the filename in title
       obj.title = obj.title.split(/[/\\]/).pop();
     }
   }
@@ -1735,6 +1484,7 @@ async function savePlaylists(playlists) {
 
 // Initial load
 (async () => {
+  initUI();
   DBDATA.queue = await db.loadVideos();
   DBDATA.playlists = await db.loadPlaylists();
   dbCheck();
@@ -1763,3 +1513,5 @@ async function savePlaylists(playlists) {
     playNextVideo(0, { cueVideo: true });
   }
 })();
+
+export { getVideoIdFromInput, addVideoOrPlaylist, logAndPlayNext, sendMessage };
