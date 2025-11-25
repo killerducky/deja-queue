@@ -466,7 +466,7 @@ function formatDue(due) {
 
 async function addYoutubeInfo(video) {
   console.log("Fetching YouTube info for", video.foreignKey);
-  youtube_api_key = window.electronAPI.get("youtube_api_key");
+  let youtube_api_key = window.electronAPI.get("youtube_api_key");
   const url = `https://www.googleapis.com/youtube/v3/videos?part=snippet,contentDetails,statistics&id=${video.foreignKey}&key=${youtube_api_key}`;
   const response = await fetch(url);
   let data = await response.json();
@@ -483,7 +483,7 @@ async function addYoutubeInfo(video) {
 
 async function addPlaylistVideos(playlistForeignKey) {
   // First, fetch playlist metadata
-  youtube_api_key = window.electronAPI.get("youtube_api_key");
+  let youtube_api_key = window.electronAPI.get("youtube_api_key");
   let playlistUrl = `https://www.googleapis.com/youtube/v3/playlists?part=snippet,contentDetails&id=${playlistForeignKey}&key=${youtube_api_key}`;
   let playlistRes = await fetch(playlistUrl);
   let playlistData = await playlistRes.json();
