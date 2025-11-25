@@ -78,6 +78,7 @@ class YoutubePlayerProxy {
     };
   }
   volumeChanged(msg) {
+    // console.log("sender:", msg.senderid);
     this.views[this.inactive()].webContents.send("broadcast", msg);
   }
   backgroundCueNext(msg) {
@@ -359,6 +360,7 @@ function sendBroadcast(msg, windows) {
 }
 
 ipcMain.on("broadcast", async (event, msg) => {
+  msg.senderid = event.sender.id;
   if (msg.type != "div-resize") {
     console.log("msg:", JSON.stringify(msg));
   }

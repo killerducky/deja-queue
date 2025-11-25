@@ -10,6 +10,7 @@ let foreignKey = params.get("v");
 let uuid = params.get("uuid");
 
 let savedMsg;
+let ignoreVolumeEvent = false;
 
 function getVideoId(url) {
   const params = new URL(url).searchParams;
@@ -111,6 +112,7 @@ ipcRenderer.on("broadcast", (event, msg) => {
   } else if (msg.type === "volumeChanged") {
     video.volume = msg.volume;
     video.muted = msg.muted;
+    ignoreVolumeEvent = true;
   } else if (msg.type === "rotateVideo") {
     rotateAngle = ((rotateAngle || 0) + 90) % 360;
     applyRotate(rotateAngle);
@@ -199,6 +201,10 @@ function attachListener() {
     }
   });
   video.onvolumechange = () => {
+    if (ignoreVolumeEvent) {
+      ignoreVolumeEvent = false;
+      return;
+    }
     sendBroadcast({
       type: "volumeChanged",
       volume: video.volume,
