@@ -567,8 +567,8 @@ async function addPlaylistVideos(playlistForeignKey) {
     }
     seenTokens.add(data.prevPageToken);
     failsafeCnt += 1;
-    if (failsafeCnt >= 20) {
-      alert("Error: Looped 20 times. Aborting.");
+    if (failsafeCnt >= 30) {
+      alert("Error: Looped 30 times. Aborting.");
       return;
     }
   } while (nextPageToken);
@@ -1022,33 +1022,14 @@ async function importDB(file) {
   const text = await window.electronAPI.readFile(file);
   const data = JSON.parse(text);
   await db.deleteDB();
-  if (data?.version !== 4) {
-    const videoMap = new Map();
-    for (let v of data.videos) {
-      // rename id to foreignKey
-      v.foreignKey = v.id;
-      delete v.id;
-      v.uuid = db.uuidv4();
-      v.source = "youtube";
-
-      videoMap.set(v.foreignKey, v.uuid);
-    }
-    for (let p of data.playlists) {
-      // rename id to foreignKey
-      p.foreignKey = p.id;
-      delete p.id;
-      p.uuid = db.uuidv4();
-      p.source = "youtube";
-
-      // remap videoIds to video UUIDs
-      p.videoUuids = p.videoIds.map((fk) => videoMap.get(fk)).filter(Boolean);
-      delete p.videoIds;
-    }
-    data.log = [];
-  }
   await saveVideos(data.videos); // only replaces each id with new content
   await savePlaylists(data.playlists); // only replaces each id with new content
   await db.saveLog(data.log);
+  if (data?.version == 4) {
+    console.log("version == 4, so migrateAllRatings");
+    db.importMigrateAllRatings("videos");
+    db.importMigrateAllRatings("playlists");
+  }
   console.log("Videos imported successfully");
 }
 

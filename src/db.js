@@ -3,7 +3,7 @@
 let dbPromise; // promise while opening
 let dbInstance; // actual IDBDatabase
 
-export let VERSION = 4;
+export let VERSION = 5;
 
 export function uuidv4() {
   return ([1e7] + -1e3 + -4e3 + -8e3 + -1e11).replace(/[018]/g, (c) =>
@@ -14,6 +14,50 @@ export function uuidv4() {
   );
 }
 
+function migrateRating(rating) {
+  if (rating >= 7.0) {
+    return rating;
+  }
+  if (rating >= 6.0) {
+    return rating - 0.5;
+  }
+  return rating - 1.0;
+}
+
+export async function importMigrateAllRatings(storeName) {
+  const db = await openDB();
+  let tx = db.transaction(storeName, "readwrite");
+  migrateAllRatings(tx, storeName);
+}
+
+function migrateAllRatings(tx, storeName) {
+  console.log("Running rating migration → version 4");
+
+  const store = tx.objectStore(storeName);
+
+  const cursorRequest = store.openCursor();
+
+  cursorRequest.onsuccess = (e) => {
+    const cursor = e.target.result;
+    if (!cursor) {
+      console.log("Rating migration complete");
+      return;
+    }
+
+    const video = cursor.value;
+    if (typeof video.rating === "number") {
+      video.rating = migrateRating(video.rating);
+    }
+
+    cursor.update(video);
+    cursor.continue();
+  };
+
+  cursorRequest.onerror = (e) => {
+    console.error("Error during rating migration:", e.target.error);
+  };
+}
+
 async function openDB() {
   if (!dbPromise) {
     dbPromise = new Promise((resolve, reject) => {
@@ -21,6 +65,8 @@ async function openDB() {
 
       request.onupgradeneeded = (event) => {
         const db = event.target.result;
+        const tx = event.target.transaction;
+        const oldVersion = event.oldVersion;
         if (!db.objectStoreNames.contains("videos")) {
           const videoStore = db.createObjectStore("videos", {
             keyPath: "uuid",
@@ -37,6 +83,10 @@ async function openDB() {
         }
         if (!db.objectStoreNames.contains("playlists")) {
           db.createObjectStore("playlists", { keyPath: "uuid" });
+        }
+        if (oldVersion <= 4) {
+          migrateAllRatings(tx, "videos");
+          migrateAllRatings(tx, "playlists");
         }
       };
 

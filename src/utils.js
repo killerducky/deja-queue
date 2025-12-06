@@ -62,10 +62,14 @@ export function rating2days(rating) {
   if (rating >= 8.0) return 2;
   if (rating >= 7.5) return 3;
   if (rating >= 7.0) return 7;
-  if (rating >= 6.5) return 30;
-  if (rating >= 6.0) return 90;
-  if (rating >= 5.5) return 365;
-  return 365 * 3;
+  if (rating >= 6.5) return 14; // new
+  if (rating >= 6.0) return 30;
+  if (rating >= 5.5) return 90;
+  if (rating >= 5.0) return 180; // new
+  if (rating >= 4.5) return 365;
+  if (rating >= 4.0) return 365 * 2; // new
+  if (rating >= 3.5) return 365 * 4; // new
+  return 365 * 8;
 }
 
 export function ratingScore(rating) {
