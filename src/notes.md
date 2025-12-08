@@ -1,7 +1,9 @@
 ## VIP user
 
-- [?] filter playlists and only queue those playlists
-  - [ ] Have something implemented, needs testing
+- [ ] Auto update when deleting a track from a playlist
+- [ ] Open dialog when adding new playlist/song (rating, tags)
+- [ ] Filter deleted videos from playlist
+- [x] filter playlists and only queue those playlists
 - [ ] Even smaller window size support -- especially vertical
 - [ ] full screen playlist/database
 - [ ] thumb with weird aspect ratio -- tabulator doing something?
@@ -21,6 +23,7 @@
 
 ## UI
 
+- [x] DB upgrade for 14d and 180d intervals
 - [ ] skip/defer in queue/database
 - [ ] multi row select
 - [ ] shift-click to insta play
